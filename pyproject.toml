@@ -13,6 +13,8 @@ dependencies = [
     "pyopengl>=3.1.10",
     "pyopengl-accelerate>=3.1.10",
     "wandb>=0.25.0",
+    "pytest>=9.0.2",
+    "pytest-cov>=7.0.0",
 ]
 
 [dependency-groups]
@@ -20,3 +22,9 @@ dev = [
     "pre-commit>=4.5.1",
     "ruff>=0.15.1",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# -ra: show extra test summary info
+# --cov: produce coverage report for your src folder
+addopts = "-ra --cov=src"
