@@ -1,2 +1,65 @@
-.vscode/
+# --- Python Base ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# --- uv & Virtual Environments ---
+# uv creates a .venv directory by default
 .venv/
+# If you use other env managers
+venv/
+env/
+ENV/
+
+# --- Ruff ---
+# Ruff's cache directory
+.ruff_cache/
+
+# --- pre-commit ---
+.assistant/
+.pre-commit-cache/
+
+# --- Testing & Coverage ---
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.cache
+htmlcov/
+.noseresults
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# --- Editors (VS Code) ---
+.vscode/*
+# Allow specific VS Code settings if you want to share them with the team:
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.history/
+
+# --- OS Specific ---
+.DS_Store
+Thumbs.db
