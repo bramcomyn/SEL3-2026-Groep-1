@@ -18,9 +18,3 @@ class QNetwork(nnx.Module):
         for layer in self.mlp:
             x = layer(x)
         return x
-
-
-if __name__ == "__main__":
-    import flax
-
-    print("Flax version:", flax.__version__)

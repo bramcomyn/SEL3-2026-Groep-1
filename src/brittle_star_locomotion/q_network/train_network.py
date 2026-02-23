@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import optax
 from flax import nnx
@@ -5,7 +6,7 @@ from q_network import QNetwork
 
 
 @nnx.jit
-def train_step(model, optimizer, x, y, rngs):
+def train_step(model, optimizer, x, y, rngs) -> jax.Array:
     def loss_fn(model: QNetwork, rngs: nnx.Rngs):
         y_pred = model(x)
         return jnp.mean((y_pred - y) ** 2)
