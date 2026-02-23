@@ -3,9 +3,9 @@ Checkpointing utilities for saving and loading model checkpoints.
 https://flax.readthedocs.io/en/stable/guides/checkpointing.html
 """
 import os
+import pickle
 from collections.abc import Callable
 
-import orbax.checkpoint as ocp
 from flax import nnx
 
 CHECKPOINT_DIR = "checkpoints"
@@ -21,14 +21,13 @@ def save_checkpoint(model: nnx.Module, name: str):
     >>> save_checkpoint(model, "my_checkpoint")
     """
     os.makedirs(CHECKPOINT_DIR, exist_ok=True)
+    path_to_checkpoint = os.path.join(CHECKPOINT_DIR, name)
 
     _, state = nnx.split(model)
 
-    checkpointer = ocp.StandardCheckpointer()
-    checkpointer.save(
-        os.path.join(CHECKPOINT_DIR, name),
-        state
-    )
+    pure_dict_state = nnx.to_pure_dict(state)
+    with open(path_to_checkpoint, "wb") as output_file:
+        pickle.dump(pure_dict_state, output_file)
 
 
 def load_checkpoint(model_callback: Callable[[], nnx.Module], name: str) -> nnx.Module:
@@ -41,13 +40,15 @@ def load_checkpoint(model_callback: Callable[[], nnx.Module], name: str) -> nnx.
 
     >>> model = load_checkpoint(lambda: MyModel(), "my_checkpoint")
     """
-    checkpoint_path = os.path.join(CHECKPOINT_DIR, f"{name}")
+    path_to_checkpoint = os.path.join(CHECKPOINT_DIR, f"{name}")
 
     abstract_model = nnx.eval_shape(lambda: model_callback())
     graphdef, abstract_state = nnx.split(abstract_model)
 
-    checkpointer = ocp.StandardCheckpointer()
-    state_restored = checkpointer.restore(checkpoint_path, abstract_state)
+    with open(path_to_checkpoint, "rb") as input_file:
+        restored_pure_dict = pickle.load(input_file)
 
-    model = nnx.merge(graphdef, state_restored)
+    nnx.replace_by_pure_dict(abstract_state, restored_pure_dict)
+
+    model = nnx.merge(graphdef, abstract_state)
     return model
