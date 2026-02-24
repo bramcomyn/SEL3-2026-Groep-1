@@ -9,8 +9,16 @@ def update_model_parameters(model: nnx.Module, copy_from: nnx.Module) -> nnx.Mod
     :param nnx.Module model: The model to update.
     :param nnx.Module copy_from: The model to copy parameters from.
     :return: The updated model.
-    """
-    _, copy_from_state = nnx.split(copy_from)
-    nnx.update(model, copy_from_state)
 
+    >>> model = QNetwork(5, 5, rngs=nnx.Rngs(0), hidden_size=5)
+    >>> copy_from = QNetwork(5, 5, rngs=nnx.Rngs(0), hidden_size=5)
+    >>> updated_model = update_model_parameters(model, copy_from)
+    """
+    model_graphdef, _ = nnx.split(model)
+    copy_from_graphdef, copy_from_state = nnx.split(copy_from)
+
+    assert model_graphdef == copy_from_graphdef, \
+        "Model architectures must match to copy parameters."
+
+    nnx.update(model, copy_from_state)
     return model
