@@ -80,6 +80,9 @@ class Environment:
                 assert obs in self.state_space, f"Observation {obs} not in state space {self.state_space}"
             self.observations = observations
 
+        self.jit_env_step = jax.jit(self.env.step)
+        self.jit_env_reset = jax.jit(self.env.reset)
+
     def step(self, actions: jnp.ndarray):  # TODO return type
         """Step in the environment.
 
@@ -89,9 +92,7 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        # TODO: jit step
-        self.state = self.env.step(self.state, actions)
-
+        self.state = self.jit_env_step(self.state, actions)
         return self.state, self.state.reward, self.state.terminated, self.state.truncated
 
     def reset(self):  # TODO return type
@@ -100,7 +101,7 @@ class Environment:
         :return: The new state.
         :rtype: BaseEnvState
         """
-        self.state = self.env.reset(self.rng)
+        self.state = self.jit_env_reset(self.rng)
         return self.state
 
     def get_observations(self) -> jnp.ndarray:
@@ -119,8 +120,8 @@ class Environment:
         for arm in range(self.num_arms):
             i = 0
             for obs in self.observations:
-                for obs_value in self.state.observations[obs][arm * self.state_space[obs] : (arm + 1) * self.state_space[obs]]:  # type: ignore
-                    observations.at[arm, i].set(obs_value)
+                for obs_idx in range(self.state_space[obs]):
+                    observations.at[arm, i].set(self.state.observations[obs][arm * self.state_space[obs] + obs_idx])
                     i += 1
 
         return observations

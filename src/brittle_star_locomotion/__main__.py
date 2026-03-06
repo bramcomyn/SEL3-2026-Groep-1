@@ -1,13 +1,13 @@
 from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
 from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
+from jax import random
 
 from brittle_star_locomotion.environment.environment import Environment
 
 morphology_specification = default_brittle_star_morphology_specification(num_arms=5, num_segments_per_arm=4, use_p_control=True)
 arena_configuration = AquariumArenaConfiguration(size=(10, 5), attach_target=True)
 environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(render_mode="rgb_array", simulation_time=5, camera_ids=[1])
-
 
 env = Environment(
     5,
@@ -16,3 +16,12 @@ env = Environment(
     environment_configuration=environment_configuration,
     observations=["actuator_force", "joint_position"],
 )
+
+key = random.PRNGKey(0)
+actions = random.uniform(key, shape=(30,))
+
+# print(env.get_observations())
+# for i in range(1000):
+#     print(i)
+#     env.step(actions)
+# print(env.get_observations())
