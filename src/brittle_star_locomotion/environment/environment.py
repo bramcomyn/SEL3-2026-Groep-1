@@ -114,7 +114,7 @@ class Environment:
         :return: The selected observations per agent with shape (num_agents, observation_space_shape).
         :rtype: jnp.ndarray
         """
-        observation_space_shape = self.num_segments_per_arm * sum(self.state_space[obs] for obs in self.observations)
+        observation_space_shape = self.get_observation_size()
         observations = jnp.zeros((self.num_arms, observation_space_shape))
 
         for arm in range(self.num_arms):
@@ -125,3 +125,11 @@ class Environment:
                     i += 1
 
         return observations
+
+    def get_observation_size(self) -> int:
+        """Get the size of the observation space.
+
+        :return: The size of the observation space.
+        :rtype: int
+        """
+        return self.num_segments_per_arm * sum(self.state_space[obs] for obs in self.observations)
