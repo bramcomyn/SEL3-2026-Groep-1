@@ -24,7 +24,6 @@ if __name__ == "__main__":
     rngs = nnx.Rngs(0)
     x, y = jnp.ones((5,)), jnp.ones((5,))
 
-
     loss = train_step(model, optimizer, x, y, rngs)
     while loss > 1e-6:
         print(f"Loss {loss}")
