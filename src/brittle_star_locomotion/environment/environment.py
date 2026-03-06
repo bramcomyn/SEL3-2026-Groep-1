@@ -121,7 +121,7 @@ class Environment:
             i = 0
             for obs in self.observations:
                 for obs_idx in range(self.state_space[obs]):
-                    observations.at[arm, i].set(self.state.observations[obs][arm * self.state_space[obs] + obs_idx])
+                    observations.at[arm, i].set(self.state.observations[obs][arm * self.state_space[obs] + obs_idx])  # type: ignore
                     i += 1
 
         return observations
