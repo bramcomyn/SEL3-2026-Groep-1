@@ -9,7 +9,6 @@ requires-python = ">=3.12"
 dependencies = [
     "biorobot>=0.4.2",
     "evosax>=0.2.0",
-    "flax[gpu]>=0.12.5",
     "matplotlib>=3.10.8",
     "mediapy>=1.2.6",
     "pyopengl>=3.1.10",
