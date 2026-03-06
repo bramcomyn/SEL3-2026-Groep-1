@@ -37,7 +37,7 @@ for i in range(10):
         action=actions,
         reward=1.0,
         next_observation=env.get_observations()[0],
-        done=False
+        done=0
     )
 
 print(buffer.sample(5))

@@ -1,5 +1,6 @@
+from functools import partial
+
 import jax
-from jax import random
 import jax.numpy as jnp
 
 
@@ -52,6 +53,7 @@ class ReplayBuffer:
         self.replay_buffer.at[self.size].set(new_entry)
         self.size = (self.size + 1) % self.max_size
 
+    @partial(jax.jit, static_argnums=(0,1))
     def sample(
         self,
         batch_size: int
@@ -64,5 +66,10 @@ class ReplayBuffer:
         :return: A batch of experiences sampled from the replay buffer.
         :rtype: jnp.ndarray
         """
-        random_indices = jax.random.choice(self.rng, self.size, (batch_size,), replace=False)
+        random_indices = jax.random.choice(
+            self.rng,
+            self.size,
+            shape=(batch_size,),
+            replace=False
+        )
         return self.replay_buffer[random_indices]
