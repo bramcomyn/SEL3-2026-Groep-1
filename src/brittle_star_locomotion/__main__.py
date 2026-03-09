@@ -10,8 +10,7 @@ from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.gait.gait import modulate_rowing_gait
 
 NUM_ARMS: int = 5
-NUM_SEGMENTS: int = 2
-DT: float = 0.01
+NUM_SEGMENTS: int = 3
 SIMULATION_TIME: float = 20.0
 RENDER_EVERY: int = 5
 
@@ -58,9 +57,14 @@ def run_simulation():
     from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
     from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 
-    arena_config = AquariumArenaConfiguration(size=(10, 5), attach_target=True)
+    arena_config = AquariumArenaConfiguration(size=(10, 5), attach_target=True, sand_ground_color=False)
     env_config = BrittleStarDirectedLocomotionEnvironmentConfiguration(
-        render_mode="rgb_array", simulation_time=SIMULATION_TIME, render_size=(480, 640), camera_ids=(0, 1)
+        render_mode="rgb_array",
+        simulation_time=SIMULATION_TIME,
+        render_size=(480, 640),
+        camera_ids=(0, 1),
+        time_scale=1,
+        num_physics_steps_per_control_step=10,
     )
 
     env = Environment(
@@ -72,11 +76,11 @@ def run_simulation():
 
     num_osc = NUM_ARMS * 2
     weights = create_cpg_structure(num_osc)
-    cpg = CPG(weights=weights, dt=DT, solver=RK4Solver())
+    cpg = CPG(weights=weights, dt=env_config.control_timestep, solver=RK4Solver())
     cpg_state = cpg.reset(rng=jax.random.PRNGKey(0))
 
     cpg_state = cpg_state.replace(  # type: ignore
-        omegas=jnp.pi * jnp.ones_like(cpg_state.omegas)
+        omegas=jnp.pi / 2 * jnp.ones_like(cpg_state.omegas)
     )
 
     leading_idx = 0
@@ -93,7 +97,7 @@ def run_simulation():
         max_joint_limit=env.env.action_space.high[0] * 0.5,  # type: ignore
     )
 
-    num_steps = int(SIMULATION_TIME / DT)
+    num_steps = int(SIMULATION_TIME / env_config.control_timestep)
     print("Starting JAX-native simulation...")
 
     trajectory = run_jax_simulation(cpg, cpg_state, env.env, num_steps)
@@ -107,11 +111,19 @@ def run_simulation():
         frames.append(combined)
 
     if frames:
-        media.write_video("out/modulated_rowing.mp4", np.array(frames), fps=1.0 / (DT * RENDER_EVERY))
+        media.write_video("out/modulated_rowing.mp4", np.array(frames))
         print("Video saved to out/modulated_rowing.mp4")
 
     env.env.close()
 
 
 if __name__ == "__main__":
+    # import os
+    # import jax.profiler
+
+    # jax_profile_dir = "/tmp/jax-prof"
+    # os.makedirs(jax_profile_dir, exist_ok=True)
+
+    # jax.profiler.start_trace(jax_profile_dir)
     run_simulation()
+    # jax.profiler.stop_trace()
