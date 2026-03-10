@@ -1,8 +1,8 @@
 import jax
 import jax.numpy as jnp
 import optax
+from brittle_star_locomotion.nn.q_network import QNetwork
 from flax import nnx
-from q_network import QNetwork
 
 
 @nnx.jit
