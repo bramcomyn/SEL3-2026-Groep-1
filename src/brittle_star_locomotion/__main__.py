@@ -5,10 +5,9 @@ from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
 from biorobot.brittle_star.mjcf.morphology.specification.default import (
     default_brittle_star_morphology_specification,
 )
-from jax import random
-
 from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.replay_buffer.replay_buffer import ReplayBuffer
+from jax import random
 
 morphology_specification = default_brittle_star_morphology_specification(num_arms=5, num_segments_per_arm=4, use_p_control=True)
 arena_configuration = AquariumArenaConfiguration(size=(10, 5), attach_target=True)
