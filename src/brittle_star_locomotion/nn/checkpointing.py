@@ -2,6 +2,7 @@
 Checkpointing utilities for saving and loading model checkpoints.
 https://flax.readthedocs.io/en/stable/guides/checkpointing.html
 """
+
 import os
 import pickle
 from collections.abc import Callable

@@ -1,8 +1,9 @@
 import jax
 import jax.numpy as jnp
 import optax
-from brittle_star_locomotion.nn.q_network import QNetwork
 from flax import nnx
+
+from brittle_star_locomotion.nn.q_network import QNetwork
 
 
 @nnx.jit
@@ -23,7 +24,6 @@ if __name__ == "__main__":
     optimizer = nnx.Optimizer(model, optax.adam(1e-3), wrt=nnx.Param)
     rngs = nnx.Rngs(0)
     x, y = jnp.ones((5,)), jnp.ones((5,))
-
 
     loss = train_step(model, optimizer, x, y, rngs)
     while loss > 1e-6:

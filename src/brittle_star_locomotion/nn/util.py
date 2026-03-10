@@ -1,5 +1,5 @@
-"""Utility functions for training and evaluating neural networks.
-"""
+"""Utility functions for training and evaluating neural networks."""
+
 from flax import nnx
 
 
@@ -17,8 +17,7 @@ def update_model_parameters(model: nnx.Module, copy_from: nnx.Module) -> nnx.Mod
     model_graphdef, _ = nnx.split(model)
     copy_from_graphdef, copy_from_state = nnx.split(copy_from)
 
-    assert model_graphdef == copy_from_graphdef, \
-        "Model architectures must match to copy parameters."
+    assert model_graphdef == copy_from_graphdef, "Model architectures must match to copy parameters."
 
     nnx.update(model, copy_from_state)
     return model
