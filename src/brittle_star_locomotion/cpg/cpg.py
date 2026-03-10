@@ -1,13 +1,12 @@
 from functools import partial
 
+import chex
 import jax
 import jax.numpy as jnp
+from brittle_star_locomotion.cpg.equations import CPGEquations
+from brittle_star_locomotion.cpg.solver import Solver
 from flax import struct
 from jax import jit
-import chex
-
-from brittle_star_locomotion.cpg.solver import Solver
-from brittle_star_locomotion.cpg.equations import CPGEquations
 
 
 @struct.dataclass
@@ -108,3 +107,19 @@ class CPG:
             omegas=jnp.zeros(num_oscillators),
             rhos=jnp.zeros_like(self.weights),
         )
+
+
+def create_cpg_structure(num_osc: int) -> jnp.ndarray:
+    """Creates the coupling weight matrix for the CPG network."""
+    weights = jnp.zeros((num_osc, num_osc))
+    ip_oscillators = jnp.arange(0, num_osc, 2)
+    oop_oscillators = jnp.arange(1, num_osc, 2)
+
+    weights = weights.at[ip_oscillators, oop_oscillators].set(1.0)
+    next_ip = jnp.roll(ip_oscillators, shift=-1)
+    weights = weights.at[ip_oscillators, next_ip].set(1.0)
+    next_oop = jnp.roll(oop_oscillators, shift=-1)
+    weights = weights.at[oop_oscillators, next_oop].set(1.0)
+
+    weights = 5.0 * jnp.maximum(weights, weights.T)
+    return weights

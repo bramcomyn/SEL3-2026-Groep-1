@@ -1,5 +1,5 @@
-from jax import vmap
 import jax.numpy as jnp
+from jax import vmap
 
 
 class CPGEquations:
