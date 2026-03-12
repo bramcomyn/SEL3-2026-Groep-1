@@ -46,7 +46,7 @@ class Environment:
         self.num_segments_per_arm = num_segments_per_arm
 
         self.morphology_specification = default_brittle_star_morphology_specification(
-            num_arms=self.num_arms, num_segments_per_arm=self.num_segments_per_arm, use_p_control=True
+            num_arms=self.num_arms, num_segments_per_arm=self.num_segments_per_arm, use_p_control=True, use_torque_control=False
         )
         self.arena_configuration = arena_configuration
         self.environment_configuration = environment_configuration
