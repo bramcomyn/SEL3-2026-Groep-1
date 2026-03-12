@@ -1,43 +1,39 @@
-from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
-from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
-from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
-from jax import random
+import argparse
+import logging
+import sys
 
-from brittle_star_locomotion.environment.environment import Environment
-from brittle_star_locomotion.replay_buffer.replay_buffer import ReplayBuffer
+from brittle_star_locomotion.core import run_experiment
 
-morphology_specification = default_brittle_star_morphology_specification(num_arms=5, num_segments_per_arm=4, use_p_control=True)
-arena_configuration = AquariumArenaConfiguration(size=(10, 5), attach_target=True)
-environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(render_mode="rgb_array", simulation_time=5, camera_ids=[1])
 
-env = Environment(
-    5,
-    3,
-    arena_configuration=arena_configuration,
-    environment_configuration=environment_configuration,
-    observations=["actuator_force", "joint_position"],
-)
+def get_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Brittle Star Locomotion Simulator")
 
-key = random.PRNGKey(0)
-actions = random.uniform(key, shape=(1,))
+    parser.add_argument("-v", "--verbose", help="Increase output verbosity (INFO)", action="store_const", const=logging.INFO, default=logging.WARNING)
 
-# print(env.get_observations())
-# for i in range(1000):
-#     print(i)
-#     env.step(actions)
-# print(env.get_observations())
+    parser.add_argument("-d", "--debug", help="Show debug/JIT trace logs", action="store_const", const=logging.DEBUG)
 
-buffer = ReplayBuffer(
-    size_observation=env.get_observation_size(),
-    size_action=1)
+    parser.add_argument("--time", type=float, default=20.0, help="Simulation time in seconds")
+    parser.add_argument("--render", action="store_true", help="Render video output")
 
-for i in range(10):
-    buffer.add(
-        observation=env.get_observations()[0],
-        action=actions,
-        reward=1.0,
-        next_observation=env.get_observations()[0],
-        done=0
-    )
+    return parser.parse_args()
 
-print(buffer.sample(5))
+
+def get_logger(args: argparse.Namespace) -> logging.Logger:
+    log_level = args.debug or args.verbose
+
+    logging.basicConfig(level=log_level, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", datefmt="%H:%M:%S")
+
+    return logging.getLogger("brittle_star")
+
+
+def main():
+    args = get_args()
+    logger = get_logger(args)
+
+    logger.info(f"Starting simulation")
+
+    run_experiment(simulation_time=args.time, should_render=args.render)
+
+
+if __name__ == "__main__":
+    main()
