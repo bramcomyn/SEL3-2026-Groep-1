@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 import brittle_star_locomotion.environment.environment as environment
 import jax
@@ -17,7 +16,7 @@ NUM_SEGMENTS: int = 3
 RENDER_EVERY: int = 5
 
 
-class Control:
+class Control(ABC):
     def __init__(self):
         pass
 
@@ -25,28 +24,36 @@ class Control:
     def __call__(self, env: environment.Environment, actions: jnp.ndarray) -> BaseEnvState:
         pass
 
+    @abstractmethod
+    def init(self, **kwargs):
+        pass
+
 
 class CPGControl(Control):
-    def __init__(self, control_timestep: float):
+    def __init__(self, control_timestep: float, action_limit: float):
+        self.control_timestep = control_timestep
+        self.action_limit = action_limit
         self.num_osc = NUM_ARMS * 2
         self.weights = create_cpg_structure(self.num_osc)
-        self.cpg = CPG(weights=self.weights, dt=control_timestep, solver=RK4Solver())
-        self.cpg_state = None
 
-    def _initialize_gait(self, cpg: CPG, env: environment.Environment) -> Any:
+        self.cpg_state = None
+        self.cpg = CPG(weights=self.weights, dt=self.control_timestep, solver=RK4Solver())
+
+    def init(self, **kwargs):
         """Sets up the modulated rowing gait state."""
-        self.cpg_state = cpg.reset(rng=jax.random.PRNGKey(0))
+        env = kwargs.get("env")
+        self.cpg_state = self.cpg.reset(rng=jax.random.PRNGKey(0))
 
         # Set base frequency
-        cpg_state = cpg_state.replace(omegas=jnp.pi / 2 * jnp.ones_like(cpg_state.omegas))  # type: ignore
+        self.cpg_state = self.cpg_state.replace(omegas=jnp.pi / 2 * jnp.ones_like(self.cpg_state.omegas))  # type: ignore
 
         # Define rowing roles
         leading_idx = 0
         left_rowers = [(leading_idx - 1) % NUM_ARMS, (leading_idx - 2) % NUM_ARMS]
         right_rowers = [(leading_idx + 1) % NUM_ARMS, (leading_idx + 2) % NUM_ARMS]
 
-        return modulate_rowing_gait(
-            cpg_state=cpg_state,
+        self.cpg_state = modulate_rowing_gait(
+            cpg_state=self.cpg_state,
             leading_arms=[leading_idx],
             left_rowers=left_rowers,
             right_rowers=right_rowers,

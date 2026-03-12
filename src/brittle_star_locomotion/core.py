@@ -40,7 +40,7 @@ def run_experiment(simulation_time: float, should_render: bool):
         num_physics_steps_per_control_step=10,
     )
 
-    control = CPGControl(env_config.control_timestep)
+    control = CPGControl(env_config.control_timestep, 0)
 
     env = Environment(
         num_arms=NUM_ARMS, num_segments_per_arm=NUM_SEGMENTS, arena_configuration=arena_config, environment_configuration=env_config, control=control

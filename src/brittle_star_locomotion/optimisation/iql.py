@@ -1,16 +1,17 @@
 from typing import Callable
 
-import jax
 import jax.numpy as jnp
 import optax
 from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.nn.q_network import QNetwork
-from brittle_star_locomotion.replay_buffer.replay_buffer import ReplayBuffer
+from cpprb import ReplayBuffer
 from flax import nnx
 
 
 class IQL:
-    def __init__(self, optimizer: optax.GradientTransformationExtraArgs, loss_fn: Callable, n_agents: int, env: Environment):
+    def __init__(self, optimizer: optax.GradientTransformationExtraArgs, loss_fn: Callable, n_agents: int, env: Environment, **kwargs):
+        self.replay_buffer_size = kwargs.get("replay_buffer_size", 5_000)
+
         self.loss_fn = loss_fn
         self.n_agents = n_agents
         self.env = env
@@ -21,7 +22,13 @@ class IQL:
         self.value_network = QNetwork(self.observation_size, 5, rngs=self.rngs, hidden_size=5)
         # self.target_network = QNetwork(self.observation_size, 5, rngs=self.rngs, hidden_size=5)
 
-        self.replay_buffers = [ReplayBuffer(self.observation_size, 5) for _ in range(n_agents)]
+        self.replay_buffers = [
+            ReplayBuffer(
+                self.replay_buffer_size,
+                env_dict={"obs": {"shape": self.observation_size}, "act": {}, "rew": {}, "next_obs": {"shape": self.observation_size}, "done": {}},
+            )
+            for _ in range(n_agents)
+        ]
 
         self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
 
@@ -33,70 +40,49 @@ class IQL:
 
         for _ in range(epochs):
             observations = self.env.get_observations()  # n_agents x observation_size
-            actions = jnp.zeros(self.n_agents, dtype=jnp.int8)  # n_agents
+            actions = jnp.zeros(self.n_agents, dtype=jnp.int32)  # n_agents
 
             for agent in range(self.n_agents):
                 if self.rngs.uniform(minval=0.0, maxval=1.0) < epsilon:
-                    action = actions.at[agent].set(self.rngs.randint((), minval=0, maxval=5))
+                    action = self.rngs.randint((), minval=0, maxval=5)
                 else:
                     action = jnp.argmax(self.value_network(observations[agent]))
                 actions = actions.at[agent].set(action)
 
             _, reward, terminated, truncated = self.env.step(actions)  # 1, 1, 1
-            done = jnp.any(terminated) or jnp.any(truncated)
+            done = jnp.logical_or(jnp.any(terminated), jnp.any(truncated))
             next_observations = self.env.get_observations()  # n_agents x observation_size
 
             print(f"reward: {reward}")
 
             for agent in range(self.n_agents):
-                # Store transition in replay buffer
                 self.replay_buffers[agent].add(
-                    observations[agent],  # observation_size
-                    actions[agent],
-                    reward,
-                    next_observations[agent],  # observation_size
-                    done,
+                    obs=observations[agent],  # observation_size
+                    act=actions[agent],
+                    rew=reward,
+                    next_obs=next_observations[agent],  # observation_size
+                    done=done,
                 )
 
-                # Sample mini-batch from replay buffer
-                mini_batch = self.replay_buffers[agent].sample(batch_size)  # batch_size x observation_size
+                mini_batch = self.replay_buffers[agent].sample(batch_size)
 
-                # Compute target Q-values using target network
                 if done:
-                    target = reward  # TODO: needs to be reward from replay buffer
+                    target = mini_batch["rew"]
                 else:
-                    target = reward + discount * jnp.max(self.value_network(mini_batch), axis=0)
+                    target = mini_batch["rew"].squeeze() + discount * jnp.max(self.value_network(mini_batch["next_obs"]), axis=1)
 
-                # Compute loss
-                loss, grads = nnx.value_and_grad(self.loss_fn)(target, self.value_network)
+                def loss_fn(model, obs, actions, targets):
+                    q_values = model(obs)  # forward pass
+                    actions = mini_batch["act"].astype(jnp.int32)  # batch x 1
+                    q_selected = jnp.take_along_axis(q_values, actions, axis=1).squeeze()
+                    loss = jnp.mean((q_selected - targets) ** 2)
+                    return loss
 
-                # Call optimizer
+                loss, grads = nnx.value_and_grad(loss_fn)(self.value_network, mini_batch["obs"], mini_batch["act"], target)
+
+                print(f"loss: {loss}")
+
                 self.optimizer.update(self.value_network, grads)
 
-                # Update target network param (interval)
+                # TODO: Update target network param (interval)
                 pass
-
-
-@nnx.jit
-def train_step(model, optimizer, x, y) -> jax.Array:
-    def loss_fn(model: QNetwork):
-        y_pred = model(x)
-        return jnp.mean((y_pred - y) ** 2)
-
-    loss, grads = nnx.value_and_grad(loss_fn)(model)
-    optimizer.update(model, grads)
-
-    return loss
-
-
-if __name__ == "__main__":
-    print("Training Q-Network...")
-    model = QNetwork(5, 5, rngs=nnx.Rngs(0), hidden_size=5)
-    optimizer = nnx.Optimizer(model, optax.adam(1e-3), wrt=nnx.Param)
-    rngs = nnx.Rngs(0)
-    x, y = jnp.ones((5,)), jnp.ones((5,))
-
-    loss = train_step(model, optimizer, x, y)
-    while loss > 1e-6:
-        print(f"Loss {loss}")
-        loss = train_step(model, optimizer, x, y)

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import brittle_star_locomotion.control.control as control
 import jax
 import jax.numpy as jnp
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
@@ -5,7 +8,6 @@ from biorobot.brittle_star.environment.directed_locomotion.shared import BaseEnv
 from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
 from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
 from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
-from brittle_star_locomotion.control.control import Control
 
 
 class Environment:
@@ -15,7 +17,7 @@ class Environment:
         num_segments_per_arm: int,
         arena_configuration: AquariumArenaConfiguration,
         environment_configuration: BrittleStarDirectedLocomotionEnvironmentConfiguration,
-        control: Control,
+        control: control.Control,
         backend: str = "MJX",
         rng=jax.random.PRNGKey(0),
         observations: None | list[str] = None,
@@ -62,6 +64,8 @@ class Environment:
         )
 
         self.control = control
+        self.control.init(env=self)
+
         self.state = self.env.reset(self.rng)
         self.state_space = {
             "actuator_force": 2,
