@@ -133,3 +133,14 @@ class Environment:
         :rtype: int
         """
         return self.num_segments_per_arm * sum(self.state_space[obs] for obs in self.observations)
+
+    def close(self):
+        """Close the environment."""
+        self.env.close()
+
+    def render(self):
+        """Render the environment.
+        :return: The rendered environment.
+        :rtype: list[np.ndarray]
+        """
+        return self.env.render()
