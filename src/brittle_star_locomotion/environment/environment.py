@@ -1,10 +1,11 @@
 import jax
 import jax.numpy as jnp
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
-from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
+from biorobot.brittle_star.environment.directed_locomotion.shared import BaseEnvState, BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
 from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
 from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
+from brittle_star_locomotion.control.control import Control
 
 
 class Environment:
@@ -14,6 +15,7 @@ class Environment:
         num_segments_per_arm: int,
         arena_configuration: AquariumArenaConfiguration,
         environment_configuration: BrittleStarDirectedLocomotionEnvironmentConfiguration,
+        control: Control,
         backend: str = "MJX",
         rng=jax.random.PRNGKey(0),
         observations: None | list[str] = None,
@@ -31,6 +33,9 @@ class Environment:
 
         :param environment_configuration: Configuration for the environment.
         :type EnvironmentConfiguration: environment_configuration
+
+        :param control: Controller for stepping in the environment.
+        :type Control: control
 
         :param backend: Backend to use for the environment.
         :type str: backend
@@ -56,6 +61,7 @@ class Environment:
             morphology=self.morphology, arena=self.arena, configuration=self.environment_configuration, backend=backend
         )
 
+        self.control = control
         self.state = self.env.reset(self.rng)
         self.state_space = {
             "actuator_force": 2,
@@ -92,7 +98,10 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        self.state = self.jit_env_step(self.state, actions)
+        # self.state = self.jit_env_step(self.state, actions)
+
+        # TODO: typing is a bit all over the place
+        self.state: BaseEnvState = self.control(self, actions)
         return self.state, self.state.reward, self.state.terminated, self.state.truncated
 
     def reset(self):  # TODO return type
