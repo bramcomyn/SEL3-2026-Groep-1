@@ -11,20 +11,31 @@ from jax import jit
 
 @struct.dataclass
 class CPGState:
-    """State container for the Central Pattern Generator.
+    """
+    State container for the Central Pattern Generator.
 
-    Attributes:
-        time: Current simulation time.
-        phases: Current phase of each oscillator.
-        amplitudes: Current actual amplitude.
-        dot_amplitudes: Rate of change for amplitude convergence.
-        offsets: Current actual offset (baseline shift).
-        dot_offsets: Rate of change for offset convergence.
-        outputs: The final generated signal (theta) used for control.
-        R: Target amplitudes (set points).
-        X: Target offsets (set points).
-        omegas: Intrinsic frequencies.
-        rhos: Target phase biases (coupling matrix).
+    :ivar time: Current simulation time.
+    :vartype time: float
+    :ivar phases: Current phase of each oscillator.
+    :vartype phases: jnp.ndarray
+    :ivar amplitudes: Current actual amplitude.
+    :vartype amplitudes: jnp.ndarray
+    :ivar dot_amplitudes: Rate of change for amplitude convergence.
+    :vartype dot_amplitudes: jnp.ndarray
+    :ivar offsets: Current actual offset (baseline shift).
+    :vartype offsets: jnp.ndarray
+    :ivar dot_offsets: Rate of change for offset convergence.
+    :vartype dot_offsets: jnp.ndarray
+    :ivar outputs: The final generated signal (theta) used for control.
+    :vartype outputs: jnp.ndarray
+    :ivar R: Target amplitudes (set points).
+    :vartype R: jnp.ndarray
+    :ivar X: Target offsets (set points).
+    :vartype X: jnp.ndarray
+    :ivar omegas: Intrinsic frequencies.
+    :vartype omegas: jnp.ndarray
+    :ivar rhos: Target phase biases (coupling matrix).
+    :vartype rhos: jnp.ndarray
     """
 
     time: float
