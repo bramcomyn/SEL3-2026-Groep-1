@@ -13,11 +13,11 @@ from brittle_star_locomotion.cpg.cpg import CPG, create_cpg_structure
 from brittle_star_locomotion.cpg.solver import RK4Solver
 from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.gait.gait import modulate_rowing_gait
+from brittle_star_locomotion.config.config import load_env_config
 from tqdm import tqdm
 
-NUM_ARMS: int = 5
-NUM_SEGMENTS: int = 3
-RENDER_EVERY: int = 5
+
+env_cfg = load_env_config()
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +39,15 @@ def setup_simulation_objects(simulation_time: float) -> tuple[Environment, CPG, 
         num_physics_steps_per_control_step=10,
     )
 
-    logger.info(f"Initializing Environment: {NUM_ARMS} arms, {NUM_SEGMENTS} segments/arm")
+    logger.info(f"Initializing Environment: {env_cfg.num_arms} arms, {env_cfg.num_segments} segments/arm")
     env = Environment(
-        num_arms=NUM_ARMS,
-        num_segments_per_arm=NUM_SEGMENTS,
+        num_arms=env_cfg.num_arms,
+        num_segments_per_arm=env_cfg.num_segments,
         arena_configuration=arena_config,
         environment_configuration=env_config,
     )
 
-    num_osc = NUM_ARMS * 2
+    num_osc = env_cfg.num_arms * 2
     weights = create_cpg_structure(num_osc)
     cpg = CPG(weights=weights, dt=env_config.control_timestep, solver=RK4Solver())
 
@@ -64,8 +64,8 @@ def initialize_gait(cpg: CPG, env: Environment) -> Any:
 
     # Define rowing roles
     leading_idx = 0
-    left_rowers = [(leading_idx - 1) % NUM_ARMS, (leading_idx - 2) % NUM_ARMS]
-    right_rowers = [(leading_idx + 1) % NUM_ARMS, (leading_idx + 2) % NUM_ARMS]
+    left_rowers = [(leading_idx - 1) % env_cfg.num_arms, (leading_idx - 2) % env_cfg.num_arms]
+    right_rowers = [(leading_idx + 1) % env_cfg.num_arms, (leading_idx + 2) % env_cfg.num_arms]
 
     return modulate_rowing_gait(
         cpg_state=cpg_state,
@@ -88,8 +88,8 @@ def run_jax_simulation(cpg, init_cpg_state, env_jax, num_steps):
         next_c_state = cpg.step(c_state)
 
         # Map CPG outputs to robot actuators
-        cpg_outputs_per_arm = next_c_state.outputs.reshape((NUM_ARMS, 2))
-        actions = jnp.repeat(cpg_outputs_per_arm, NUM_SEGMENTS, axis=0).ravel()
+        cpg_outputs_per_arm = next_c_state.outputs.reshape((env_cfg.num_arms, 2))
+        actions = jnp.repeat(cpg_outputs_per_arm, env_cfg.num_segments, axis=0).ravel()
 
         next_e_state = env_jax.step(e_state, actions)
         return (next_c_state, next_e_state), next_e_state
@@ -104,7 +104,7 @@ def render_video(env: Environment, trajectory: Any, num_steps: int, output_path:
     logger.info(f"Rendering results to {output_path}")
     frames = []
 
-    render_indices = range(0, num_steps, RENDER_EVERY)
+    render_indices = range(0, num_steps, env_cfg.render_every)
     for i in tqdm(render_indices, desc="Generating Video Frames"):
         step_state = jax.tree_util.tree_map(lambda x: x[i], trajectory)
         rendered = np.asarray(env.env.render(step_state))

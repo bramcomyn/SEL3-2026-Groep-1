@@ -1,0 +1,10 @@
+# config.yaml
+
+env:
+  num_arms: 5
+  num_segments: 3
+  render_every: 5
+
+rl:
+  learning_rate: 0.4
+  discount_factor: 0.99
