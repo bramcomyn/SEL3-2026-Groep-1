@@ -33,7 +33,7 @@ class IQL:
         self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
 
     def train(self, **kwargs):
-        epochs = kwargs.get("epochs", 10)
+        epochs = kwargs.get("epochs", 400)
         epsilon = kwargs.get("epsilon", 0.4)
         discount = kwargs.get("discount", 0.99)
         batch_size = kwargs.get("batch_size", 4)

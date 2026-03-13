@@ -30,14 +30,15 @@ class Control(ABC):
 
 
 class CPGControl(Control):
-    def __init__(self, control_timestep: float, action_limit: float):
+    def __init__(self, control_timestep: float):
         self.control_timestep = control_timestep
-        self.action_limit = action_limit
         self.num_osc = NUM_ARMS * 2
         self.weights = create_cpg_structure(self.num_osc)
 
         self.cpg_state = None
         self.cpg = CPG(weights=self.weights, dt=self.control_timestep, solver=RK4Solver())
+
+        self.jit_step = None
 
     def init(self, **kwargs):
         """Sets up the modulated rowing gait state."""
@@ -68,8 +69,9 @@ class CPGControl(Control):
         cpg_outputs_per_arm = next_cpg_state.outputs.reshape((NUM_ARMS, 2))
         actions = jnp.repeat(cpg_outputs_per_arm, NUM_SEGMENTS, axis=0).ravel()
 
-        # TODO: jit compile step
-        next_env_state = env.env.step(env.state, actions)
+        if self.jit_step is None:
+            self.jit_step = jax.jit(env.env.step)
+        next_env_state = self.jit_step(env.state, actions)
 
         self.cpg_state = next_cpg_state
 

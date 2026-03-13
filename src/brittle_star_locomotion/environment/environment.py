@@ -106,7 +106,8 @@ class Environment:
 
         # TODO: typing is a bit all over the place
         self.state: BaseEnvState = self.control(self, actions)
-        return self.state, self.state.reward, self.state.terminated, self.state.truncated
+        # TODO reward scale
+        return self.state, self.state.reward * 10e6, self.state.terminated, self.state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment

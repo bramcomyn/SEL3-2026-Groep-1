@@ -2,7 +2,7 @@ import argparse
 import logging
 import sys
 
-from brittle_star_locomotion.core import run_experiment
+from brittle_star_locomotion.core import run_experiment, visualize_agent
 
 
 def get_args() -> argparse.Namespace:
@@ -32,7 +32,8 @@ def main():
 
     logger.info(f"Starting simulation")
 
-    run_experiment(simulation_time=args.time, should_render=args.render)
+    # run_experiment(simulation_time=args.time, should_render=args.render)
+    visualize_agent("test_checkpoint", args.time)
 
 
 if __name__ == "__main__":
