@@ -1,10 +1,8 @@
-from __future__ import annotations
-
 import brittle_star_locomotion.control.control as control
 import jax
 import jax.numpy as jnp
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
-from biorobot.brittle_star.environment.directed_locomotion.shared import BaseEnvState, BrittleStarDirectedLocomotionEnvironmentConfiguration
+from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
 from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
 from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
@@ -62,9 +60,10 @@ class Environment:
         self.env = BrittleStarDirectedLocomotionEnvironment.from_morphology_and_arena(
             morphology=self.morphology, arena=self.arena, configuration=self.environment_configuration, backend=backend
         )
+        self.jit_step = jax.jit(self.env.step)
 
         self.control = control
-        self.control.init(env=self)
+        self.control.init()
 
         self.state = self.env.reset(self.rng)
         self.state_space = {
@@ -109,7 +108,9 @@ class Environment:
         # print(f'Environment: step with actions {actions}')
         # print(f'Environment: self.env.step')
 
-        self.state: BaseEnvState = self.control(self, actions)
+        actions = self.control(actions, max_joint_limit=self.env.action_space.high[0] * 0.5)  # type: ignore
+
+        self.state = self.jit_step(self.state, actions)
 
         # print(self.state.mj_data.qpos)
 

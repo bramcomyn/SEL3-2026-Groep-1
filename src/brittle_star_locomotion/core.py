@@ -47,7 +47,7 @@ def run_experiment(simulation_time: float):
         arena_configuration=arena_config,
         environment_configuration=env_config,
         control=control,
-        observations=["disk_position"],
+        observations=["xy_distance_to_target"],
     )
 
     iql = IQL(optimizer=optax.adam(1e-2), n_agents=5, env=env)

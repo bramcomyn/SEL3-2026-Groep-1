@@ -1,19 +1,15 @@
-# https://stackoverflow.com/questions/5748946/pythonic-way-to-resolve-circular-import-statements
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 
-import brittle_star_locomotion.environment.environment as environment
 import jax
 import jax.numpy as jnp
-from biorobot.brittle_star.environment.directed_locomotion.shared import BaseEnvState
 from brittle_star_locomotion.cpg.cpg import CPG, create_cpg_structure
 from brittle_star_locomotion.cpg.solver import RK4Solver
-from brittle_star_locomotion.gait.gait import modulate_rowing_gait
+from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
 
 NUM_ARMS: int = 5
 NUM_SEGMENTS: int = 3
 RENDER_EVERY: int = 5
+rng = jax.random.PRNGKey(seed=0)
 
 
 class Control(ABC):
@@ -21,7 +17,7 @@ class Control(ABC):
         pass
 
     @abstractmethod
-    def __call__(self, env: environment.Environment, actions: jnp.ndarray) -> BaseEnvState:
+    def __call__(self, actions: jnp.ndarray, **kwargs) -> jnp.ndarray:
         pass
 
     @abstractmethod
@@ -35,7 +31,6 @@ class CPGControl(Control):
         self.num_osc = NUM_ARMS * 2
         self.weights = create_cpg_structure(self.num_osc)
 
-        self.cpg_state = None
         self.cpg = CPG(weights=self.weights, dt=self.control_timestep, solver=RK4Solver())
 
         self.jit_step = None
@@ -48,38 +43,25 @@ class CPGControl(Control):
         # Set base frequency
         self.cpg_state = self.cpg_state.replace(omegas=jnp.pi / 2 * jnp.ones_like(self.cpg_state.omegas))  # type: ignore
 
-        # Define rowing roles
-        # TODO: selection of these indices needs to happen dynamically
-        leading_idx = 0
-        left_rowers = [(leading_idx - 1) % NUM_ARMS, (leading_idx - 2) % NUM_ARMS]
-        right_rowers = [(leading_idx + 1) % NUM_ARMS, (leading_idx + 2) % NUM_ARMS]
+    def __call__(self, actions: jnp.ndarray, **kwargs) -> jnp.ndarray:
+        leading, left, right, left_second, right_second = [0], [1, 2], [3, 4], [2], [4]
+
+        # action_lists = [
+        #     [leading],              # Action 0
+        #     [left],                 # Action 1
+        #     [right],                # Action 2
+        #     [left, left_second],    # Action 3
+        #     [right, right_second]   # Action 4
+        # ]
+
+        # for arm, action in enumerate(actions):
+        #     for target in action_lists[action]:
+        #         target.append(arm)
 
         self.cpg_state = modulate_rowing_gait(
-            cpg_state=self.cpg_state,
-            leading_arms=[leading_idx],
-            left_rowers=left_rowers,
-            right_rowers=right_rowers,
-            left_second=[left_rowers[1]],
-            right_second=[right_rowers[1]],
-            max_joint_limit=env.env.action_space.high[0] * 0.5,  # type: ignore
+            self.cpg_state, leading, left, right, left_second, right_second, max_joint_limit=kwargs.get("max_joint_limit")
         )
 
-    def __call__(self, env: environment.Environment, actions: jnp.ndarray) -> BaseEnvState:
         next_cpg_state = self.cpg.step(self.cpg_state)
-
-        cpg_outputs_per_arm = next_cpg_state.outputs.reshape((NUM_ARMS, 2))
-        actions = jnp.repeat(cpg_outputs_per_arm, NUM_SEGMENTS, axis=0).ravel()
-
-        # print(actions)
-
-        if self.jit_step is None:
-            self.jit_step = jax.jit(env.env.step)
-
-        # print('CPGControl: self.jit_step')
-        for _ in range(50):
-            next_env_state = self.jit_step(env.state, actions)
-
         self.cpg_state = next_cpg_state
-        # env.state = next_env_state
-
-        return next_env_state
+        return map_cpg_to_brittle_star_actions(self.cpg_state.outputs, NUM_ARMS, NUM_SEGMENTS)
