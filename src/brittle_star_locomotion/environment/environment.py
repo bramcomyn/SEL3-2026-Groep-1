@@ -105,9 +105,15 @@ class Environment:
         # self.state = self.jit_env_step(self.state, actions)
 
         # TODO: typing is a bit all over the place
+        # TODO: self.env.state?
+        # print(f'Environment: step with actions {actions}')
+        # print(f'Environment: self.env.step')
+
         self.state: BaseEnvState = self.control(self, actions)
-        # TODO reward scale
-        return self.state, self.state.reward * 10e6, self.state.terminated, self.state.truncated
+
+        # print(self.state.mj_data.qpos)
+
+        return self.state, self.state.reward, self.state.terminated, self.state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
@@ -135,6 +141,7 @@ class Environment:
             i = 0
             for obs in self.observations:
                 for obs_idx in range(self.state_space[obs]):
+                    # print(f'Environment: get_observations for arm {arm}, obs {obs}, obs_idx {obs_idx}')
                     observations.at[arm, i].set(self.state.observations[obs][arm * self.state_space[obs] + obs_idx])  # type: ignore
                     i += 1
 

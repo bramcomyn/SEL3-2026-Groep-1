@@ -30,9 +30,6 @@ logger = logging.getLogger(__name__)
 
 
 def run_experiment(simulation_time: float):
-    def loss_fn(target, predicted):
-        return jnp.mean((predicted - target) ** 2)
-
     arena_config = AquariumArenaConfiguration(size=(10, 5), attach_target=True, sand_ground_color=False)
     env_config = BrittleStarDirectedLocomotionEnvironmentConfiguration(
         render_mode="rgb_array",
@@ -44,13 +41,16 @@ def run_experiment(simulation_time: float):
     )
 
     control = CPGControl(env_config.control_timestep)
-
     env = Environment(
-        num_arms=NUM_ARMS, num_segments_per_arm=NUM_SEGMENTS, arena_configuration=arena_config, environment_configuration=env_config, control=control
+        num_arms=NUM_ARMS,
+        num_segments_per_arm=NUM_SEGMENTS,
+        arena_configuration=arena_config,
+        environment_configuration=env_config,
+        control=control,
+        observations=["disk_position"],
     )
 
-    iql = IQL(optax.adam(1e-2), loss_fn, 5, env)
-
+    iql = IQL(optimizer=optax.adam(1e-2), n_agents=5, env=env)
     iql.train()
     save_checkpoint(iql.value_network, "test_checkpoint")
 

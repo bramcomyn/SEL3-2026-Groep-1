@@ -49,6 +49,7 @@ class CPGControl(Control):
         self.cpg_state = self.cpg_state.replace(omegas=jnp.pi / 2 * jnp.ones_like(self.cpg_state.omegas))  # type: ignore
 
         # Define rowing roles
+        # TODO: selection of these indices needs to happen dynamically
         leading_idx = 0
         left_rowers = [(leading_idx - 1) % NUM_ARMS, (leading_idx - 2) % NUM_ARMS]
         right_rowers = [(leading_idx + 1) % NUM_ARMS, (leading_idx + 2) % NUM_ARMS]
@@ -69,10 +70,16 @@ class CPGControl(Control):
         cpg_outputs_per_arm = next_cpg_state.outputs.reshape((NUM_ARMS, 2))
         actions = jnp.repeat(cpg_outputs_per_arm, NUM_SEGMENTS, axis=0).ravel()
 
+        # print(actions)
+
         if self.jit_step is None:
             self.jit_step = jax.jit(env.env.step)
-        next_env_state = self.jit_step(env.state, actions)
+
+        # print('CPGControl: self.jit_step')
+        for _ in range(50):
+            next_env_state = self.jit_step(env.state, actions)
 
         self.cpg_state = next_cpg_state
+        # env.state = next_env_state
 
         return next_env_state
