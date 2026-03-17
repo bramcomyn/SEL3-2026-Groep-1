@@ -4,6 +4,7 @@ from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.nn.q_network import QNetwork
 from cpprb import ReplayBuffer
 from flax import nnx
+from tqdm import tqdm
 
 
 class IQL:
@@ -30,12 +31,14 @@ class IQL:
         self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
 
     def train(self, **kwargs):
-        n_episodes = kwargs.get("n_episodes", 1)
+        n_episodes = kwargs.get("n_episodes", 10)
         epsilon = kwargs.get("epsilon", 0.4)
+        epsilon_min = kwargs.get("epsilon_min", 0.05)
+        epsilon_decay = kwargs.get("epsilon_decay", 0.95)
         discount = kwargs.get("discount", 0.99)
         batch_size = kwargs.get("batch_size", 1)
 
-        for _ in range(n_episodes):
+        for _ in tqdm(range(n_episodes), desc="training"):
             self.env.reset()
             done = False
 
@@ -44,11 +47,15 @@ class IQL:
                 actions = jnp.zeros(self.n_agents, dtype=jnp.int32)  # n_agents
 
                 for agent in range(self.n_agents):
+                    epsilon = max(epsilon_min, epsilon * epsilon_decay)
                     if self.rngs.uniform(minval=0.0, maxval=1.0) < epsilon:
                         action = self.rngs.randint((), minval=0, maxval=5)
                     else:
-                        action = jnp.argmax(self.value_network(observations[agent]))
+                        action = jnp.argmax(
+                            self.value_network(observations[agent]),
+                        )
                     actions = actions.at[agent].set(action)
+                    print(actions)
 
                 # print('IQL: self.env.step')
                 _, reward, terminated, truncated = self.env.step(actions)  # 1, 1, 1
@@ -70,7 +77,7 @@ class IQL:
                     # TODO: Check if replay buffer size is bigger than batch size
                     mini_batch = self.replay_buffers[agent].sample(batch_size)
 
-                    print(f"Position: {mini_batch['obs']}")
+                    # print(f"Position {agent}: {mini_batch['obs']}")
 
                     if done:
                         target = mini_batch["rew"]

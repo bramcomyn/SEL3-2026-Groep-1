@@ -32,8 +32,8 @@ def main():
 
     logger.info(f"Starting simulation")
 
-    run_experiment(simulation_time=args.time)
-    # visualize_agent("test_checkpoint", args.time)
+    # run_experiment(simulation_time=args.time)
+    visualize_agent("test_checkpoint", args.time)
 
 
 if __name__ == "__main__":

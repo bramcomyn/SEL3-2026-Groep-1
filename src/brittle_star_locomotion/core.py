@@ -47,7 +47,7 @@ def run_experiment(simulation_time: float):
         arena_configuration=arena_config,
         environment_configuration=env_config,
         control=control,
-        observations=["xy_distance_to_target"],
+        observations=["disk_position"],
     )
 
     iql = IQL(optimizer=optax.adam(1e-2), n_agents=5, env=env)
@@ -71,22 +71,25 @@ def visualize_agent(checkpoint: str, simulation_time: float):
     num_steps = int(simulation_time / env_config.control_timestep)
     trajectory = [env.state]
 
-    for i in range(10):  # TODO num_steps
-        print(f"Step: {i}")
-
+    for _ in tqdm(range(num_steps), desc="episode"):  # TODO num_steps
         obs = env.get_observations()
 
         # Make a deterministic copy of the network to avoid RNG mutation
         # JAX complains about rngs when not doing this...
-        deterministic_network = copy.deepcopy(network)
+        # deterministic_network = copy.deepcopy(network)
 
         # Forward pass (deterministic)
-        q_values = deterministic_network(obs)
+        q_values = network(obs)
         actions = jnp.argmax(q_values, axis=1)
+        print(actions)
         env.step(actions)
         trajectory.append(env.state)
 
-    render_video(env, jnp.array(trajectory), num_steps, "test_checkpoint_video")
+    # This turns a list of PyTrees into one PyTree of stacked arrays
+    stacked_trajectory = jax.tree_util.tree_map(lambda *args: jnp.stack(args), *trajectory)
+
+    # Pass the stacked version, and remove the weird [0, trajectory] wrapping
+    render_video(env, stacked_trajectory, len(trajectory), "out/test_checkpoint_video.mp4")
 
 
 def setup_simulation_objects(simulation_time: float) -> tuple[Environment, CPG, Any]:
@@ -113,6 +116,7 @@ def setup_simulation_objects(simulation_time: float) -> tuple[Environment, CPG, 
         arena_configuration=arena_config,
         environment_configuration=env_config,
         control=CPGControl(env_config.control_timestep),
+        observations=["disk_position"],
     )
 
     num_osc = NUM_ARMS * 2
@@ -127,7 +131,8 @@ def render_video(env: Environment, trajectory: Any, num_steps: int, output_path:
     logger.info(f"Rendering results to {output_path}")
     frames = []
 
-    render_indices = range(0, num_steps, RENDER_EVERY)
+    actual_steps = jax.tree_util.tree_leaves(trajectory)[0].shape[0]
+    render_indices = range(0, actual_steps, RENDER_EVERY)
     for i in tqdm(render_indices, desc="Generating Video Frames"):
         step_state = jax.tree_util.tree_map(lambda x: x[i], trajectory)
         rendered = np.asarray(env.env.render(step_state))

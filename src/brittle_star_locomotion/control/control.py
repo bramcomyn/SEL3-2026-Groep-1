@@ -44,7 +44,21 @@ class CPGControl(Control):
         self.cpg_state = self.cpg_state.replace(omegas=jnp.pi / 2 * jnp.ones_like(self.cpg_state.omegas))  # type: ignore
 
     def __call__(self, actions: jnp.ndarray, **kwargs) -> jnp.ndarray:
-        leading, left, right, left_second, right_second = [0], [1, 2], [3, 4], [2], [4]
+        leading, left, right, left_second, right_second = [], [], [], [], []
+
+        for arm, action in enumerate(actions):
+            if action == 0:
+                leading.append(arm)
+            elif action == 1:
+                left.append(arm)
+            elif action == 2:
+                right.append(arm)
+            elif action == 3:
+                left.append(arm)
+                left_second.append(arm)
+            else:
+                right.append(arm)
+                right_second.append(arm)
 
         # action_lists = [
         #     [leading],              # Action 0
