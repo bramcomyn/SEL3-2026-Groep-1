@@ -31,14 +31,14 @@ class IQL:
         self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
 
     def train(self, **kwargs):
-        n_episodes = kwargs.get("n_episodes", 10)
+        n_episodes = kwargs.get("n_episodes", 1)
         epsilon = kwargs.get("epsilon", 0.4)
         epsilon_min = kwargs.get("epsilon_min", 0.05)
         epsilon_decay = kwargs.get("epsilon_decay", 0.95)
         discount = kwargs.get("discount", 0.99)
         batch_size = kwargs.get("batch_size", 1)
 
-        for _ in tqdm(range(n_episodes), desc="training"):
+        for _ in range(n_episodes):
             self.env.reset()
             done = False
 
@@ -55,10 +55,13 @@ class IQL:
                             self.value_network(observations[agent]),
                         )
                     actions = actions.at[agent].set(action)
-                    print(actions)
 
+                print(observations)
+                # print(actions)
                 # print('IQL: self.env.step')
                 _, reward, terminated, truncated = self.env.step(actions)  # 1, 1, 1
+
+                print(reward)
 
                 done = jnp.logical_or(jnp.any(terminated), jnp.any(truncated))
                 next_observations = self.env.get_observations()  # (n_agents, observation_size)
@@ -81,6 +84,7 @@ class IQL:
 
                     if done:
                         target = mini_batch["rew"]
+                        # target = 100.0
                     else:
                         target = mini_batch["rew"].squeeze() + discount * jnp.max(self.value_network(mini_batch["next_obs"]), axis=1)
 

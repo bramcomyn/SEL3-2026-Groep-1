@@ -47,7 +47,7 @@ def run_experiment(simulation_time: float):
         arena_configuration=arena_config,
         environment_configuration=env_config,
         control=control,
-        observations=["disk_position"],
+        # observations=["disk_position"],
     )
 
     iql = IQL(optimizer=optax.adam(1e-2), n_agents=5, env=env)
@@ -74,15 +74,12 @@ def visualize_agent(checkpoint: str, simulation_time: float):
     for _ in tqdm(range(num_steps), desc="episode"):  # TODO num_steps
         obs = env.get_observations()
 
-        # Make a deterministic copy of the network to avoid RNG mutation
-        # JAX complains about rngs when not doing this...
-        # deterministic_network = copy.deepcopy(network)
+        # print(obs)
 
-        # Forward pass (deterministic)
         q_values = network(obs)
         actions = jnp.argmax(q_values, axis=1)
-        print(actions)
-        env.step(actions)
+        # print(actions)
+        env.step(actions)  # TODO: can be overruled, see control step
         trajectory.append(env.state)
 
     # This turns a list of PyTrees into one PyTree of stacked arrays
@@ -116,7 +113,7 @@ def setup_simulation_objects(simulation_time: float) -> tuple[Environment, CPG, 
         arena_configuration=arena_config,
         environment_configuration=env_config,
         control=CPGControl(env_config.control_timestep),
-        observations=["disk_position"],
+        # observations=["disk_position"],
     )
 
     num_osc = NUM_ARMS * 2

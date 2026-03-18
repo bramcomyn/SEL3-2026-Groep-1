@@ -110,11 +110,11 @@ class Environment:
 
         actions = self.control(actions, max_joint_limit=self.env.action_space.high[0] * 0.5)  # type: ignore
 
-        self.state = self.jit_step(self.state, actions)
-
-        # print(self.state.mj_data.qpos)
+        for _ in range(250):
+            self.state = self.jit_step(self.state, actions)
 
         return self.state, self.state.reward, self.state.terminated, self.state.truncated
+        # return self.state, 0.0, self.state.terminated, self.state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
