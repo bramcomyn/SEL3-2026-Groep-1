@@ -2,60 +2,69 @@ import jax
 import jax.numpy as jnp
 from brittle_star_locomotion.cpg.cpg import CPGState
 
-
-def get_oscillator_indices_for_arm(arm_index: int) -> tuple[int, int]:
-    """Returns (in-plane, out-of-plane) oscillator indices for a given arm."""
+def get_oscillator_indices_for_arm(arm_index):
+    """Returns (in-plane, out-of-plane) oscillator indices."""
     return arm_index * 2, arm_index * 2 + 1
-
 
 @jax.jit
 def modulate_rowing_gait(
     cpg_state: CPGState,
-    leading_arms: list[int],
-    left_rowers: list[int],
-    right_rowers: list[int],
-    left_second: list[int],
-    right_second: list[int],
+    leading_mask: jnp.ndarray,
+    left_mask: jnp.ndarray,
+    right_mask: jnp.ndarray,
+    left_second_mask: jnp.ndarray,
+    right_second_mask: jnp.ndarray,
     max_joint_limit: float,
 ) -> CPGState:
-    """Modulates CPG parameters to produce a rowing gait.
-
-    In rowing, the leading arm points forward while the other arms move
-    symmetrically with specific phase offsets to generate thrust.
     """
+    Vectorized gait modulation that strictly mirrors the 1-to-1 
+    coupling logic of the loop-based version.
+    """
+    num_arms = leading_mask.shape[0]
+    all_arms = jnp.arange(num_arms)
+    
+    ip_idx, oop_idx = get_oscillator_indices_for_arm(all_arms)
+
     R = jnp.zeros_like(cpg_state.R)
     X = jnp.zeros_like(cpg_state.X)
     rhos = jnp.zeros_like(cpg_state.rhos)
 
-    for lead_idx in leading_arms:
-        _, oop_osc = get_oscillator_indices_for_arm(lead_idx)
-        X = X.at[oop_osc].set(max_joint_limit)
+    # 1. Leading Arms (Only OOP oscillators are biased in X)
+    X = X.at[oop_idx].set(jnp.where(leading_mask, max_joint_limit, X[oop_idx]))
 
-    def apply_rower(arm_indices: list[int], bias_val: float, R_arr: jnp.ndarray, rhos_arr: jnp.ndarray):
-        for idx in arm_indices:
-            ip, oop = get_oscillator_indices_for_arm(idx)
-            R_arr = R_arr.at[ip].set(max_joint_limit)
-            R_arr = R_arr.at[oop].set(max_joint_limit)
-            rhos_arr = rhos_arr.at[ip, oop].set(bias_val)
-            rhos_arr = rhos_arr.at[oop, ip].set(-bias_val)
-        return R_arr, rhos_arr
+    # 2. Intra-arm Coupling (Rower Logic)
+    def apply_side_params(mask, bias, curr_R, curr_rhos):
+        # Set amplitudes for both oscillators in the arm
+        curr_R = curr_R.at[ip_idx].set(jnp.where(mask, max_joint_limit, curr_R[ip_idx]))
+        curr_R = curr_R.at[oop_idx].set(jnp.where(mask, max_joint_limit, curr_R[oop_idx]))
+        
+        # Set phase bias between IP and OOP oscillators (intra-arm)
+        curr_rhos = curr_rhos.at[ip_idx, oop_idx].set(jnp.where(mask,  bias, curr_rhos[ip_idx, oop_idx]))
+        curr_rhos = curr_rhos.at[oop_idx, ip_idx].set(jnp.where(mask, -bias, curr_rhos[oop_idx, ip_idx]))
+        return curr_R, curr_rhos
 
-    R, rhos = apply_rower(left_rowers, jnp.pi / 2, R, rhos)
-    R, rhos = apply_rower(right_rowers, -jnp.pi / 2, R, rhos)
+    # Apply left-side and right-side intra-arm parameters
+    R, rhos = apply_side_params(left_mask  | left_second_mask,   jnp.pi / 2.0, R, rhos)
+    R, rhos = apply_side_params(right_mask | right_second_mask, -jnp.pi / 2.0, R, rhos)
 
-    for l_idx, r_idx in zip(left_second, right_second):
-        l_ip, _ = get_oscillator_indices_for_arm(l_idx)
-        r_ip, _ = get_oscillator_indices_for_arm(r_idx)
-        rhos = rhos.at[l_ip, r_ip].set(jnp.pi)
-        rhos = rhos.at[r_ip, l_ip].set(-jnp.pi)
+    # 3. Secondary Synchronization (Inter-arm 1-to-1 coupling)
+    
+    # use fill_value=-1 to handle cases where there are fewer arms than the fixed size
+    l_arm_ids = jnp.where(left_second_mask, size=num_arms, fill_value=-1)[0]
+    r_arm_ids = jnp.where(right_second_mask, size=num_arms, fill_value=-1)[0]
 
-    return cpg_state.replace(R=R, X=X, rhos=rhos)  # type: ignore
+    l_ip_targets = ip_idx[l_arm_ids]
+    r_ip_targets = ip_idx[r_arm_ids]
 
+    valid_pair = (l_arm_ids >= 0) & (r_arm_ids >= 0)
+    
+    rhos = rhos.at[l_ip_targets, r_ip_targets].set(jnp.where(valid_pair,  jnp.pi, rhos[l_ip_targets, r_ip_targets]))
+    rhos = rhos.at[r_ip_targets, l_ip_targets].set(jnp.where(valid_pair, -jnp.pi, rhos[r_ip_targets, l_ip_targets]))
+
+    return cpg_state.replace(R=R, X=X, rhos=rhos) # type: ignore
 
 def map_cpg_to_brittle_star_actions(outputs: jnp.ndarray, num_arms: int, num_segments: int) -> jnp.ndarray:
-    """Broadcats 2 oscillators per arm across all segments of that arm."""
-    # shape: (num_arms, 2)
+    """Broadcasts oscillator outputs to robot joints."""
     cpg_outputs_per_arm = outputs.reshape((num_arms, 2))
-    # shape: (num_arms * num_segments, 2)
-    cpg_outputs_per_segment = cpg_outputs_per_arm.repeat(num_segments, axis=0)
+    cpg_outputs_per_segment = jnp.repeat(cpg_outputs_per_arm, num_segments, axis=0)
     return cpg_outputs_per_segment.flatten()

@@ -3,15 +3,6 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
-
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
-    hooks:
-      - id: ruff
-        args: [ "--fix", "--select", "I" ]
-      - id: ruff-format
 
 -   repo: https://github.com/astral-sh/uv-pre-commit
     # Update to the latest version of uv

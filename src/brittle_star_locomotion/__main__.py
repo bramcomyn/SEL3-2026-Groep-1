@@ -1,40 +1,94 @@
 import argparse
+import jax
 import logging
-import sys
+import optax
+import jax.numpy as jnp
 
-from brittle_star_locomotion.core import run_experiment, visualize_agent
+from brittle_star_locomotion.environment import Environment, NUM_ARMS
+from brittle_star_locomotion.optimization.independentqlearning import IndependentQLearning
 
+
+NUM_MODULATIONS = 10 
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Brittle Star Locomotion Simulator")
-
-    parser.add_argument("-v", "--verbose", help="Increase output verbosity (INFO)", action="store_const", const=logging.INFO, default=logging.WARNING)
-
-    parser.add_argument("-d", "--debug", help="Show debug/JIT trace logs", action="store_const", const=logging.DEBUG)
-
-    parser.add_argument("--time", type=float, default=20.0, help="Simulation time in seconds")
-    parser.add_argument("--render", action="store_true", help="Render video output")
-
+    parser.add_argument("-v", "--verbose", dest="loglevel", action="store_const", const=logging.INFO, default=logging.INFO)
+    parser.add_argument("-d", "--debug", dest="loglevel", action="store_const", const=logging.DEBUG)
+    parser.add_argument("--output", type=str, default="out/brittle_star_sim.mp4")
     return parser.parse_args()
-
-
-def get_logger(args: argparse.Namespace) -> logging.Logger:
-    log_level = args.debug or args.verbose
-
-    logging.basicConfig(level=log_level, format="%(asctime)s | %(name)s | %(levelname)s | %(message)s", datefmt="%H:%M:%S")
-
-    return logging.getLogger("brittle_star")
-
 
 def main():
     args = get_args()
-    logger = get_logger(args)
 
-    logger.info(f"Starting simulation")
+    logging.basicConfig(
+        level=args.loglevel,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        force=True
+    )
 
-    # run_experiment(simulation_time=args.time)
-    visualize_agent("test_checkpoint", args.time)
+    logger = logging.getLogger(__name__)
 
+    # 2. Initialize Environment
+    # Note: Using subset of observations to keep state space manageable
+    obs_to_use = ["unit_xy_direction_to_target", "xy_distance_to_target", "joint_position"]
+    env = Environment(observations=obs_to_use)
+    
+    # 3. Initialize IQL Trainer
+    n_agents = NUM_ARMS
+    learning_rate = 0.001
+    optimizer = optax.adam(learning_rate)
+    
+    trainer = IndependentQLearning(
+        optimizer=optimizer, 
+        n_agents=n_agents, 
+        env=env,
+        replay_buffer_size=10000
+    )
+
+    # 4. Training Phase
+    logger.info("Starting Training...")
+    
+    trainer.train(
+        n_episodes=50, 
+        epsilon=0.5, 
+        batch_size=32,
+        discount=0.999
+    )
+
+    logger.info("Training complete.")
+
+    # 5. Visualization / Evaluation Phase
+    # We run one final episode with epsilon=0 (greedy) to see the result
+    logger.info("Running evaluation for visualization...")
+    env.reset()
+    eval_trajectory = []
+    done = False
+    
+    # Run for a fixed number of cycles to generate a video
+    num_eval_cycles = 20
+    for i in range(num_eval_cycles):
+        observations = env.get_observations()
+        
+        # Get greedy actions from the trained network
+        # (n_agents, action_probs) -> (n_agents,)
+        q_values = trainer.value_network(observations)
+        actions = jnp.argmax(q_values, axis=1)
+        
+        # run_iteration returns the trajectory of MJX states
+        trajectory = env.run_iteration(actions)
+        eval_trajectory.append(trajectory)
+        
+        if i % 5 == 0:
+            logger.info(f"Eval Cycle {i}/{num_eval_cycles}")
+
+    # 6. Combine and Render
+    combined_trajectory = jax.tree_util.tree_map(
+        lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory
+    )
+    
+    output_path = "out/trained_brittle_star.mp4"
+    env.render_video(combined_trajectory, output_path=output_path)
+    logger.info(f"Video saved to {output_path}")
 
 if __name__ == "__main__":
     main()

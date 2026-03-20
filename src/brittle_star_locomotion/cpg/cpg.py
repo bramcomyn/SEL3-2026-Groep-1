@@ -104,6 +104,7 @@ class CPG:
         """
         num_oscillators = self.weights.shape[0]
         phase_rng = jax.random.split(rng, 1)[0]
+        base_frequency = 2.0 * jnp.pi * 1.0
 
         return CPGState(
             time=0.0,
@@ -115,7 +116,7 @@ class CPG:
             outputs=jnp.zeros(num_oscillators),
             R=jnp.zeros(num_oscillators),
             X=jnp.zeros(num_oscillators),
-            omegas=jnp.zeros(num_oscillators),
+            omegas=jnp.full_like(num_oscillators, base_frequency),
             rhos=jnp.zeros_like(self.weights),
         )
 

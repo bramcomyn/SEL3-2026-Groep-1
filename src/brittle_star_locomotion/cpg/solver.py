@@ -5,45 +5,64 @@ import jax.numpy as jnp
 
 
 class Solver(ABC):
-    """Abstract base class for numerical Ordinary Differential Equation (ODE) solvers."""
+    """abstract base class for numerical ordinary differential equation (ode) solvers."""
 
     @abstractmethod
     def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
-        """Standard interface for numerical ODE solvers.
+        """standard interface for numerical ode solvers.
 
-        :param current_time: The current simulation time (t).
-        :param y: The current state value(s) to be integrated.
-        :param derivative_fn: A function f(t, y) that returns dy/dt.
-        :param delta_time: The time step (dt) for integration.
-        :return: The integrated state value(s) at time t + dt.
+        :param current_time: the current simulation time (t).
+        :param y: the current state value(s) to be integrated.
+        :param derivative_fn: a function f(t, y) that returns dy/dt.
+        :param delta_time: the time step (dt) for integration.
+        :return: the integrated state value(s) at time t + dt.
         """
         pass
 
 
 class RK4Solver(Solver):
-    """Fourth-order Runge-Kutta (RK4) ODE solver.
+    """fourth-order runge-kutta (rk4) ode solver.
 
-    Provides high accuracy by sampling the derivative at four different
+    provides high accuracy by sampling the derivative at four different
     points within the time step to compute a weighted average slope.
     """
 
     def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
+        """integrates the state using the rk4 method.
+
+        :param current_time: current simulation time.
+        :param y: current state values.
+        :param derivative_fn: function returning the derivative dy/dt.
+        :param delta_time: integration time step.
+        :return: state values at the next time step.
+        """
+        half_dt = delta_time / 2.0
+
         slope1 = derivative_fn(current_time, y)
-        slope2 = derivative_fn(current_time + delta_time / 2, y + slope1 * delta_time / 2)
-        slope3 = derivative_fn(current_time + delta_time / 2, y + slope2 * delta_time / 2)
+        slope2 = derivative_fn(current_time + half_dt, y + slope1 * half_dt)
+        slope3 = derivative_fn(current_time + half_dt, y + slope2 * half_dt)
         slope4 = derivative_fn(current_time + delta_time, y + slope3 * delta_time)
 
-        average_slope = (slope1 + 2 * slope2 + 2 * slope3 + slope4) / 6
+        # weighted average of the four sampled slopes
+        average_slope = (slope1 + 2.0 * slope2 + 2.0 * slope3 + slope4) / 6.0
         return y + average_slope * delta_time
 
 
 class EulerSolver(Solver):
-    """First-order Euler ODE solver.
+    """first-order euler ode solver.
 
-    The simplest integration method, approximating the next state by
+    the simplest integration method, approximating the next state by
     following the tangent line at the current state.
     """
 
     def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
+        """integrates the state using the euler method.
+
+        :param current_time: current simulation time.
+        :param y: current state values.
+        :param derivative_fn: function returning the derivative dy/dt.
+        :param delta_time: integration time step.
+        :return: state values at the next time step.
+        """
         slope = derivative_fn(current_time, y)
         return y + delta_time * slope
