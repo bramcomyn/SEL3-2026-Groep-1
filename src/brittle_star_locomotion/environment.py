@@ -229,6 +229,7 @@ class Environment:
         self.env_state = self.jit_env_reset(self.rng)
         return self.env_state
 
+    @functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:
         """Get the observations from the environment per agent.
 
@@ -264,7 +265,6 @@ class Environment:
                 if obs == "angle_to_target":
                     size = 1
 
-                    # TODO: JIT this fucker
                     arm_positions = self.env_state.observations["joint_position"].reshape(-1, NUM_SEGMENTS_PER_ARM * 2)[:, :2]
                     to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions  # type: ignore
                     to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=1, keepdims=True) + 1e-8)
