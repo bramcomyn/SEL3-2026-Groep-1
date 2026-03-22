@@ -207,6 +207,8 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
+        prev_distance = self.env_state.observations["xy_distance_to_target"]
+
         masks = tuple(actions == i for i in range(5))
         new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
             self.env_state,
@@ -218,7 +220,11 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        return self.env_state, summed_reward, self.env_state.terminated, self.env_state.truncated
+        current_distance = self.env_state.observations["xy_distance_to_target"]
+
+        reward = prev_distance - current_distance
+
+        return self.env_state, reward[0], self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
