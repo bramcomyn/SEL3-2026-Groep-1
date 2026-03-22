@@ -31,9 +31,7 @@ def main():
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
     obs_to_use = [
-        "unit_xy_direction_to_target",
-        "angle_to_target",
-        "joint_position"
+        "joint_position",
     ]
     env = Environment(observations=obs_to_use)
     
@@ -49,7 +47,7 @@ def main():
         optimizer=optimizer, 
         n_agents=n_agents, 
         env=env,
-        replay_buffer_size=10000
+        replay_buffer_size=1000
     )
 
     # 4. Training Phase
@@ -58,7 +56,7 @@ def main():
     trainer.train(
         n_episodes=50, 
         epsilon=1.0,
-        epsilon_decay=0.9,
+        epsilon_decay=0.95,
         epsilon_min=0.01,
         batch_size=32,
         discount=0.99
@@ -81,15 +79,15 @@ def main():
         # Get greedy actions from the trained network
         # (n_agents, action_probs) -> (n_agents,)
 
-        q_values = jnp.zeros((n_agents, 5))  # Placeholder for Q-values
-        actions = jnp.zeros(n_agents, dtype=jnp.int32)
+        # q_values = jnp.zeros((n_agents, 5))  # Placeholder for Q-values
+        # actions = jnp.zeros(n_agents, dtype=jnp.int32)
 
-        for agent in range(n_agents):
-            q_values = q_values.at[agent].set(trainer.value_networks[agent](observations[agent]))
-            actions = actions.at[agent].set(jnp.argmax(q_values[agent]))
+        # for agent in range(n_agents):
+        #     q_values = q_values.at[agent].set(trainer.value_networks(observations[agent]))
+        #     actions = actions.at[agent].set(jnp.argmax(q_values[agent]))
 
-        # q_values = trainer.value_network(observations)
-        # actions = jnp.argmax(q_values, axis=1)
+        q_values = trainer.value_network(observations)
+        actions = jnp.argmax(q_values, axis=1)
         
         # run_iteration returns the trajectory of MJX states
         trajectory = env.run_iteration(actions)

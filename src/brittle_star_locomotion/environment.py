@@ -261,6 +261,16 @@ class Environment:
 
                     i += 1
 
+            # observations = observations.at[arm, -1].set(arm)
+        #     agent_one_hot_start = -NUM_ARMS  # start index of the one-hot section
+        #     observations = observations.at[arm, agent_one_hot_start:].set(0.0)
+        #     observations = observations.at[arm, agent_one_hot_start + arm].set(1.0)
+
+        # # Normalize
+        # mean = jnp.mean(observations, axis=0)  # mean per feature
+        # std = jnp.std(observations, axis=0)
+        # observations = (observations - mean) / (std + 1e-8)
+
         return observations
 
     def get_observation_size(self) -> int:
@@ -269,5 +279,5 @@ class Environment:
         :return: The size of the observation space.
         :rtype: int
         """
-        return NUM_SEGMENTS_PER_ARM * sum(self.state_space[obs] for obs in self.observations)
+        return NUM_SEGMENTS_PER_ARM * sum(self.state_space[obs] for obs in self.observations) # + NUM_ARMS
     
