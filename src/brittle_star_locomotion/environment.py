@@ -69,32 +69,54 @@ class Environment:
         self.cpg            = CPG(self.weights, RK4Solver(), DT)
         self.cpg_state      = self.cpg.reset(reset_key)
         self.env_state      = self.environment.reset(reset_key)
-        self.state_space = {
-            "actuator_force": 2,
-            "disk_angular_velocity": 1,
-            "disk_linear_velocity": 1,
-            "disk_position": 1,
-            "disk_rotation": 1,
-            "joint_actuator_force": 2,
-            "joint_position": 2,
-            "joint_velocity": 2,
-            "segment_contact": 1,
-            "tendon_position": 0,
-            "tendon_velocity": 0,
-            "unit_xy_direction_to_target": 2,
-            "xy_distance_to_target": 1,
 
-            # Derived observations
-            "angle_to_target": 1
+        self.derived_states = [
+            "arm_identification",
+            "angle_to_target"
+        ]
+        self.state_space = {
+            "central": {
+                "disk_angular_velocity": 3,
+                "disk_linear_velocity": 3,
+                "disk_position": 3,
+                "disk_rotation": 3,
+
+                # Specific to the directed locomotion task
+                "unit_xy_direction_to_target": 2,
+                "xy_distance_to_target": 1,
+            },
+
+            "individual_per_segment": {
+                "actuator_force": 2,
+                "joint_actuator_force": 2,
+                "joint_position": 2,
+                "joint_velocity": 2,
+            },
+
+            "individual_per_arm": {
+                "segment_contact": 3,
+
+                # Derived
+                "angle_to_target": 1,
+                "arm_identification": NUM_ARMS,
+            }
         }
-        self.derived_state = ["angle_to_target"]
 
         if observations is None:
-            self.observations = list(self.state_space.keys()) + self.derived_state
+            self.observations = list(self.state_space["central"].keys()) \
+                + list(self.state_space["individual_per_segment"].keys()) \
+                + list(self.state_space["individual_per_arm"].keys()) \
+                + list(self.state_space["derived"].keys())
         else:
             for obs in observations:
-                assert obs in self.state_space, f"Observation {obs} not in state space {self.state_space}"
+                obs_exists = obs in self.state_space["central"] \
+                    or obs in self.state_space["individual_per_segment"] \
+                    or obs in self.state_space["individual_per_arm"] \
+                    or obs in self.state_space["derived"]
+                assert obs_exists, f"Observation {obs} not in state space {self.state_space}"
             self.observations = observations
+
+        self.observation_space_size = self.get_observation_size()
 
         self.jit_env_step = jax.jit(self.environment.step)
         self.jit_env_reset = jax.jit(self.environment.reset)
@@ -236,40 +258,54 @@ class Environment:
         :return: The selected observations per agent with shape (num_agents, observation_space_shape).
         :rtype: jnp.ndarray
         """
-        observation_space_shape = self.get_observation_size()
-        observations = jnp.zeros((NUM_ARMS, observation_space_shape))
+        observations = jnp.zeros((NUM_ARMS, self.observation_space_size))
 
-        for arm in range(NUM_ARMS):
-            i = 0
-            for obs in self.observations:
-                for obs_idx in range(NUM_SEGMENTS_PER_ARM * self.state_space[obs]):
+        begin = 0
+        end = 0
+        size = 0
+        observation = None
 
-                    if obs in self.env_state.observations:
-                        observations = observations.at[arm, i].set(self.env_state.observations[obs][arm * self.state_space[obs] + obs_idx])  # type: ignore
+        for obs in self.observations:
 
-                    elif obs in self.derived_state:
-                        if obs == "angle_to_target":
-                            
-                            to_target_unit_vec2 = self.env_state.observations["unit_xy_direction_to_target"][0 : 2]  # type: ignore
-                                                        
-                            to_arm_vec2 = self.env_state.observations["joint_position"][arm * 2 : arm * 2 + 2]  # type: ignore
-                            to_arm_unit_vec2 = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2) + 1e-8)
+            if obs not in self.derived_states:
 
-                            angle = jnp.dot(to_target_unit_vec2, to_arm_unit_vec2)
+                if obs in self.state_space["central"]:
+                    size = self.state_space["central"][obs]
+                    observation = jnp.vstack((self.env_state.observations[obs],) * NUM_ARMS)
 
-                            observations = observations.at[arm, i].set(angle)
+                elif obs in self.state_space["individual_per_segment"]:
+                    size = NUM_SEGMENTS_PER_ARM * self.state_space["individual_per_segment"][obs]
+                    observation = self.env_state.observations[obs].reshape((NUM_ARMS, size))
 
-                    i += 1
+                elif obs in self.state_space["individual_per_arm"]:
+                    size = self.state_space["individual_per_arm"][obs]
+                    observation = self.env_state.observations[obs].reshape((NUM_ARMS, size))
 
-            # observations = observations.at[arm, -1].set(arm)
-        #     agent_one_hot_start = -NUM_ARMS  # start index of the one-hot section
-        #     observations = observations.at[arm, agent_one_hot_start:].set(0.0)
-        #     observations = observations.at[arm, agent_one_hot_start + arm].set(1.0)
+            else:
 
-        # # Normalize
-        # mean = jnp.mean(observations, axis=0)  # mean per feature
-        # std = jnp.std(observations, axis=0)
-        # observations = (observations - mean) / (std + 1e-8)
+                if obs == "angle_to_target":
+                    size = 1
+
+                    # TODO: JIT this fucker
+                    arm_positions = self.env_state.observations["joint_position"].reshape(-1, NUM_SEGMENTS_PER_ARM * 2)[:, :2]
+                    to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions # type: ignore
+                    to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=1, keepdims=True) + 1e-8)
+                    to_target_vec2_unit = self.env_state.observations["unit_xy_direction_to_target"]
+
+                    # Row-wise dot products
+                    observation = jnp.sum(
+                        to_arm_vec2_unit * to_target_vec2_unit[None, :], # type: ignore
+                        axis=1,
+                        keepdims=True
+                    )
+
+                elif obs == "arm_identification":
+                    size = NUM_ARMS
+                    observation = jnp.eye(NUM_ARMS)
+
+            end = begin + size
+            observations = observations.at[:, begin:end].set(observation)
+            begin = end
 
         return observations
 
@@ -278,6 +314,17 @@ class Environment:
 
         :return: The size of the observation space.
         :rtype: int
-        """
-        return NUM_SEGMENTS_PER_ARM * sum(self.state_space[obs] for obs in self.observations) # + NUM_ARMS
-    
+        """        
+        size = 0
+
+        for obs in self.observations:
+            if obs in self.state_space["central"]:
+                size += self.state_space["central"][obs]
+
+            elif obs in self.state_space["individual_per_segment"]:
+                size += NUM_SEGMENTS_PER_ARM * self.state_space["individual_per_segment"][obs]
+
+            elif obs in self.state_space["individual_per_arm"]:
+                size += self.state_space["individual_per_arm"][obs]
+
+        return size

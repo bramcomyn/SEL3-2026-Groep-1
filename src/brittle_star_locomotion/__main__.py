@@ -31,7 +31,9 @@ def main():
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
     obs_to_use = [
-        "joint_position",
+        "arm_identification",
+        "angle_to_target",
+        "xy_distance_to_target"
     ]
     env = Environment(observations=obs_to_use)
     
