@@ -44,7 +44,7 @@ def main():
         optax.clip_by_global_norm(10.0),
         optax.adam(learning_rate)
     )
-    
+
     trainer = IndependentQLearning(
         optimizer=optimizer, 
         n_agents=n_agents, 
@@ -80,14 +80,6 @@ def main():
         
         # Get greedy actions from the trained network
         # (n_agents, action_probs) -> (n_agents,)
-
-        # q_values = jnp.zeros((n_agents, 5))  # Placeholder for Q-values
-        # actions = jnp.zeros(n_agents, dtype=jnp.int32)
-
-        # for agent in range(n_agents):
-        #     q_values = q_values.at[agent].set(trainer.value_networks(observations[agent]))
-        #     actions = actions.at[agent].set(jnp.argmax(q_values[agent]))
-
         q_values = trainer.value_network(observations)
         actions = jnp.argmax(q_values, axis=1)
         
