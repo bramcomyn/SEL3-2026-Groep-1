@@ -26,28 +26,22 @@ NUM_OSCILLATORS = NUM_ARMS * 2
 NUM_SEGMENTS_PER_ARM = 3
 SIMULATION_TIME = 20
 DT = 0.01
-SEED=42
+SEED = 42
 TARGET_DISTANCE = 1.2
 RENDER_EVERY = 5
-NUM_SUBSTEPS_PER_MODULATION=50
+NUM_SUBSTEPS_PER_MODULATION = 50
+
 
 class Environment:
     """representation of the brittle star directed locomotion environment"""
 
-    def __init__(self, observations: None | list[str]=None):
+    def __init__(self, observations: None | list[str] = None):
         self.morphology_specification = default_brittle_star_morphology_specification(
-            num_arms=NUM_ARMS,
-            num_segments_per_arm=NUM_SEGMENTS_PER_ARM,
-            use_p_control=True,
-            use_torque_control=False
+            num_arms=NUM_ARMS, num_segments_per_arm=NUM_SEGMENTS_PER_ARM, use_p_control=True, use_torque_control=False
         )
 
         self.arena_configuration = AquariumArenaConfiguration(
-            size=(15, 15),
-            sand_ground_color=False,
-            attach_target=True,
-            wall_height=1.5,
-            wall_thickness=0.1
+            size=(15, 15), sand_ground_color=False, attach_target=True, wall_height=1.5, wall_thickness=0.1
         )
 
         self.environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
@@ -63,56 +57,53 @@ class Environment:
 
         self.__create_environment()
 
-        self.rng            = jax.random.PRNGKey(seed=SEED)
+        self.rng = jax.random.PRNGKey(seed=SEED)
         self.rng, reset_key = jax.random.split(self.rng)
-        self.weights        = create_cpg_structure(NUM_OSCILLATORS)
-        self.cpg            = CPG(self.weights, RK4Solver(), DT)
-        self.cpg_state      = self.cpg.reset(reset_key)
-        self.env_state      = self.environment.reset(reset_key)
+        self.weights = create_cpg_structure(NUM_OSCILLATORS)
+        self.cpg = CPG(self.weights, RK4Solver(), DT)
+        self.cpg_state = self.cpg.reset(reset_key)
+        self.env_state = self.environment.reset(reset_key)
 
-        self.derived_states = [
-            "arm_identification",
-            "angle_to_target"
-        ]
+        self.derived_states = ["arm_identification", "angle_to_target"]
         self.state_space = {
             "central": {
                 "disk_angular_velocity": 3,
                 "disk_linear_velocity": 3,
                 "disk_position": 3,
                 "disk_rotation": 3,
-
                 # Specific to the directed locomotion task
                 "unit_xy_direction_to_target": 2,
                 "xy_distance_to_target": 1,
             },
-
             "individual_per_segment": {
                 "actuator_force": 2,
                 "joint_actuator_force": 2,
                 "joint_position": 2,
                 "joint_velocity": 2,
             },
-
             "individual_per_arm": {
                 "segment_contact": 3,
-
                 # Derived
                 "angle_to_target": 1,
                 "arm_identification": NUM_ARMS,
-            }
+            },
         }
 
         if observations is None:
-            self.observations = list(self.state_space["central"].keys()) \
-                + list(self.state_space["individual_per_segment"].keys()) \
-                + list(self.state_space["individual_per_arm"].keys()) \
+            self.observations = (
+                list(self.state_space["central"].keys())
+                + list(self.state_space["individual_per_segment"].keys())
+                + list(self.state_space["individual_per_arm"].keys())
                 + list(self.state_space["derived"].keys())
+            )
         else:
             for obs in observations:
-                obs_exists = obs in self.state_space["central"] \
-                    or obs in self.state_space["individual_per_segment"] \
-                    or obs in self.state_space["individual_per_arm"] \
+                obs_exists = (
+                    obs in self.state_space["central"]
+                    or obs in self.state_space["individual_per_segment"]
+                    or obs in self.state_space["individual_per_arm"]
                     or obs in self.state_space["derived"]
+                )
                 assert obs_exists, f"Observation {obs} not in state space {self.state_space}"
             self.observations = observations
 
@@ -120,7 +111,6 @@ class Environment:
 
         self.jit_env_step = jax.jit(self.environment.step)
         self.jit_env_reset = jax.jit(self.environment.reset)
-
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def __step_compiled(self, env_state, cpg_state, masks, max_limit):
@@ -132,54 +122,42 @@ class Environment:
             _action = map_cpg_to_brittle_star_actions(_next_state.outputs, NUM_ARMS, NUM_SEGMENTS_PER_ARM)
             return _next_state, _action
 
-        cpg_state, action_trajectory = jax.lax.scan(
-            _cpg_loop_body, cpg_state, None, length=NUM_SUBSTEPS_PER_MODULATION
-        )
+        cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=NUM_SUBSTEPS_PER_MODULATION)
 
         def _env_loop_body(_state, _action):
             _next_env_state = self.jit_env_step(_state, _action)
             return _next_env_state, (_next_env_state, _next_env_state.reward)
 
-        final_env_state, (trajectory, rewards) = jax.lax.scan(
-            _env_loop_body, env_state, action_trajectory
-        )
+        final_env_state, (trajectory, rewards) = jax.lax.scan(_env_loop_body, env_state, action_trajectory)
 
         return final_env_state, cpg_state, trajectory, jnp.sum(rewards)
-    
+
     def run_iteration(self, action_values: jnp.ndarray, max_limit: float = 1.0):
         """Python wrapper to prepare masks and update instance state."""
         masks = tuple(action_values == i for i in range(5))
 
-        new_env_state, new_cpg_state, trajectory, _ = self.__step_compiled(
-            self.env_state, 
-            self.cpg_state, 
-            masks, 
-            max_limit
-        )
-        
+        new_env_state, new_cpg_state, trajectory, _ = self.__step_compiled(self.env_state, self.cpg_state, masks, max_limit)
+
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
-        
+
         return trajectory
 
     def __create_environment(self):
         """create an environment configuration based on the self.morphology_specification, self.arena_configuration and self.environment_configuration"""
-        self.morphology  = MJCFBrittleStarMorphology(self.morphology_specification)
-        self.arena       = MJCFAquariumArena(self.arena_configuration)
+        self.morphology = MJCFBrittleStarMorphology(self.morphology_specification)
+        self.arena = MJCFAquariumArena(self.arena_configuration)
         self.environment = BrittleStarDirectedLocomotionEnvironment.from_morphology_and_arena(
-            self.morphology,
-            self.arena,
-            self.environment_configuration,
-            "MJX"
+            self.morphology, self.arena, self.environment_configuration, "MJX"
         )
 
     def __post_render(self, render_output: list[np.ndarray]) -> np.ndarray | None:
         """converts list of camera arrays into a single stitched array."""
         if render_output is None or len(render_output) == 0:
             return None
-        
+
         num_cameras = len(self.environment_configuration.camera_ids)
-        
+
         # If we have multiple cameras, stitch them side-by-side (axis=1)
         if num_cameras > 1:
             processed_frame = np.concatenate(render_output, axis=1)
@@ -188,7 +166,7 @@ class Environment:
 
         return processed_frame
 
-    def render_video(self, trajectory, output_path: str="out/test-video.mp4"):
+    def render_video(self, trajectory, output_path: str = "out/test-video.mp4"):
         """processes the trajectory into a video file using the environment's render logic."""
         logger.info(f"Rendering results to {output_path}")
         frames = []
@@ -198,20 +176,20 @@ class Environment:
 
         for i in tqdm(render_indices, desc="Generating Video Frames"):
             step_state = jax.tree_util.tree_map(lambda x: x[i], trajectory)
-            
+
             raw_frames = self.environment.render(step_state)
             if raw_frames is not None:
                 processed_list = [np.asarray(f) for f in raw_frames]
-                
+
                 combined_frame = self.__post_render(processed_list)
-                
+
                 if combined_frame is not None:
                     frames.append(combined_frame)
 
         if frames:
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            
+
             media.write_video(str(output_file), np.array(frames), fps=20)
             logger.info(f"Successfully saved video ({len(frames)} frames) to {output_path}")
 
@@ -228,15 +206,18 @@ class Environment:
 
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
-        """        
+        """
         masks = tuple(actions == i for i in range(5))
         new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
-            self.env_state, self.cpg_state, masks, self.environment.action_space.high[0] * 0.5 # type: ignore
+            self.env_state,
+            self.cpg_state,
+            masks,
+            self.environment.action_space.high[0] * 0.5,  # type: ignore
         )
-        
+
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
-        
+
         return self.env_state, summed_reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
@@ -266,9 +247,7 @@ class Environment:
         observation = None
 
         for obs in self.observations:
-
             if obs not in self.derived_states:
-
                 if obs in self.state_space["central"]:
                     size = self.state_space["central"][obs]
                     observation = jnp.vstack((self.env_state.observations[obs],) * NUM_ARMS)
@@ -282,21 +261,20 @@ class Environment:
                     observation = self.env_state.observations[obs].reshape((NUM_ARMS, size))
 
             else:
-
                 if obs == "angle_to_target":
                     size = 1
 
                     # TODO: JIT this fucker
                     arm_positions = self.env_state.observations["joint_position"].reshape(-1, NUM_SEGMENTS_PER_ARM * 2)[:, :2]
-                    to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions # type: ignore
+                    to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions  # type: ignore
                     to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=1, keepdims=True) + 1e-8)
                     to_target_vec2_unit = self.env_state.observations["unit_xy_direction_to_target"]
 
                     # Row-wise dot products
                     observation = jnp.sum(
-                        to_arm_vec2_unit * to_target_vec2_unit[None, :], # type: ignore
+                        to_arm_vec2_unit * to_target_vec2_unit[None, :],  # type: ignore
                         axis=1,
-                        keepdims=True
+                        keepdims=True,
                     )
 
                 elif obs == "arm_identification":
@@ -314,7 +292,7 @@ class Environment:
 
         :return: The size of the observation space.
         :rtype: int
-        """        
+        """
         size = 0
 
         for obs in self.observations:
