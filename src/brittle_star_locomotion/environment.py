@@ -83,10 +83,14 @@ class Environment:
             "tendon_velocity": 0,
             "unit_xy_direction_to_target": 2,
             "xy_distance_to_target": 1,
+
+            # Derived observations
+            "angle_to_target": 1
         }
+        self.derived_state = ["angle_to_target"]
 
         if observations is None:
-            self.observations = list(self.state_space.keys())
+            self.observations = list(self.state_space.keys()) + self.derived_state
         else:
             for obs in observations:
                 assert obs in self.state_space, f"Observation {obs} not in state space {self.state_space}"
@@ -239,8 +243,22 @@ class Environment:
             i = 0
             for obs in self.observations:
                 for obs_idx in range(NUM_SEGMENTS_PER_ARM * self.state_space[obs]):
-                    # print(f'Environment: get_observations for arm {arm}, obs {obs}, obs_idx {obs_idx}')
-                    observations = observations.at[arm, i].set(self.env_state.observations[obs][arm * self.state_space[obs] + obs_idx])  # type: ignore
+
+                    if obs in self.env_state.observations:
+                        observations = observations.at[arm, i].set(self.env_state.observations[obs][arm * self.state_space[obs] + obs_idx])  # type: ignore
+
+                    elif obs in self.derived_state:
+                        if obs == "angle_to_target":
+                            
+                            to_target_unit_vec2 = self.env_state.observations["unit_xy_direction_to_target"][0 : 2]  # type: ignore
+                                                        
+                            to_arm_vec2 = self.env_state.observations["joint_position"][arm * 2 : arm * 2 + 2]  # type: ignore
+                            to_arm_unit_vec2 = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2) + 1e-8)
+
+                            angle = jnp.dot(to_target_unit_vec2, to_arm_unit_vec2)
+
+                            observations = observations.at[arm, i].set(angle)
+
                     i += 1
 
         return observations

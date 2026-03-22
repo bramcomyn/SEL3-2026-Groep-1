@@ -30,13 +30,20 @@ def main():
 
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
-    obs_to_use = ["unit_xy_direction_to_target", "xy_distance_to_target", "joint_position"]
+    obs_to_use = [
+        "unit_xy_direction_to_target",
+        "angle_to_target",
+        "joint_position"
+    ]
     env = Environment(observations=obs_to_use)
     
     # 3. Initialize IQL Trainer
     n_agents = NUM_ARMS
-    learning_rate = 0.001
-    optimizer = optax.adam(learning_rate)
+    learning_rate = 0.0001
+    optimizer = optax.chain(
+        optax.clip_by_global_norm(10.0),
+        optax.adam(learning_rate)
+    )
     
     trainer = IndependentQLearning(
         optimizer=optimizer, 
@@ -49,10 +56,12 @@ def main():
     logger.info("Starting Training...")
     
     trainer.train(
-        n_episodes=50, 
-        epsilon=0.5, 
+        n_episodes=200, 
+        epsilon=1.0,
+        epsilon_decay=0.99,
+        epsilon_min=0.1,
         batch_size=32,
-        discount=0.999
+        discount=0.99
     )
 
     logger.info("Training complete.")

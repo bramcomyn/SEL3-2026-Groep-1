@@ -1,3 +1,4 @@
+import jax
 import jax.numpy as jnp
 import optax
 import logging
@@ -21,10 +22,10 @@ class IndependentQLearning:
         self.rngs = nnx.Rngs(0)
 
         # Primary Q-Network (The one we update via gradients)
-        self.value_network = QNetwork(self.observation_size, 5, rngs=self.rngs, hidden_size=5)
+        self.value_network = QNetwork(self.observation_size, 5, rngs=self.rngs)
         
         # Target Q-Network (The stable reference for calculating TD targets)
-        self.target_network = QNetwork(self.observation_size, 5, rngs=self.rngs, hidden_size=5)
+        self.target_network = QNetwork(self.observation_size, 5, rngs=self.rngs)
         
         # Synchronize target network weights with the primary network immediately
         self._sync_target_network()
@@ -74,13 +75,13 @@ class IndependentQLearning:
             episode_reward = 0.0
             step_count = 0
 
+            # --- 1. Action Selection (Decay epsilon once per global step) ---
+            epsilon = max(epsilon_min, epsilon * epsilon_decay)
+
             while not done:
                 observations = self.env.get_observations()
                 actions = jnp.zeros(self.n_agents, dtype=jnp.int32)
 
-                # --- 1. Action Selection (Decay epsilon once per global step) ---
-                epsilon = max(epsilon_min, epsilon * epsilon_decay)
-                
                 for agent in range(self.n_agents):
                     if self.rngs.uniform() < epsilon:
                         action = self.rngs.randint((), minval=0, maxval=5)
@@ -116,12 +117,20 @@ class IndependentQLearning:
                         mini_batch = self.replay_buffers[agent].sample(batch_size)
 
                         # Use the TARGET network to calculate the 'Next Q' values (Stable Target)
-                        next_q = self.target_network(mini_batch["next_obs"])
-                        
                         # Temporal Difference (TD) Target: R + gamma * max(Q_target(s', a'))
                         # For terminal states, the target is just the reward.
-                        max_next_q = jnp.max(next_q, axis=1)
-                        y_target = mini_batch["rew"].squeeze() + (1.0 - mini_batch["done"].squeeze()) * discount * max_next_q
+
+                        # TODO maximization bias
+                        # max_next_q = jnp.max(next_q, axis=1)
+                        max_next_q = jnp.take_along_axis(
+                            self.target_network(mini_batch["next_obs"]),
+                            jnp.argmax(self.value_network(mini_batch["next_obs"]), axis=1, keepdims=True),
+                            axis=1
+                        )
+
+                        y_target = jax.lax.stop_gradient(
+                            mini_batch["rew"].squeeze() + (1.0 - mini_batch["done"].squeeze()) * discount * max_next_q
+                        )
 
                         def loss_fn(model, obs, actions, targets):
                             q_values = model(obs)
