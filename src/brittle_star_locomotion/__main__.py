@@ -47,35 +47,35 @@ def main():
     logger.info("Training complete.")
 
     # 5. Visualization / Evaluation Phase
-    # We run one final episode with epsilon=0 (greedy) to see the result
-    logger.info("Running evaluation for visualization...")
-    env.reset()
-    eval_trajectory = []
-    
-    # Run for a fixed number of cycles to generate a video
-    num_eval_cycles = 20
-    for _ in tqdm(range(num_eval_cycles), desc="Evaluation cycles"):
-        observations = env.get_observations()
+    if config.evaluation.render:
+        logger.info("Running evaluation for visualization...")
+        env.reset()
+        eval_trajectory = []
+        
+        # Run for a fixed number of cycles to generate a video
+        num_eval_cycles = 20
+        for _ in tqdm(range(num_eval_cycles), desc="Evaluation cycles"):
+            observations = env.get_observations()
 
-        # Get greedy actions from the trained network
-        # (n_agents, action_probs) -> (n_agents,)
-        q_values = jnp.stack(
-            [trainer.value_networks[agent](observations[agent]) for agent in range(n_agents)], 
-            axis=0
-        )
+            # Get greedy actions from the trained network
+            # (n_agents, action_probs) -> (n_agents,)
+            q_values = jnp.stack(
+                [trainer.value_networks[agent](observations[agent]) for agent in range(n_agents)], 
+                axis=0
+            )
 
-        actions = jnp.argmax(q_values, axis=1)
+            actions = jnp.argmax(q_values, axis=1)
 
-        # run_iteration returns the trajectory of MJX states
-        trajectory = env.run_iteration(actions)
-        eval_trajectory.append(trajectory)
+            # run_iteration returns the trajectory of MJX states
+            trajectory = env.run_iteration(actions)
+            eval_trajectory.append(trajectory)
 
-    # 6. Combine and Render
-    combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)
+        # 6. Combine and Render
+        combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)
 
-    output_path = config.evaluation.output_video_path
-    env.render_video(combined_trajectory, output_path=output_path)
-    logger.info(f"Video saved to {output_path}")
+        output_path = config.evaluation.output_video_path
+        env.render_video(combined_trajectory, output_path=output_path)
+        logger.info(f"Video saved to {output_path}")
 
 
 if __name__ == "__main__":

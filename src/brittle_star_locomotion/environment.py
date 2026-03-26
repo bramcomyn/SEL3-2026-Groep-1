@@ -34,7 +34,7 @@ class Environment:
         )
 
         self.arena_configuration = AquariumArenaConfiguration(
-            size=config.env.arena.size, sand_ground_color=config.env.arena.sand_ground_color, attach_target=config.env.arena.attach_target, wall_height=config.env.arena.wall_height, wall_thickness=config.env.arena.wall_thickness
+            size=(config.env.arena.size_x, config.env.arena.size_y), sand_ground_color=config.env.arena.sand_ground_color, attach_target=config.env.arena.attach_target, wall_height=config.env.arena.wall_height, wall_thickness=config.env.arena.wall_thickness
         )
 
         self.environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
@@ -45,7 +45,7 @@ class Environment:
             num_physics_steps_per_control_step=config.env.num_physics_steps_per_control_step,
             time_scale=config.env.time_scale,
             camera_ids=(0, 1),
-            render_size=config.env.render_size,
+            render_size=(config.env.render_size_x, config.env.render_size_y),
         )
 
         self.__create_environment()
@@ -200,7 +200,7 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        prev_position = self.env_state.observations["disk_position"][:2] # type: ignore
+        # prev_position = self.env_state.observations["disk_position"][:2] # type: ignore
 
         masks = tuple(actions == i for i in range(5))
         new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
@@ -213,13 +213,13 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        current_position = self.env_state.observations["disk_position"][:2] # type: ignore
+        # current_position = self.env_state.observations["disk_position"][:2] # type: ignore
 
-        move_direction = current_position - prev_position
-        move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
-        target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
+        # move_direction = current_position - prev_position
+        # move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
+        # target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
 
-        reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
+        # reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
 
         return self.env_state, summed_reward, self.env_state.terminated, self.env_state.truncated
 
