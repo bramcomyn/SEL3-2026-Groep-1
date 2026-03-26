@@ -229,7 +229,7 @@ class Environment:
         if jnp.any(self.env_state.terminated):
             reward += 10.0
 
-        return self.env_state, 10.0*reward, self.env_state.terminated, self.env_state.truncated
+        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
