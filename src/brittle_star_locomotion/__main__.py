@@ -29,7 +29,7 @@ def main():
 
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
-    obs_to_use = ["arm_identification", "angle_to_target", "xy_distance_to_target"]
+    obs_to_use = ["angle_to_target"]
     env = Environment(observations=obs_to_use)
 
     # 3. Initialize IQL Trainer
@@ -59,10 +59,7 @@ def main():
 
         # Get greedy actions from the trained network
         # (n_agents, action_probs) -> (n_agents,)
-        q_values = jnp.stack(
-            [trainer.value_networks[agent](observations[agent]) for agent in range(n_agents)], 
-            axis=0
-        )
+        q_values = trainer.value_network(observations)
         actions = jnp.argmax(q_values, axis=1)
 
         # run_iteration returns the trajectory of MJX states

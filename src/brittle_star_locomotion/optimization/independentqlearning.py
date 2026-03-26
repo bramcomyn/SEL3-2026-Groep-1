@@ -26,10 +26,10 @@ class IndependentQLearning:
         self.rngs = nnx.Rngs(0)
 
         # Primary Q-Network (The one we update via gradients)
-        self.value_networks = [QNetwork(self.observation_size, 5, rngs=nnx.Rngs(i)) for i in range(n_agents)]
+        self.value_network = QNetwork(self.observation_size, 5, rngs=nnx.Rngs(0))
 
         # Target Q-Network (The stable reference for calculating TD targets)
-        self.target_networks = [QNetwork(self.observation_size, 5, rngs=nnx.Rngs(i + n_agents)) for i in range(n_agents)]
+        self.target_network = QNetwork(self.observation_size, 5, rngs=nnx.Rngs(0))
 
         # Synchronize target network weights with the primary network immediately
         self._sync_target_network()
@@ -44,20 +44,17 @@ class IndependentQLearning:
         ]
 
         # NNX Optimizer handles parameter updates for the value network
-        # self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
-        self.optimizers = [nnx.Optimizer(value_network, optimizer, wrt=nnx.Param) for value_network in self.value_networks]
+        self.optimizer = nnx.Optimizer(self.value_network, optimizer, wrt=nnx.Param)
 
     def _sync_target_network(self):
         """Copies weights from value_network to target_network to stabilize learning."""
-        for target_network, value_network in zip(self.target_networks, self.value_networks):
-            _, state = nnx.split(value_network, nnx.Param)
-            nnx.update(target_network, state)
+        _, state = nnx.split(self.value_network, nnx.Param)
+        nnx.update(self.target_network, state)
 
     def save(self, name: str = "latest_model"):
         """Saves the value network using your project's utilities."""
-        for i, value_network in enumerate(self.value_networks):
-            save_checkpoint(value_network, f"{name}_{i}")
-            logger.info(f"Checkpoint '{name}_{i}' saved to disk.")
+        save_checkpoint(self.value_network, f"{name}")
+        logger.info(f"Checkpoint '{name}' saved to disk.")
 
     def epsilon_update(self, epsilon: float, epsilon_min: float, epsilon_decay: float) -> float:
         return max(epsilon_min, epsilon * epsilon_decay)
@@ -69,7 +66,7 @@ class IndependentQLearning:
             if self.rngs.uniform() < epsilon:
                 action = self.rngs.randint((), minval=0, maxval=5)
             else:
-                q_values = self.value_networks[agent](observations[agent])
+                q_values = self.value_network(observations[agent])
                 action = jnp.argmax(q_values)
             actions = actions.at[agent].set(action)
 
@@ -83,8 +80,8 @@ class IndependentQLearning:
         # For terminal states, the target is just the reward.
         # Also Q(s, argmax(Q)) for reducing maximisation bias.
         max_next_q = jnp.take_along_axis(
-            self.target_networks[agent](mini_batch["next_obs"]),
-            jnp.argmax(self.value_networks[agent](mini_batch["next_obs"]), axis=1, keepdims=True),
+            self.target_network(mini_batch["next_obs"]),
+            jnp.argmax(self.value_network(mini_batch["next_obs"]), axis=1, keepdims=True),
             axis=1,
         )
 
@@ -99,10 +96,9 @@ class IndependentQLearning:
             return jnp.mean((q_selected - targets) ** 2)
 
         # Calculate gradients and update the Primary (Value) Network
-        loss, grads = nnx.value_and_grad(loss_fn)(self.value_networks[agent], mini_batch["obs"], mini_batch["act"], y_target)
-        self.optimizers[agent].update(self.value_networks[agent], grads)
+        loss, grads = nnx.value_and_grad(loss_fn)(self.value_network, mini_batch["obs"], mini_batch["act"], y_target)
+        self.optimizer.update(self.value_network, grads)
         return loss
-
 
     def train(self, **kwargs):
         wandb.init(
