@@ -2,7 +2,9 @@ import jax
 import jax.numpy as jnp
 import optax
 import logging
-import functools
+import wandb
+import time
+
 from flax import nnx
 from cpprb import ReplayBuffer
 
@@ -96,9 +98,15 @@ class IndependentQLearning:
         # Calculate gradients and update the Primary (Value) Network
         loss, grads = nnx.value_and_grad(loss_fn)(self.value_network, mini_batch["obs"], mini_batch["act"], y_target)
         self.optimizer.update(self.value_network, grads)
-
+        return loss
 
     def train(self, **kwargs):
+        wandb.init(
+            project="brittle-star-locomotion",
+            config=kwargs,
+            name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
+        )
+        
         n_episodes         = kwargs.get("n_episodes", 50)
         epsilon            = kwargs.get("epsilon", 0.5)
         epsilon_min        = kwargs.get("epsilon_min", 0.01)
@@ -137,7 +145,8 @@ class IndependentQLearning:
                     )
 
                     if self.replay_buffers[agent].get_stored_size() >= batch_size:
-                        self.train_step(agent, batch_size, discount)
+                        loss = self.train_step(agent, batch_size, discount)
+                        wandb.log({ f"agent_{agent}/loss": float(loss) }, step=total_steps)
 
                     total_steps += 1
                     if total_steps % target_update_freq == 0:
@@ -145,3 +154,8 @@ class IndependentQLearning:
 
             # --- Episode Logging ---
             logger.info(f"Episode {episode + 1:3d}/{n_episodes} | Reward: {episode_reward:8.2f} | Epsilon: {epsilon:.3f}")
+            wandb.log({
+                "episode/reward": episode_reward,
+                "episode/epsilon": epsilon,
+                "episode/episode_number": episode
+            }, step=total_steps)
