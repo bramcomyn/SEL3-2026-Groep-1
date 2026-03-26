@@ -5,12 +5,12 @@ import optax
 import jax.numpy as jnp
 from tqdm import tqdm
 
-from brittle_star_locomotion.environment import Environment, NUM_ARMS
+from brittle_star_locomotion.environment import Environment
 from brittle_star_locomotion.optimization.independentqlearning import IndependentQLearning
 
+from brittle_star_locomotion.config.config_loader import load_config
 
-NUM_MODULATIONS = 10
-
+config = load_config("configs/base_config.yaml")
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Brittle Star Locomotion Simulator")
@@ -33,16 +33,16 @@ def main():
     env = Environment(observations=obs_to_use)
 
     # 3. Initialize IQL Trainer
-    n_agents = NUM_ARMS
-    learning_rate = 0.0001
-    optimizer = optax.chain(optax.clip_by_global_norm(10.0), optax.adam(learning_rate))
+    n_agents = config.env.num_arms
+    learning_rate = config.rl.learning_rate
+    optimizer = optax.chain(optax.clip_by_global_norm(config.rl.gradient_clip), optax.adam(learning_rate))
 
-    trainer = IndependentQLearning(optimizer=optimizer, n_agents=n_agents, env=env, replay_buffer_size=1000)
+    trainer = IndependentQLearning(optimizer=optimizer, n_agents=n_agents, env=env)
 
     # 4. Training Phase
     logger.info("Starting Training...")
 
-    trainer.train(n_episodes=50, epsilon=1.0, epsilon_decay=0.95, epsilon_min=0.01, batch_size=32, discount=0.99)
+    trainer.train()
 
     logger.info("Training complete.")
 
@@ -53,7 +53,7 @@ def main():
     eval_trajectory = []
     
     # Run for a fixed number of cycles to generate a video
-    num_eval_cycles = 20
+    num_eval_cycles = config.evaluation.num_eval_cycles
     for _ in tqdm(range(num_eval_cycles)):
         observations = env.get_observations()
 
@@ -69,7 +69,7 @@ def main():
     # 6. Combine and Render
     combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)
 
-    output_path = "out/trained_brittle_star.mp4"
+    output_path = config.evaluation.output_video_path
     env.render_video(combined_trajectory, output_path=output_path)
     logger.info(f"Video saved to {output_path}")
 
