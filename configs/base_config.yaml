@@ -31,6 +31,10 @@ rl:
   learning_rate: 0.0001
   gradient_clip: 10.0
   action_space_dim: 5
+  observations_to_use: [
+    "angle_to_target", 
+    "xy_distance_to_target"
+  ]
 
 evaluation:
   num_eval_cycles: 20

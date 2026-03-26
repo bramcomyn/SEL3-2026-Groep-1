@@ -10,7 +10,6 @@ from brittle_star_locomotion.optimization.independentqlearning import Independen
 
 from brittle_star_locomotion.config.config_loader import load_config
 
-config = load_config("configs/base_config.yaml")
 
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Brittle Star Locomotion Simulator")
@@ -26,10 +25,11 @@ def main():
     logging.basicConfig(level=args.loglevel, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", force=True)
 
     logger = logging.getLogger(__name__)
+    config = load_config("configs/base_config.yaml")
 
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
-    obs_to_use = ["angle_to_target", "xy_distance_to_target"]
+    obs_to_use = config.rl.observations_to_use
     env = Environment(observations=obs_to_use)
 
     # 3. Initialize IQL Trainer
