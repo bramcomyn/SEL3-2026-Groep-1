@@ -42,8 +42,8 @@ class Environment:
             joint_randomization_noise_scale=0.0,
             render_mode="rgb_array",
             simulation_time=config.env.simulation_time,
-            num_physics_steps_per_control_step=10,
-            time_scale=1,
+            num_physics_steps_per_control_step=config.env.num_physics_steps_per_control_step,
+            time_scale=config.env.time_scale,
             camera_ids=(0, 1),
             render_size=config.env.render_size,
         )

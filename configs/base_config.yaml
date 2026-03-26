@@ -7,6 +7,7 @@ env:
   num_substeps_per_modulation: 50
   simulation_time: 20
   num_physics_steps_per_control_step: 10
+  time_scale: 1
   render_size: (480, 640)
   arena:
     size: (15, 15)
