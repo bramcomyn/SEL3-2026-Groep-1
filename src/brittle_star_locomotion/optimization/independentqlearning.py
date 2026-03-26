@@ -25,7 +25,8 @@ class IndependentQLearning:
         self.observation_size = self.env.get_observation_size()
 
         # Initialize Random Number Generators for NNX
-        self.rngs = nnx.Rngs(0)
+        # self.rngs = nnx.Rngs(0)
+        self.key = jax.random.PRNGKey(0)
 
         # Primary Q-Network (The one we update via gradients)
         self.value_networks = [QNetwork(self.observation_size, 5, rngs=nnx.Rngs(i)) for i in range(n_agents)]
@@ -66,9 +67,14 @@ class IndependentQLearning:
     def epsilon_greedy_actions(self, observations, epsilon):
         actions = jnp.zeros(self.n_agents, dtype=jnp.int32)
 
+        self.key, subkey = jax.random.split(self.key) # TODO
+
         for agent in range(self.n_agents):
-            if self.rngs.uniform() < epsilon:
-                action = self.rngs.randint((), minval=0, maxval=config.rl.action_space_dim)
+
+            subkey, sk1, sk2 = jax.random.split(subkey, 3) # TODO
+
+            if jax.random.uniform(sk1) < epsilon:
+                action = jax.random.randint(sk2, shape=(), minval=0, maxval=config.rl.action_space_dim)
             else:
                 q_values = self.value_networks[agent](observations[agent])
                 action = jnp.argmax(q_values)
@@ -162,5 +168,6 @@ class IndependentQLearning:
             wandb.log({
                 "episode/reward": episode_reward,
                 "episode/epsilon": epsilon,
-                "episode/episode_number": episode
+                "episode/episode_number": episode,
+                "episode/success": float(jnp.any(terminated))
             }, step=total_steps)

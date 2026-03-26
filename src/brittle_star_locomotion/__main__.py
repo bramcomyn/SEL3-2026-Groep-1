@@ -70,6 +70,10 @@ def main():
             trajectory = env.run_iteration(actions)
             eval_trajectory.append(trajectory)
 
+            if env.env_state.terminated:
+                logger.info("Environment terminated during evaluation. Resetting environment.")
+                env.reset()
+
         # 6. Combine and Render
         combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)
 

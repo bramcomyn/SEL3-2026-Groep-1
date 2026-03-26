@@ -5,7 +5,7 @@ env:
   target_distance: 1.2
   render_every: 5
   num_substeps_per_modulation: 50
-  simulation_time: 30
+  simulation_time: 20
   num_physics_steps_per_control_step: 10
   time_scale: 1
   render_size_x: 480
@@ -22,14 +22,14 @@ cpg:
   dt: 0.01
 
 rl:
-  replay_buffer_size: 1000
+  replay_buffer_size: 10000
   num_episodes: 50
   epsilon: 1.0
   epsilon_min: 0.01
-  epsilon_decay: 0.9
+  epsilon_decay: 0.95
   discount: 0.99
   batch_size: 64
-  target_update_freq: 100
+  target_update_freq: 200
   learning_rate: 0.0001
   gradient_clip: 10.0
   action_space_dim: 5
