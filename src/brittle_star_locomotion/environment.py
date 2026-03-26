@@ -207,7 +207,7 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        prev_distance = self.env_state.observations["xy_distance_to_target"]
+        prev_position = self.env_state.observations["disk_position"][:2] # type: ignore
 
         masks = tuple(actions == i for i in range(5))
         new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
@@ -220,11 +220,15 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        current_distance = self.env_state.observations["xy_distance_to_target"]
+        current_position = self.env_state.observations["disk_position"][:2] # type: ignore
 
-        reward = prev_distance - current_distance
+        move_direction = current_position - prev_position
+        move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
+        target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
 
-        return self.env_state, reward[0], self.env_state.terminated, self.env_state.truncated
+        reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
+
+        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
