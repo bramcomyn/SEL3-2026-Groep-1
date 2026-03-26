@@ -102,6 +102,7 @@ class IndependentQLearning:
 
     def train(self, **kwargs):
         wandb.init(
+            entity="comyn-bram-universiteit-gent",
             project="brittle-star-locomotion",
             config=kwargs,
             name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
