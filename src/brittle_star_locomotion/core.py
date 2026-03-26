@@ -1,3 +1,0 @@
-"""
-Empty core module file
-"""

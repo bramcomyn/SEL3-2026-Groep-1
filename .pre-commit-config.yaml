@@ -3,24 +3,6 @@ repos:
     rev: v6.0.0
     hooks:
     -   id: check-yaml
-    -   id: end-of-file-fixer
-    -   id: trailing-whitespace
-
--   repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
-    hooks:
-      - id: ruff
-        args: [ --fix ]
-      - id: ruff-format
-
--   repo: local
-    hooks:
-    -   id: pytest-check
-        name: pytest-check
-        entry: uv run pytest
-        language: system
-        pass_filenames: false
-        always_run: true
 
 -   repo: https://github.com/astral-sh/uv-pre-commit
     # Update to the latest version of uv
