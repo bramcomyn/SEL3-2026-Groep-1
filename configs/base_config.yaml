@@ -23,7 +23,7 @@ cpg:
 
 rl:
   replay_buffer_size: 10000
-  num_episodes: 50
+  num_episodes: 100
   epsilon: 1.0
   epsilon_min: 0.01
   epsilon_decay: 0.95
@@ -31,10 +31,13 @@ rl:
   batch_size: 64
   target_update_freq: 200
   learning_rate: 0.0001
-  gradient_clip: 10.0
+  gradient_clip: 5.0
+  hidden_layer_size: 32
+  amount_of_hidden_layers: 1
   action_space_dim: 5
   observations_to_use: [
-    "angle_to_target", 
+    "angle_to_target",
+    "unit_xy_direction_to_target",
     "xy_distance_to_target"
   ]
 

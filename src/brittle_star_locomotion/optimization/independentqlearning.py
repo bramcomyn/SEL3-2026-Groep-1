@@ -29,10 +29,28 @@ class IndependentQLearning:
         self.key = jax.random.PRNGKey(0)
 
         # Primary Q-Network (The one we update via gradients)
-        self.value_networks = [QNetwork(self.observation_size, 5, rngs=nnx.Rngs(i)) for i in range(n_agents)]
+        self.value_networks = [
+            QNetwork(
+                input_size=self.observation_size, 
+                output_size=config.rl.action_space_dim, 
+                rngs=nnx.Rngs(i),
+                hidden_size=config.rl.hidden_layer_size,
+                amount_of_hidden_layers=config.rl.amount_of_hidden_layers
+            ) 
+            for i in range(n_agents)
+        ]
 
         # Target Q-Network (The stable reference for calculating TD targets)
-        self.target_networks = [QNetwork(self.observation_size, 5, rngs=nnx.Rngs(i + n_agents)) for i in range(n_agents)]
+        self.target_networks = [
+            QNetwork(
+                input_size=self.observation_size, 
+                output_size=config.rl.action_space_dim, 
+                rngs=nnx.Rngs(i + n_agents),
+                hidden_size=config.rl.hidden_layer_size,
+                amount_of_hidden_layers=config.rl.amount_of_hidden_layers
+            ) 
+            for i in range(n_agents)
+        ]
 
         # Synchronize target network weights with the primary network immediately
         self._sync_target_network()

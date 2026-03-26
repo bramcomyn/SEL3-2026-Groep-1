@@ -35,7 +35,10 @@ def main():
     # 3. Initialize IQL Trainer
     n_agents = config.env.num_arms
     learning_rate = config.rl.learning_rate
-    optimizer = optax.chain(optax.clip_by_global_norm(config.rl.gradient_clip), optax.adam(learning_rate))
+    optimizer = optax.chain(
+        optax.clip_by_global_norm(config.rl.gradient_clip),
+        optax.adam(learning_rate)
+    )
 
     trainer = IndependentQLearning(optimizer=optimizer, n_agents=n_agents, env=env)
 
