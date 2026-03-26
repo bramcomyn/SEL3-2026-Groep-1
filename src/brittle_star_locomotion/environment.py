@@ -16,20 +16,13 @@ from brittle_star_locomotion.cpg.solver import RK4Solver
 from brittle_star_locomotion.cpg.cpg import create_cpg_structure, CPG
 from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
 
+from brittle_star_locomotion.config.config_loader import load_config
+
 from pathlib import Path
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
-
-NUM_ARMS = 5
-NUM_OSCILLATORS = NUM_ARMS * 2
-NUM_SEGMENTS_PER_ARM = 3
-SIMULATION_TIME = 20
-DT = 0.01
-SEED = 42
-TARGET_DISTANCE = 1.2
-RENDER_EVERY = 5
-NUM_SUBSTEPS_PER_MODULATION = 50
+config = load_config("configs/base_config.yaml")
 
 
 class Environment:
@@ -37,30 +30,30 @@ class Environment:
 
     def __init__(self, observations: None | list[str] = None):
         self.morphology_specification = default_brittle_star_morphology_specification(
-            num_arms=NUM_ARMS, num_segments_per_arm=NUM_SEGMENTS_PER_ARM, use_p_control=True, use_torque_control=False
+            num_arms=config.env.num_arms, num_segments_per_arm=config.env.num_segments_per_arm, use_p_control=True, use_torque_control=False
         )
 
         self.arena_configuration = AquariumArenaConfiguration(
-            size=(15, 15), sand_ground_color=False, attach_target=True, wall_height=1.5, wall_thickness=0.1
+            size=config.env.arena.size, sand_ground_color=config.env.arena.sand_ground_color, attach_target=config.env.arena.attach_target, wall_height=config.env.arena.wall_height, wall_thickness=config.env.arena.wall_thickness
         )
 
         self.environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
-            target_distance=TARGET_DISTANCE,
+            target_distance=config.env.target_distance,
             joint_randomization_noise_scale=0.0,
             render_mode="rgb_array",
-            simulation_time=SIMULATION_TIME,
+            simulation_time=config.env.simulation_time,
             num_physics_steps_per_control_step=10,
             time_scale=1,
             camera_ids=(0, 1),
-            render_size=(480, 640),
+            render_size=config.env.render_size,
         )
 
         self.__create_environment()
 
-        self.rng = jax.random.PRNGKey(seed=SEED)
+        self.rng = jax.random.PRNGKey(seed=0)
         self.rng, reset_key = jax.random.split(self.rng)
-        self.weights = create_cpg_structure(NUM_OSCILLATORS)
-        self.cpg = CPG(self.weights, RK4Solver(), DT)
+        self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
+        self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
         self.cpg_state = self.cpg.reset(reset_key)
         self.env_state = self.environment.reset(reset_key)
 
@@ -85,7 +78,7 @@ class Environment:
                 "segment_contact": 3,
                 # Derived
                 "angle_to_target": 1,
-                "arm_identification": NUM_ARMS,
+                "arm_identification": config.env.num_arms,
             },
         }
 
@@ -119,10 +112,10 @@ class Environment:
 
         def _cpg_loop_body(_state, _):
             _next_state = self.cpg.step(_state)
-            _action = map_cpg_to_brittle_star_actions(_next_state.outputs, NUM_ARMS, NUM_SEGMENTS_PER_ARM)
+            _action = map_cpg_to_brittle_star_actions(_next_state.outputs, config.env.num_arms, config.env.num_segments_per_arm)
             return _next_state, _action
 
-        cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=NUM_SUBSTEPS_PER_MODULATION)
+        cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=config.env.num_substeps_per_modulation)
 
         def _env_loop_body(_state, _action):
             _next_env_state = self.jit_env_step(_state, _action)
@@ -172,7 +165,7 @@ class Environment:
         frames = []
 
         actual_steps = jax.tree_util.tree_leaves(trajectory)[0].shape[0]
-        render_indices = range(0, actual_steps, RENDER_EVERY)
+        render_indices = range(0, actual_steps, config.env.render_every)
 
         for i in tqdm(render_indices, desc="Generating Video Frames"):
             step_state = jax.tree_util.tree_map(lambda x: x[i], trajectory)
@@ -250,7 +243,7 @@ class Environment:
         :return: The selected observations per agent with shape (num_agents, observation_space_shape).
         :rtype: jnp.ndarray
         """
-        observations = jnp.zeros((NUM_ARMS, self.observation_space_size))
+        observations = jnp.zeros((config.env.num_arms, self.observation_space_size))
 
         begin = 0
         end = 0
@@ -261,21 +254,21 @@ class Environment:
             if obs not in self.derived_states:
                 if obs in self.state_space["central"]:
                     size = self.state_space["central"][obs]
-                    observation = jnp.vstack((self.env_state.observations[obs],) * NUM_ARMS)
+                    observation = jnp.vstack((self.env_state.observations[obs],) * config.env.num_arms)
 
                 elif obs in self.state_space["individual_per_segment"]:
-                    size = NUM_SEGMENTS_PER_ARM * self.state_space["individual_per_segment"][obs]
-                    observation = self.env_state.observations[obs].reshape((NUM_ARMS, size))
+                    size = config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
+                    observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
 
                 elif obs in self.state_space["individual_per_arm"]:
                     size = self.state_space["individual_per_arm"][obs]
-                    observation = self.env_state.observations[obs].reshape((NUM_ARMS, size))
+                    observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
 
             else:
                 if obs == "angle_to_target":
                     size = 1
 
-                    arm_positions = self.env_state.observations["joint_position"].reshape(-1, NUM_SEGMENTS_PER_ARM * 2)[:, :2]
+                    arm_positions = self.env_state.observations["joint_position"].reshape(-1, config.env.num_segments_per_arm * 2)[:, :2]
                     to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions  # type: ignore
                     to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=1, keepdims=True) + 1e-8)
                     to_target_vec2_unit = self.env_state.observations["unit_xy_direction_to_target"]
@@ -288,8 +281,8 @@ class Environment:
                     )
 
                 elif obs == "arm_identification":
-                    size = NUM_ARMS
-                    observation = jnp.eye(NUM_ARMS)
+                    size = config.env.num_arms
+                    observation = jnp.eye(config.env.num_arms)
 
             end = begin + size
             observations = observations.at[:, begin:end].set(observation)
@@ -310,7 +303,7 @@ class Environment:
                 size += self.state_space["central"][obs]
 
             elif obs in self.state_space["individual_per_segment"]:
-                size += NUM_SEGMENTS_PER_ARM * self.state_space["individual_per_segment"][obs]
+                size += config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
 
             elif obs in self.state_space["individual_per_arm"]:
                 size += self.state_space["individual_per_arm"][obs]
