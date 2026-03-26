@@ -12,12 +12,14 @@ from brittle_star_locomotion.environment import Environment
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 from brittle_star_locomotion.neural.checkpoint import save_checkpoint
 
-logger = logging.getLogger(__name__)
+from brittle_star_locomotion.config.config_loader import load_config
 
+logger = logging.getLogger(__name__)
+config = load_config("configs/base_config.yaml")
 
 class IndependentQLearning:
     def __init__(self, optimizer: optax.GradientTransformationExtraArgs, n_agents: int, env: Environment, **kwargs):
-        self.replay_buffer_size = kwargs.get("replay_buffer_size", 10_000)
+        self.replay_buffer_size = config.rl.replay_buffer_size
         self.n_agents = n_agents
         self.env = env
         self.observation_size = self.env.get_observation_size()
@@ -66,7 +68,7 @@ class IndependentQLearning:
 
         for agent in range(self.n_agents):
             if self.rngs.uniform() < epsilon:
-                action = self.rngs.randint((), minval=0, maxval=5)
+                action = self.rngs.randint((), minval=0, maxval=config.rl.action_space_dim)
             else:
                 q_values = self.value_networks[agent](observations[agent])
                 action = jnp.argmax(q_values)
@@ -104,22 +106,23 @@ class IndependentQLearning:
 
     def train(self, **kwargs):
         wandb.init(
+            entity="comyn-bram-universiteit-gent",
             project="brittle-star-locomotion",
             config=kwargs,
             name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
         )
         
-        n_episodes         = kwargs.get("n_episodes", 50)
-        epsilon            = kwargs.get("epsilon", 0.5)
-        epsilon_min        = kwargs.get("epsilon_min", 0.01)
-        epsilon_decay      = kwargs.get("epsilon_decay", 0.999) # Slowed decay for better exploration
-        discount           = kwargs.get("discount", 0.99)
-        batch_size         = kwargs.get("batch_size", 64)
-        target_update_freq = kwargs.get("target_update_freq", 100) # Sync every 100 steps
+        num_episodes       = config.rl.num_episodes
+        epsilon            = config.rl.epsilon
+        epsilon_min        = config.rl.epsilon_min
+        epsilon_decay      = config.rl.epsilon_decay # Slowed decay for better exploration
+        discount           = config.rl.discount
+        batch_size         = config.rl.batch_size
+        target_update_freq = config.rl.target_update_freq # Sync every 100 steps
         
         total_steps = 0
 
-        for episode in range(n_episodes):
+        for episode in range(num_episodes):
             self.env.reset()
             done = False
             episode_reward = 0.0
@@ -155,7 +158,7 @@ class IndependentQLearning:
                         self._sync_target_network()
 
             # --- Episode Logging ---
-            logger.info(f"Episode {episode + 1:3d}/{n_episodes} | Reward: {episode_reward:8.2f} | Epsilon: {epsilon:.3f}")
+            logger.info(f"Episode {episode + 1:3d}/{num_episodes} | Reward: {episode_reward:8.2f} | Epsilon: {epsilon:.3f}")
             wandb.log({
                 "episode/reward": episode_reward,
                 "episode/epsilon": epsilon,
