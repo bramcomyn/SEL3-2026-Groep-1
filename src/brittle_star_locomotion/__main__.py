@@ -30,7 +30,7 @@ def main():
 
     # 2. Initialize Environment
     # Note: Using subset of observations to keep state space manageable
-    obs_to_use = ["unit_xy_direction_to_target", "xy_distance_to_target", "joint_position"]
+    obs_to_use = ["xy_distance_to_target", "disk_position"]
     env = Environment(observations=obs_to_use)
     
     # 3. Initialize IQL Trainer
@@ -49,10 +49,11 @@ def main():
     logger.info("Starting Training...")
     
     trainer.train(
-        n_episodes=50, 
-        epsilon=0.5, 
+        n_episodes=100, 
+        epsilon=1.0, 
         batch_size=32,
-        discount=0.999
+        discount=0.99,
+        epsilon_decay=0.999
     )
 
     logger.info("Training complete.")
@@ -62,7 +63,6 @@ def main():
     logger.info("Running evaluation for visualization...")
     env.reset()
     eval_trajectory = []
-    done = False
     
     # Run for a fixed number of cycles to generate a video
     num_eval_cycles = 20

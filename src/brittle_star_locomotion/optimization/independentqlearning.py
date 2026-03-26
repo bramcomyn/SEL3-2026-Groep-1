@@ -6,7 +6,7 @@ from cpprb import ReplayBuffer
 
 from brittle_star_locomotion.environment import Environment
 from brittle_star_locomotion.neural.qnetwork import QNetwork
-from brittle_star_locomotion.neural.checkpoint import save_checkpoint, load_checkpoint
+from brittle_star_locomotion.neural.checkpoint import save_checkpoint
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,8 @@ class IndependentQLearning:
     def train(self, **kwargs):
         n_episodes         = kwargs.get("n_episodes", 50)
         epsilon            = kwargs.get("epsilon", 0.5)
-        epsilon_min        = kwargs.get("epsilon_min", 0.05)
-        epsilon_decay      = kwargs.get("epsilon_decay", 0.99) # Slowed decay for better exploration
+        epsilon_min        = kwargs.get("epsilon_min", 0.01)
+        epsilon_decay      = kwargs.get("epsilon_decay", 0.999) # Slowed decay for better exploration
         discount           = kwargs.get("discount", 0.99)
         batch_size         = kwargs.get("batch_size", 64)
         target_update_freq = kwargs.get("target_update_freq", 100) # Sync every 100 steps
