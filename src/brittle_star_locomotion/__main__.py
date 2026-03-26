@@ -3,6 +3,7 @@ import jax
 import logging
 import optax
 import jax.numpy as jnp
+from tqdm import tqdm
 
 from brittle_star_locomotion.environment import Environment, NUM_ARMS
 from brittle_star_locomotion.optimization.independentqlearning import IndependentQLearning
@@ -53,7 +54,7 @@ def main():
     
     # Run for a fixed number of cycles to generate a video
     num_eval_cycles = 20
-    for i in range(num_eval_cycles):
+    for _ in tqdm(range(num_eval_cycles)):
         observations = env.get_observations()
 
         # Get greedy actions from the trained network
@@ -67,9 +68,6 @@ def main():
         # run_iteration returns the trajectory of MJX states
         trajectory = env.run_iteration(actions)
         eval_trajectory.append(trajectory)
-
-        if i % 5 == 0:
-            logger.info(f"Eval Cycle {i}/{num_eval_cycles}")
 
     # 6. Combine and Render
     combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)

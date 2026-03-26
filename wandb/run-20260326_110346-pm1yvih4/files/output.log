@@ -1,0 +1,60 @@
+2026-03-26 11:04:36,796 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   1/50 | Reward:     0.11 | Epsilon: 0.950
+2026-03-26 11:04:47,080 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   2/50 | Reward:    -0.20 | Epsilon: 0.902
+2026-03-26 11:04:55,029 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   3/50 | Reward:     0.24 | Epsilon: 0.857
+2026-03-26 11:05:02,851 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   4/50 | Reward:     0.46 | Epsilon: 0.815
+2026-03-26 11:05:10,681 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   5/50 | Reward:     0.01 | Epsilon: 0.774
+2026-03-26 11:05:18,577 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   6/50 | Reward:     0.23 | Epsilon: 0.735
+2026-03-26 11:05:26,672 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   7/50 | Reward:     0.42 | Epsilon: 0.698
+2026-03-26 11:05:34,766 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   8/50 | Reward:    -0.21 | Epsilon: 0.663
+2026-03-26 11:05:42,824 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode   9/50 | Reward:    -0.07 | Epsilon: 0.630
+2026-03-26 11:05:50,829 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  10/50 | Reward:    -0.38 | Epsilon: 0.599
+2026-03-26 11:05:59,101 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  11/50 | Reward:     0.08 | Epsilon: 0.569
+2026-03-26 11:06:07,153 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  12/50 | Reward:    -0.11 | Epsilon: 0.540
+2026-03-26 11:06:15,072 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  13/50 | Reward:     0.12 | Epsilon: 0.513
+2026-03-26 11:06:23,018 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  14/50 | Reward:    -0.37 | Epsilon: 0.488
+2026-03-26 11:06:30,977 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  15/50 | Reward:     0.08 | Epsilon: 0.463
+2026-03-26 11:06:38,984 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  16/50 | Reward:     0.09 | Epsilon: 0.440
+2026-03-26 11:06:47,392 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  17/50 | Reward:    -0.00 | Epsilon: 0.418
+2026-03-26 11:06:55,670 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  18/50 | Reward:     0.26 | Epsilon: 0.397
+2026-03-26 11:07:03,803 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  19/50 | Reward:     0.00 | Epsilon: 0.377
+2026-03-26 11:07:11,993 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  20/50 | Reward:    -0.13 | Epsilon: 0.358
+2026-03-26 11:07:20,244 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  21/50 | Reward:    -0.22 | Epsilon: 0.341
+2026-03-26 11:07:28,276 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  22/50 | Reward:    -0.16 | Epsilon: 0.324
+2026-03-26 11:07:36,423 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  23/50 | Reward:     0.40 | Epsilon: 0.307
+2026-03-26 11:07:44,453 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  24/50 | Reward:    -0.14 | Epsilon: 0.292
+2026-03-26 11:07:52,581 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  25/50 | Reward:     0.05 | Epsilon: 0.277
+2026-03-26 11:08:00,683 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  26/50 | Reward:     0.21 | Epsilon: 0.264
+2026-03-26 11:08:08,954 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  27/50 | Reward:    -0.10 | Epsilon: 0.250
+2026-03-26 11:08:17,189 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  28/50 | Reward:     0.07 | Epsilon: 0.238
+2026-03-26 11:08:25,245 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  29/50 | Reward:     0.21 | Epsilon: 0.226
+2026-03-26 11:08:33,280 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  30/50 | Reward:    -0.08 | Epsilon: 0.215
+2026-03-26 11:08:41,359 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  31/50 | Reward:     0.01 | Epsilon: 0.204
+2026-03-26 11:08:49,590 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  32/50 | Reward:     0.39 | Epsilon: 0.194
+2026-03-26 11:08:57,886 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  33/50 | Reward:     1.04 | Epsilon: 0.184
+2026-03-26 11:09:06,120 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  34/50 | Reward:     0.46 | Epsilon: 0.175
+2026-03-26 11:09:14,235 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  35/50 | Reward:    -0.44 | Epsilon: 0.166
+2026-03-26 11:09:22,427 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  36/50 | Reward:     0.55 | Epsilon: 0.158
+2026-03-26 11:09:30,766 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  37/50 | Reward:     0.59 | Epsilon: 0.150
+2026-03-26 11:09:39,046 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  38/50 | Reward:     0.54 | Epsilon: 0.142
+2026-03-26 11:09:47,384 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  39/50 | Reward:     0.03 | Epsilon: 0.135
+2026-03-26 11:09:55,659 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  40/50 | Reward:    -0.27 | Epsilon: 0.129
+2026-03-26 11:10:04,324 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  41/50 | Reward:     0.45 | Epsilon: 0.122
+2026-03-26 11:10:12,615 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  42/50 | Reward:     0.40 | Epsilon: 0.116
+2026-03-26 11:10:20,868 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  43/50 | Reward:     0.54 | Epsilon: 0.110
+2026-03-26 11:10:29,302 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  44/50 | Reward:     0.44 | Epsilon: 0.105
+2026-03-26 11:10:37,684 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  45/50 | Reward:     0.02 | Epsilon: 0.099
+2026-03-26 11:10:45,970 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  46/50 | Reward:    -0.12 | Epsilon: 0.094
+2026-03-26 11:10:54,236 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  47/50 | Reward:    -0.20 | Epsilon: 0.090
+2026-03-26 11:11:02,616 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  48/50 | Reward:     0.14 | Epsilon: 0.085
+2026-03-26 11:11:10,964 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  49/50 | Reward:     0.75 | Epsilon: 0.081
+2026-03-26 11:11:19,238 - brittle_star_locomotion.optimization.independentqlearning - INFO - Episode  50/50 | Reward:     0.85 | Epsilon: 0.077
+2026-03-26 11:11:19,238 - __main__ - INFO - Training complete.
+2026-03-26 11:11:19,238 - __main__ - INFO - Running evaluation for visualization...
+2026-03-26 11:11:32,604 - __main__ - INFO - Eval Cycle 0/20
+2026-03-26 11:11:46,115 - __main__ - INFO - Eval Cycle 5/20
+2026-03-26 11:11:47,318 - __main__ - INFO - Eval Cycle 10/20
+2026-03-26 11:11:48,543 - __main__ - INFO - Eval Cycle 15/20
+2026-03-26 11:11:58,629 - brittle_star_locomotion.environment - INFO - Rendering results to out/trained_brittle_star.mp4
+Generating Video Frames: 100%|██████████████████████████████| 200/200 [00:17<00:00, 11.51it/s]
+2026-03-26 11:12:17,144 - brittle_star_locomotion.environment - INFO - Successfully saved video (200 frames) to out/trained_brittle_star.mp4
+2026-03-26 11:12:17,156 - __main__ - INFO - Video saved to out/trained_brittle_star.mp4
