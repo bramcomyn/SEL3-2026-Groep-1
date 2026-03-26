@@ -228,7 +228,7 @@ class Environment:
 
         reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
 
-        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
+        return self.env_state, summed_reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
