@@ -58,10 +58,7 @@ def main():
 
         # Get greedy actions from the trained network
         # (n_agents, action_probs) -> (n_agents,)
-        q_values = jnp.stack(
-            [trainer.value_networks[agent](observations[agent]) for agent in range(n_agents)], 
-            axis=0
-        )
+        q_values = trainer.value_network(observations)
         actions = jnp.argmax(q_values, axis=1)
 
         # run_iteration returns the trajectory of MJX states
