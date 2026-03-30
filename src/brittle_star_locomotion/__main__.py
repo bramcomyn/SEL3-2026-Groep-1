@@ -96,7 +96,7 @@ def main():
                 logger.info("Environment terminated during evaluation. Resetting environment.")
                 env.reset()
 
-        # 6. Combine and Render
+        # Combine and Render
         combined_trajectory = jax.tree_util.tree_map(lambda *xs: jnp.concatenate(xs, axis=0), *eval_trajectory)
 
         output_path = config.evaluation.output_video_path

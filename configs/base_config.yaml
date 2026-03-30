@@ -26,7 +26,7 @@ rl:
   num_episodes: 100
   epsilon: 1.0
   epsilon_min: 0.01
-  epsilon_decay: 0.95
+  epsilon_decay: 0.975
   discount: 0.99
   batch_size: 64
   target_update_freq: 200
