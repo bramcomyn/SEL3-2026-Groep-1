@@ -237,10 +237,10 @@ class Environment:
         :return: The new state.
         :rtype: BaseEnvState
         """
-        self.reset_key, reset_key = self.reset_key.split()
+        self.reset_key, reset_key = jax.random.split(self.reset_key)
         self.cpg_state = self.cpg.reset(reset_key)
         self.env_state = self.jit_env_reset(self.reset_key)
-        self.env_state.mj_model.body("target").pos = np.array([1, 1, 0.05])
+
         return self.env_state
 
     @functools.partial(jax.jit, static_argnums=(0,))

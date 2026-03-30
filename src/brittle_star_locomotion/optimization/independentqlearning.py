@@ -28,6 +28,7 @@ class IndependentQLearning:
         # self.rngs = nnx.Rngs(0)
         self.key = jax.random.PRNGKey(0)
 
+        # TODO: DRY
         # Primary Q-Network (The one we update via gradients)
         self.value_networks = [
             QNetwork(

@@ -26,7 +26,7 @@ rl:
   num_episodes: 100
   epsilon: 1.0
   epsilon_min: 0.01
-  epsilon_decay: 0.99
+  epsilon_decay: 0.95
   discount: 0.99
   batch_size: 64
   target_update_freq: 200
@@ -45,4 +45,4 @@ evaluation:
   num_eval_cycles: 20
   render: True
   fps: 20
-  output_video_path: "out/trained_brittle_star.mp4"
+  output_video_path: "out/trained_brittle_star"
