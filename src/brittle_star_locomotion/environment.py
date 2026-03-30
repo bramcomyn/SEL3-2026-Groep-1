@@ -51,11 +51,11 @@ class Environment:
         self.__create_environment()
 
         self.rng = jax.random.PRNGKey(seed=0)
-        self.rng, reset_key = jax.random.split(self.rng)
+        self.rng, self.reset_key = jax.random.split(self.rng)
         self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
         self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
-        self.cpg_state = self.cpg.reset(reset_key)
-        self.env_state = self.environment.reset(reset_key)
+        self.cpg_state = self.cpg.reset(self.reset_key)
+        self.env_state = self.environment.reset(self.reset_key)
 
         self.derived_states = ["arm_identification", "angle_to_target"]
         self.state_space = {
@@ -237,10 +237,10 @@ class Environment:
         :return: The new state.
         :rtype: BaseEnvState
         """
-        self.env_state = self.jit_env_reset(self.rng)
-
+        self.reset_key, reset_key = self.reset_key.split()
+        self.cpg_state = self.cpg.reset(reset_key)
+        self.env_state = self.jit_env_reset(self.reset_key)
         self.env_state.mj_model.body("target").pos = np.array([1, 1, 0.05])
-
         return self.env_state
 
     @functools.partial(jax.jit, static_argnums=(0,))
