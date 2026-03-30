@@ -1,5 +1,6 @@
 from omegaconf import OmegaConf
 
+
 def load_config(config_path: str):
     """Loads a YAML configuration file and returns it as a dictionary."""
     try:

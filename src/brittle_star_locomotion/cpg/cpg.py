@@ -3,10 +3,11 @@ from functools import partial
 import chex
 import jax
 import jax.numpy as jnp
-from brittle_star_locomotion.cpg.equations import CPGEquations
-from brittle_star_locomotion.cpg.solver import Solver
 from flax import struct
 from jax import jit
+
+from brittle_star_locomotion.cpg.equations import CPGEquations
+from brittle_star_locomotion.cpg.solver import Solver
 
 
 @struct.dataclass

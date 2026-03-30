@@ -1,25 +1,22 @@
-import jax
-import logging
 import functools
+import logging
+from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import mediapy as media
 import numpy as np
-
-from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
-from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
-from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
-from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
-
-from brittle_star_locomotion.cpg.solver import RK4Solver
-from brittle_star_locomotion.cpg.cpg import create_cpg_structure, CPG
-from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
+from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
+from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
+from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
+from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
+from tqdm import tqdm
 
 from brittle_star_locomotion.config.config_loader import load_config
-
-from pathlib import Path
-from tqdm import tqdm
+from brittle_star_locomotion.cpg.cpg import CPG, create_cpg_structure
+from brittle_star_locomotion.cpg.solver import RK4Solver
+from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
 
 logger = logging.getLogger(__name__)
 config = load_config("configs/base_config.yaml")

@@ -1,17 +1,18 @@
 import argparse
-import jax
 import logging
-import optax
-import jax.numpy as jnp
-from tqdm import tqdm
 import time
-from flax import nnx
 
-from brittle_star_locomotion.environment import Environment
-from brittle_star_locomotion.optimization.independentqlearning import IndependentQLearning
+import jax
+import jax.numpy as jnp
+import optax
+from flax import nnx
+from tqdm import tqdm
+
 from brittle_star_locomotion.config.config_loader import load_config
+from brittle_star_locomotion.environment import Environment
 from brittle_star_locomotion.neural.checkpoint import load_checkpoint
 from brittle_star_locomotion.neural.qnetwork import QNetwork
+from brittle_star_locomotion.optimization.independentqlearning import IndependentQLearning
 
 
 def get_args() -> argparse.Namespace:

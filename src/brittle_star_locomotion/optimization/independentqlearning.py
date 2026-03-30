@@ -1,18 +1,17 @@
+import logging
+import time
+
 import jax
 import jax.numpy as jnp
 import optax
-import logging
-import wandb
-import time
-
-from flax import nnx
 from cpprb import ReplayBuffer
+from flax import nnx
 
-from brittle_star_locomotion.environment import Environment
-from brittle_star_locomotion.neural.qnetwork import QNetwork
-from brittle_star_locomotion.neural.checkpoint import save_checkpoint
-
+import wandb
 from brittle_star_locomotion.config.config_loader import load_config
+from brittle_star_locomotion.environment import Environment
+from brittle_star_locomotion.neural.checkpoint import save_checkpoint
+from brittle_star_locomotion.neural.qnetwork import QNetwork
 
 logger = logging.getLogger(__name__)
 config = load_config("configs/base_config.yaml")

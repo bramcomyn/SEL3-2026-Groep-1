@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+
 from brittle_star_locomotion.cpg.cpg import CPGState
 
 
