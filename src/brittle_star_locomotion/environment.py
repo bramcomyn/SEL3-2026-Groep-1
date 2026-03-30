@@ -51,7 +51,12 @@ class Environment:
         self.__create_environment()
 
         self.rng = jax.random.PRNGKey(seed=0)
-        self.rng, reset_key = jax.random.split(self.rng)
+
+        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, config.rl.amount_environments + 2))
+        # self.env_state = self.jit_env_reset(self.sub_rngs)
+
+        # self.rng, reset_key = jax.random.split(self.rng)
+
         self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
         self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
         self.cpg_state = self.cpg.reset(reset_key)
@@ -102,13 +107,24 @@ class Environment:
 
         self.observation_space_size = self.get_observation_size()
 
-        self.jit_env_step = jax.jit(self.environment.step)
-        self.jit_env_reset = jax.jit(self.environment.reset)
+        self.jit_env_step = jax.jit(jax.vmap(self.environment.step)) # TODO vmap
+        self.jit_env_reset = jax.jit(jax.vmap(self.environment.reset)) # TODO vmap
+        # self.vmap_modulate_rowing_gait = jax.vmap(modulate_rowing_gait) # TODO vmap
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def __step_compiled(self, env_state, cpg_state, masks, max_limit):
+    def __step_compiled(
+        self, 
+        env_state, 
+        cpg_state, 
+        masks: jnp.ndarray, # shape (envs x 5 x 5)
+        max_limit
+    ):  
         """Pure JAX function to run simulation substeps."""
-        cpg_state = modulate_rowing_gait(cpg_state, *masks, max_joint_limit=max_limit)
+        print(masks.shape)
+
+        modulate_rowing_gait_vmap = jax.vmap(modulate_rowing_gait, in_axes=(None, 0))
+
+        cpg_state = modulate_rowing_gait_vmap(cpg_state, masks, max_joint_limit=max_limit)
 
         def _cpg_loop_body(_state, _):
             _next_state = self.cpg.step(_state)
@@ -127,7 +143,7 @@ class Environment:
 
     def run_iteration(self, action_values: jnp.ndarray, max_limit: float = 1.0):
         """Python wrapper to prepare masks and update instance state."""
-        masks = tuple(action_values == i for i in range(5))
+        masks = jnp.array([action_values == i for i in range(5)])
 
         new_env_state, new_cpg_state, trajectory, _ = self.__step_compiled(self.env_state, self.cpg_state, masks, max_limit)
 
@@ -191,7 +207,7 @@ class Environment:
         if Path(video_path).exists():
             media.show_video(media.read_video(video_path))
 
-    def step(self, actions: jnp.ndarray):  # TODO return type
+    def step(self, actions: jnp.ndarray): # TODO actions: (envs, num_arms)
         """Step in the environment.
 
         :param actions: Actions to take in the environment, one float for each actuator.
@@ -200,9 +216,16 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        prev_position = self.env_state.observations["disk_position"][:2] # type: ignore
+        prev_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
 
-        masks = tuple(actions == i for i in range(5))
+        # __step_compiled_vmap = jax.vmap(self.__step_compiled, in_axes=(None, None, 0, None)) # TODO vmap
+
+        masks = jnp.array([
+            [actions[env_index] == i for i in range(config.env.num_arms)]
+            for env_index in range(config.rl.amount_environments)
+        ])
+
+        print(f"masks shape: {masks.shape}")
         new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
             self.env_state,
             self.cpg_state,
@@ -213,31 +236,27 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        current_position = self.env_state.observations["disk_position"][:2] # type: ignore
+        current_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
 
-        # move_direction = current_position - prev_position
-        # move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
-        # target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
+        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:, :2], axis=-1) # TODO (envs,)
+        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:, :2], axis=-1) # TODO (envs,)
 
-        # reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
-
-        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:2])
-        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:2])
-
-        reward = (previous_distance - current_distance)
+        reward = (previous_distance - current_distance) # TODO (envs,)
 
         if jnp.any(self.env_state.terminated):
             reward += 10.0
 
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
 
-    def reset(self):  # TODO return type
+    def reset(self):
         """Reset the environment
 
         :return: The new state.
         :rtype: BaseEnvState
         """
-        self.env_state = self.jit_env_reset(self.rng)
+        self.env_state = self.jit_env_reset(jnp.array(self.sub_rngs))
+
+        print(type(self.env_state))
 
         self.env_state.mj_model.body("target").pos = np.array([1, 1, 0.05])
 
@@ -254,7 +273,7 @@ class Environment:
         :return: The selected observations per agent with shape (num_agents, observation_space_shape).
         :rtype: jnp.ndarray
         """
-        observations = jnp.zeros((config.env.num_arms, self.observation_space_size))
+        observations = jnp.zeros((config.rl.amount_environments, config.env.num_arms, self.observation_space_size))
 
         begin = 0
         end = 0
@@ -265,38 +284,57 @@ class Environment:
             if obs not in self.derived_states:
                 if obs in self.state_space["central"]:
                     size = self.state_space["central"][obs]
-                    observation = jnp.vstack((self.env_state.observations[obs],) * config.env.num_arms)
+                    # observation = jnp.vstack((self.env_state.observations[obs],) * config.env.num_arms)
+
+                    # self.env_state.observations[obs]  (n_envs, 3)
+                    observation = jnp.broadcast_to(self.env_state.observations[obs][:, None, :], (config.rl.amount_environments, config.env.num_arms, size)) # type: ignore
 
                 elif obs in self.state_space["individual_per_segment"]:
                     size = config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
-                    observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
+                    # observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
+                    observation = self.env_state.observations[obs].reshape((config.rl.amount_environments, config.env.num_arms, size)) # TODO env.num_segments?
 
                 elif obs in self.state_space["individual_per_arm"]:
                     size = self.state_space["individual_per_arm"][obs]
-                    observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
+                    # observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
+                    observation = self.env_state.observations[obs].reshape((config.rl.amount_environments, config.env.num_arms, size))
 
             else:
                 if obs == "angle_to_target":
                     size = 1
 
-                    arm_positions = self.env_state.observations["joint_position"].reshape(-1, config.env.num_segments_per_arm * 2)[:, :2]
-                    to_arm_vec2 = self.env_state.observations["disk_position"][:2] - arm_positions  # type: ignore
-                    to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=1, keepdims=True) + 1e-8)
-                    to_target_vec2_unit = self.env_state.observations["unit_xy_direction_to_target"]
+                    num_envs = config.rl.amount_environments
+
+                    arm_positions = self.env_state.observations["joint_position"].reshape(
+                        num_envs,
+                        config.env.num_arms, 
+                        config.env.num_segments_per_arm * 2
+                    )[:, :, :2]
+
+                    copied_disk_position = jnp.broadcast_to(self.env_state.observations["disk_position"][:, None, :2], (config.rl.amount_environments, config.env.num_arms, 2)) # type: ignore
+    
+                    to_arm_vec2 = copied_disk_position - arm_positions  # type: ignore
+
+                    to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=-1, keepdims=True) + 1e-8)
+
+                    to_target_vec2_unit = jnp.broadcast_to(self.env_state.observations["unit_xy_direction_to_target"][:, None, :], (config.rl.amount_environments, config.env.num_arms, 2)) # type: ignore
 
                     # Row-wise dot products
                     observation = jnp.sum(
-                        to_arm_vec2_unit * to_target_vec2_unit[None, :],  # type: ignore
-                        axis=1,
+                        to_arm_vec2_unit * to_target_vec2_unit,  # type: ignore
+                        axis=-1,
                         keepdims=True,
                     )
 
-                elif obs == "arm_identification":
-                    size = config.env.num_arms
-                    observation = jnp.eye(config.env.num_arms)
+                # elif obs == "arm_identification":
+                #     size = config.env.num_arms
+                #     observation = jnp.eye(config.env.num_arms)
+
+            print(obs)
+            print(f'{observations.shape} - {observation.shape}')
 
             end = begin + size
-            observations = observations.at[:, begin:end].set(observation)
+            observations = observations.at[:, :, begin:end].set(observation)
             begin = end
 
         return observations

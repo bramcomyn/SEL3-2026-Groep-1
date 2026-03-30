@@ -11,17 +11,20 @@ def get_oscillator_indices_for_arm(arm_index):
 @jax.jit
 def modulate_rowing_gait(
     cpg_state: CPGState,
-    leading_mask: jnp.ndarray,
-    left_mask: jnp.ndarray,
-    right_mask: jnp.ndarray,
-    left_second_mask: jnp.ndarray,
-    right_second_mask: jnp.ndarray,
+    masks: jnp.ndarray,
+    # leading_mask: jnp.ndarray,
+    # left_mask: jnp.ndarray,
+    # right_mask: jnp.ndarray,
+    # left_second_mask: jnp.ndarray,
+    # right_second_mask: jnp.ndarray,
     max_joint_limit: float,
 ) -> CPGState:
     """
     Vectorized gait modulation that strictly mirrors the 1-to-1
     coupling logic of the loop-based version.
     """
+    leading_mask, left_mask, right_mask, left_second_mask, right_second_mask = masks
+
     num_arms = leading_mask.shape[0]
     all_arms = jnp.arange(num_arms)
 
