@@ -133,12 +133,12 @@ class IndependentQLearning:
         return loss
 
     def train(self, **kwargs):
-        # wandb.init(
-        #     entity="comyn-bram-universiteit-gent",
-        #     project="brittle-star-locomotion",
-        #     config=kwargs,
-        #     name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
-        # )
+        wandb.init(
+            entity="comyn-bram-universiteit-gent",
+            project="brittle-star-locomotion",
+            config=kwargs,
+            name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
+        )
         
         num_episodes       = config.rl.num_episodes
         epsilon            = config.rl.epsilon
@@ -153,7 +153,7 @@ class IndependentQLearning:
         for episode in range(num_episodes):
             self.env.reset()
             done = False
-            # episode_reward = jnp.zeros((config.rl.amount_environments,))
+            episode_reward = jnp.zeros((config.rl.amount_environments,))
 
             epsilon = self.epsilon_update(epsilon, epsilon_min, epsilon_decay)
 
@@ -161,9 +161,8 @@ class IndependentQLearning:
                 observations = self.env.get_observations() # (envs, obs_size)
                 actions = self.epsilon_greedy_actions(observations, epsilon)
 
-                print(actions.shape)
                 _, reward, terminated, truncated = self.env.step(actions)
-                # episode_reward += float(reward)
+                episode_reward += reward
 
                 done = jnp.logical_or(jnp.any(terminated), jnp.any(truncated))
                 next_observations = self.env.get_observations()
@@ -174,24 +173,24 @@ class IndependentQLearning:
                         self.replay_buffers[agent].add(
                             obs=observations[environment_index, agent],
                             act=actions[environment_index, agent],
-                            rew=reward,
+                            rew=reward[environment_index],
                             next_obs=next_observations[environment_index, agent],
-                            done=done,
+                            done=terminated[environment_index] | truncated[environment_index]
                         )
 
                     if self.replay_buffers[agent].get_stored_size() >= batch_size:
                         loss = self.train_step(agent, batch_size, discount)
-                        # wandb.log({ f"agent_{agent}/loss": float(loss) }, step=total_steps)
+                        wandb.log({ f"agent_{agent}/loss": float(loss) }, step=total_steps)
 
                     total_steps += 1
                     if total_steps % target_update_freq == 0:
                         self._sync_target_network()
 
             # --- Episode Logging ---
-            # logger.info(f"Episode {episode + 1:3d}/{num_episodes} | Reward: {episode_reward:8.2f} | Epsilon: {epsilon:.3f}")
-            # wandb.log({
-            #     "episode/reward": episode_reward,
-            #     "episode/epsilon": epsilon,
-            #     "episode/episode_number": episode,
-            #     "episode/success": float(jnp.any(terminated))
-            # }, step=total_steps)
+            logger.info(f"Episode {episode + 1:3d}/{num_episodes} | Reward: {jnp.average(episode_reward):8.2f} | Epsilon: {epsilon:.3f}")
+            wandb.log({
+                "episode/reward": jnp.average(episode_reward),
+                "episode/epsilon": epsilon,
+                "episode/episode_number": episode,
+                "episode/success": float(jnp.any(terminated))
+            }, step=total_steps)

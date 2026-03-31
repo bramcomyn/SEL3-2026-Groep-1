@@ -59,7 +59,8 @@ class Environment:
 
         self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
         self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
-        self.cpg_state = self.cpg.reset(reset_key)
+        cpg_keys = jax.random.split(reset_key, config.rl.amount_environments)
+        self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)
         self.env_state = self.environment.reset(reset_key)
 
         self.derived_states = ["arm_identification", "angle_to_target"]
@@ -116,15 +117,11 @@ class Environment:
         self, 
         env_state, 
         cpg_state, 
-        masks: jnp.ndarray, # shape (envs x 5 x 5)
+        masks: jnp.ndarray, # shape (5 x 5)
         max_limit
     ):  
         """Pure JAX function to run simulation substeps."""
-        print(masks.shape)
-
-        modulate_rowing_gait_vmap = jax.vmap(modulate_rowing_gait, in_axes=(None, 0))
-
-        cpg_state = modulate_rowing_gait_vmap(cpg_state, masks, max_joint_limit=max_limit)
+        cpg_state = modulate_rowing_gait(cpg_state, masks, max_joint_limit=max_limit)
 
         def _cpg_loop_body(_state, _):
             _next_state = self.cpg.step(_state)
@@ -134,7 +131,7 @@ class Environment:
         cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=config.env.num_substeps_per_modulation)
 
         def _env_loop_body(_state, _action):
-            _next_env_state = self.jit_env_step(_state, _action)
+            _next_env_state = self.environment.step(_state, _action)
             return _next_env_state, (_next_env_state, _next_env_state.reward)
 
         final_env_state, (trajectory, rewards) = jax.lax.scan(_env_loop_body, env_state, action_trajectory)
@@ -218,15 +215,13 @@ class Environment:
         """
         prev_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
 
-        # __step_compiled_vmap = jax.vmap(self.__step_compiled, in_axes=(None, None, 0, None)) # TODO vmap
-
         masks = jnp.array([
             [actions[env_index] == i for i in range(config.env.num_arms)]
             for env_index in range(config.rl.amount_environments)
         ])
 
-        print(f"masks shape: {masks.shape}")
-        new_env_state, new_cpg_state, _, summed_reward = self.__step_compiled(
+        vmapped_step = jax.vmap(self.__step_compiled, in_axes=(0, 0, 0, None))
+        new_env_state, new_cpg_state, _, summed_reward = vmapped_step(
             self.env_state,
             self.cpg_state,
             masks,
@@ -238,8 +233,8 @@ class Environment:
 
         current_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
 
-        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:, :2], axis=-1) # TODO (envs,)
-        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:, :2], axis=-1) # TODO (envs,)
+        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:2], axis=-1) # TODO (envs,)
+        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:2], axis=-1) # TODO (envs,)
 
         reward = (previous_distance - current_distance) # TODO (envs,)
 
@@ -249,95 +244,58 @@ class Environment:
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):
-        """Reset the environment
-
-        :return: The new state.
-        :rtype: BaseEnvState
-        """
+        """Reset both the MJX environment and the CPG controllers."""
+        # self.sub_rngs should be shape (num_envs, 2)
         self.env_state = self.jit_env_reset(jnp.array(self.sub_rngs))
 
-        print(type(self.env_state))
-
-        self.env_state.mj_model.body("target").pos = np.array([1, 1, 0.05])
+        # Generate keys for each environment's CPG
+        self.rng, cpg_reset_key = jax.random.split(self.rng)
+        cpg_keys = jax.random.split(cpg_reset_key, config.rl.amount_environments)
+        self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)
 
         return self.env_state
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:
-        """Get the observations from the environment per agent.
-
-        For each agent, this returns the selected observations from `observations` in the constructor.
-        Individual observations are concatenated into a single array.
-        Observations are then stacked along a new dimension.
-
-        :return: The selected observations per agent with shape (num_agents, observation_space_shape).
-        :rtype: jnp.ndarray
-        """
-        observations = jnp.zeros((config.rl.amount_environments, config.env.num_arms, self.observation_space_size))
-
-        begin = 0
-        end = 0
-        size = 0
-        observation = None
+        obs_list = []
+        num_envs = config.rl.amount_environments
+        num_arms = config.env.num_arms
 
         for obs in self.observations:
             if obs not in self.derived_states:
                 if obs in self.state_space["central"]:
-                    size = self.state_space["central"][obs]
-                    # observation = jnp.vstack((self.env_state.observations[obs],) * config.env.num_arms)
-
-                    # self.env_state.observations[obs]  (n_envs, 3)
-                    observation = jnp.broadcast_to(self.env_state.observations[obs][:, None, :], (config.rl.amount_environments, config.env.num_arms, size)) # type: ignore
+                    # Shape: (envs, central_dim) -> (envs, 1, central_dim) -> (envs, arms, central_dim)
+                    data = self.env_state.observations[obs][:, jnp.newaxis, :] # type: ignore
+                    obs_list.append(jnp.broadcast_to(data, (num_envs, num_arms, data.shape[-1])))
 
                 elif obs in self.state_space["individual_per_segment"]:
-                    size = config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
-                    # observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
-                    observation = self.env_state.observations[obs].reshape((config.rl.amount_environments, config.env.num_arms, size)) # TODO env.num_segments?
+                    # Shape: (envs, arms, segments, dim) -> (envs, arms, segments * dim)
+                    data = self.env_state.observations[obs]
+                    obs_list.append(data.reshape(num_envs, num_arms, -1))
 
                 elif obs in self.state_space["individual_per_arm"]:
-                    size = self.state_space["individual_per_arm"][obs]
-                    # observation = self.env_state.observations[obs].reshape((config.env.num_arms, size))
-                    observation = self.env_state.observations[obs].reshape((config.rl.amount_environments, config.env.num_arms, size))
+                    # Shape: (envs, arms, dim)
+                    obs_list.append(self.env_state.observations[obs].reshape(num_envs, num_arms, -1))
 
             else:
                 if obs == "angle_to_target":
-                    size = 1
+                    # Vectorized calculation for all envs and arms at once
+                    arm_pos = self.env_state.observations["joint_position"].reshape(num_envs, num_arms, -1)[:, :, :2]
+                    disk_pos = self.env_state.observations["disk_position"][:, jnp.newaxis, :2] # type: ignore
+                    target_pos = self.env_state.mj_model.body("target").pos[:2]
 
-                    num_envs = config.rl.amount_environments
+                    to_arm = arm_pos - disk_pos
+                    to_target = target_pos - disk_pos
+                    
+                    # Unit vectors
+                    to_arm_u = to_arm / (jnp.linalg.norm(to_arm, axis=-1, keepdims=True) + 1e-8)
+                    to_target_u = to_target / (jnp.linalg.norm(to_target, axis=-1, keepdims=True) + 1e-8)
+                    
+                    # Cosine similarity (dot product of unit vectors)
+                    angle_obs = jnp.sum(to_arm_u * to_target_u, axis=-1, keepdims=True)
+                    obs_list.append(angle_obs)
 
-                    arm_positions = self.env_state.observations["joint_position"].reshape(
-                        num_envs,
-                        config.env.num_arms, 
-                        config.env.num_segments_per_arm * 2
-                    )[:, :, :2]
-
-                    copied_disk_position = jnp.broadcast_to(self.env_state.observations["disk_position"][:, None, :2], (config.rl.amount_environments, config.env.num_arms, 2)) # type: ignore
-    
-                    to_arm_vec2 = copied_disk_position - arm_positions  # type: ignore
-
-                    to_arm_vec2_unit = to_arm_vec2 / (jnp.linalg.norm(to_arm_vec2, axis=-1, keepdims=True) + 1e-8)
-
-                    to_target_vec2_unit = jnp.broadcast_to(self.env_state.observations["unit_xy_direction_to_target"][:, None, :], (config.rl.amount_environments, config.env.num_arms, 2)) # type: ignore
-
-                    # Row-wise dot products
-                    observation = jnp.sum(
-                        to_arm_vec2_unit * to_target_vec2_unit,  # type: ignore
-                        axis=-1,
-                        keepdims=True,
-                    )
-
-                # elif obs == "arm_identification":
-                #     size = config.env.num_arms
-                #     observation = jnp.eye(config.env.num_arms)
-
-            print(obs)
-            print(f'{observations.shape} - {observation.shape}')
-
-            end = begin + size
-            observations = observations.at[:, :, begin:end].set(observation)
-            begin = end
-
-        return observations
+        return jnp.concatenate(obs_list, axis=-1)
 
     def get_observation_size(self) -> int:
         """Get the size of the observation space.
