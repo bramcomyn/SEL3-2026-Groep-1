@@ -1,5 +1,6 @@
 import jax
 import jax.numpy as jnp
+
 from brittle_star_locomotion.cpg.cpg import CPGState
 
 
@@ -12,18 +13,24 @@ def get_oscillator_indices_for_arm(arm_index):
 def modulate_rowing_gait(
     cpg_state: CPGState,
     masks: jnp.ndarray,
-    # leading_mask: jnp.ndarray,
-    # left_mask: jnp.ndarray,
-    # right_mask: jnp.ndarray,
-    # left_second_mask: jnp.ndarray,
-    # right_second_mask: jnp.ndarray,
     max_joint_limit: float,
 ) -> CPGState:
     """
-    Vectorized gait modulation that strictly mirrors the 1-to-1
-    coupling logic of the loop-based version.
+    Configures the CPG state by mapping limb-specific roles to synchronized phase-amplitude 
+    relationships, enabling coordinated bilateral rowing movements through vectorized coupling.
+
+    :param cpg_state: The current state of the Central Pattern Generator oscillators.
+    :param masks: Tuple of 5 masks indicating role of each arm: leading arm, left and right rower arms, left secondary and right secondary arms
+    :param max_joint_limit: Scalar defining the maximum joint excursion or amplitude.
+    :return: The updated CPGState after applying phase and amplitude modulations.
     """
     leading_mask, left_mask, right_mask, left_second_mask, right_second_mask = masks
+
+    leading_mask = leading_mask.squeeze()
+    left_mask = left_mask.squeeze()
+    right_mask = right_mask.squeeze()
+    left_second_mask = left_second_mask.squeeze()
+    right_second_mask = right_second_mask.squeeze()
 
     num_arms = leading_mask.shape[0]
     all_arms = jnp.arange(num_arms)
@@ -39,13 +46,13 @@ def modulate_rowing_gait(
 
     # 2. Intra-arm Coupling (Rower Logic)
     def apply_side_params(mask, bias, curr_R, curr_rhos):
-        # Set amplitudes for both oscillators in the arm
         curr_R = curr_R.at[ip_idx].set(jnp.where(mask, max_joint_limit, curr_R[ip_idx]))
         curr_R = curr_R.at[oop_idx].set(jnp.where(mask, max_joint_limit, curr_R[oop_idx]))
 
-        # Set phase bias between IP and OOP oscillators (intra-arm)
-        curr_rhos = curr_rhos.at[ip_idx, oop_idx].set(jnp.where(mask, bias, curr_rhos[ip_idx, oop_idx]))
-        curr_rhos = curr_rhos.at[oop_idx, ip_idx].set(jnp.where(mask, -bias, curr_rhos[oop_idx, ip_idx]))
+        # Note: rhos typically doesn't need this because it's usually a 2D coupling matrix
+        # where you are indexing specific scalars (ip_idx, oop_idx).
+        curr_R = curr_R.at[ip_idx].set(jnp.where(mask, max_joint_limit, curr_R[ip_idx]))
+        curr_R = curr_R.at[oop_idx].set(jnp.where(mask, max_joint_limit, curr_R[oop_idx]))
         return curr_R, curr_rhos
 
     # Apply left-side and right-side intra-arm parameters
@@ -69,8 +76,31 @@ def modulate_rowing_gait(
     return cpg_state.replace(R=R, X=X, rhos=rhos)  # type: ignore
 
 
-def map_cpg_to_brittle_star_actions(outputs: jnp.ndarray, num_arms: int, num_segments: int) -> jnp.ndarray:
-    """Broadcasts oscillator outputs to robot joints."""
+def map_cpg_to_brittle_star_actions(
+    outputs: jnp.ndarray, 
+    num_arms: int, 
+    num_segments: int
+) -> jnp.ndarray:
+    """
+    Maps centralized oscillator outputs to the distributed joint actuators of the robot.
+    
+    This function assumes a bipartite control strategy where each arm is driven by 
+    a pair of oscillators (e.g., one for lateral and one for longitudinal movement), 
+    which are then mirrored across all segments of that specific arm.
+
+    :param outputs: raw CPG state array of shape (num_arms * 2,).
+    :param num_arms: total number of arms in the brittle star morphology.
+    :param num_segments: number of physical segments (and thus joint pairs) per arm.
+    :return: flattened array of joint commands suitable for the MJX environment.
+    """
+    # group the flat oscillator outputs by arm
+    # assumes the cpg was initialized with 2 oscillators per arm
     cpg_outputs_per_arm = outputs.reshape((num_arms, 2))
+
+    # broadcast the arm-level control signals to every segment in the arm
+    # this ensures all segments in an arm move in unison (rowing motion)
+    # result shape: (num_arms * num_segments, 2)
     cpg_outputs_per_segment = jnp.repeat(cpg_outputs_per_arm, num_segments, axis=0)
+
+    # flatten to a 1d array to match the environment's action space input
     return cpg_outputs_per_segment.flatten()

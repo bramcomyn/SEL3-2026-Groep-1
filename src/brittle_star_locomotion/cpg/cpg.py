@@ -3,10 +3,11 @@ from functools import partial
 import chex
 import jax
 import jax.numpy as jnp
-from brittle_star_locomotion.cpg.equations import CPGEquations
-from brittle_star_locomotion.cpg.solver import Solver
 from flax import struct
 from jax import jit
+
+from brittle_star_locomotion.cpg.equations import CPGEquations
+from brittle_star_locomotion.cpg.solver import Solver
 
 
 @struct.dataclass
@@ -122,16 +123,43 @@ class CPG:
 
 
 def create_cpg_structure(num_osc: int) -> jnp.ndarray:
-    """Creates the coupling weight matrix for the CPG network."""
+    """
+    Constructs a symmetric coupling weight matrix for a Central Pattern Generator network.
+    
+    The network structure couples oscillators in pairs (In-Phase and Out-of-Phase) 
+    and links them in a ring topology. The resulting matrix is scaled to ensure
+    strong entrainment between units.
+
+    :param num_osc: total number of oscillators in the network (should be even).
+    :return: a square weight matrix of shape (num_osc, num_osc).
+    """
     weights = jnp.zeros((num_osc, num_osc))
-    ip_oscillators = jnp.arange(0, num_osc, 2)
-    oop_oscillators = jnp.arange(1, num_osc, 2)
 
-    weights = weights.at[ip_oscillators, oop_oscillators].set(1.0)
-    next_ip = jnp.roll(ip_oscillators, shift=-1)
-    weights = weights.at[ip_oscillators, next_ip].set(1.0)
-    next_oop = jnp.roll(oop_oscillators, shift=-1)
-    weights = weights.at[oop_oscillators, next_oop].set(1.0)
+    # identify indices for in-phase (even) and out-of-phase (odd) units
+    # note: if num_osc is odd, these arrays will have different lengths, causing a crash
+    ip_idx = jnp.arange(0, num_osc, 2)
+    oop_idx = jnp.arange(1, num_osc, 2)
 
+    # determine the minimum common length to prevent broadcasting errors
+    min_len = jnp.minimum(len(ip_idx), len(oop_idx))
+    ip_idx = ip_idx[:min_len]
+    oop_idx = oop_idx[:min_len]
+
+    # couple ip and oop oscillators within the same segment
+    # this creates the primary functional unit of the cpg
+    weights = weights.at[ip_idx, oop_idx].set(1.0)
+
+    # establish a ring topology by coupling each ip unit to the next ip unit
+    # jnp.roll ensures the last unit wraps back to the first
+    next_ip = jnp.roll(ip_idx, shift=-1)
+    weights = weights.at[ip_idx, next_ip].set(1.0)
+
+    # repeat the ring topology for the oop units
+    next_oop = jnp.roll(oop_idx, shift=-1)
+    weights = weights.at[oop_idx, next_oop].set(1.0)
+
+    # enforce symmetry and apply a global coupling strength multiplier
+    # symmetry ensures that if oscillator a affects b, b affects a equally
     weights = 5.0 * jnp.maximum(weights, weights.T)
+    
     return weights

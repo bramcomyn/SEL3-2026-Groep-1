@@ -1,4 +1,5 @@
 import pytest
+
 from brittle_star_locomotion import core
 
 # Short duration to ensure tests run quickly while still triggering JIT

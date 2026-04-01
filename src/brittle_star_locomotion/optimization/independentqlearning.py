@@ -1,18 +1,17 @@
+import logging
+import time
+
 import jax
 import jax.numpy as jnp
 import optax
-import logging
-import wandb
-import time
-
-from flax import nnx
 from cpprb import ReplayBuffer
+from flax import nnx
 
-from brittle_star_locomotion.environment import Environment
-from brittle_star_locomotion.neural.qnetwork import QNetwork
-from brittle_star_locomotion.neural.checkpoint import save_checkpoint
-
+import wandb
 from brittle_star_locomotion.config.config_loader import load_config
+from brittle_star_locomotion.environment import Environment
+from brittle_star_locomotion.neural.checkpoint import save_checkpoint
+from brittle_star_locomotion.neural.qnetwork import QNetwork
 
 logger = logging.getLogger(__name__)
 config = load_config("configs/base_config.yaml")
@@ -28,6 +27,7 @@ class IndependentQLearning:
         # self.rngs = nnx.Rngs(0)
         self.key = jax.random.PRNGKey(0)
 
+        # TODO: DRY
         # Primary Q-Network (The one we update via gradients)
         self.value_networks = [
             QNetwork(
@@ -161,7 +161,7 @@ class IndependentQLearning:
                 observations = self.env.get_observations() # (envs, obs_size)
                 actions = self.epsilon_greedy_actions(observations, epsilon)
 
-                _, reward, terminated, truncated = self.env.step(actions)
+                _, reward, terminated, truncated, _ = self.env.step(actions)
                 episode_reward += reward
 
                 done = jnp.logical_or(jnp.any(terminated), jnp.any(truncated))

@@ -1,34 +1,37 @@
-import jax
-import logging
 import functools
+import logging
+from pathlib import Path
 
+import jax
 import jax.numpy as jnp
 import mediapy as media
 import numpy as np
-
-from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
-from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
-from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
-from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
-
-from brittle_star_locomotion.cpg.solver import RK4Solver
-from brittle_star_locomotion.cpg.cpg import create_cpg_structure, CPG
-from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
+from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
+from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
+from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
+from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
+from tqdm import tqdm
 
 from brittle_star_locomotion.config.config_loader import load_config
-
-from pathlib import Path
-from tqdm import tqdm
+from brittle_star_locomotion.cpg.cpg import CPG, create_cpg_structure
+from brittle_star_locomotion.cpg.solver import RK4Solver
+from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
 
 logger = logging.getLogger(__name__)
 config = load_config("configs/base_config.yaml")
 
 
 class Environment:
-    """representation of the brittle star directed locomotion environment"""
+    """
+    Representation of the Brittle Star directed locomotion environment.
+    
+    This class integrates a Central Pattern Generator (CPG) with a MuJoCo-based 
+    simulation (MJX) to coordinate multi-arm locomotion.
+    """
 
-    def __init__(self, observations: None | list[str] = None):
+    def __init__(self, amount_environments: int, observations: None | list[str] = None):
+        self.amount_environments = amount_environments # not pulling from config, because can be changed in __main__.py
         self.morphology_specification = default_brittle_star_morphology_specification(
             num_arms=config.env.num_arms, num_segments_per_arm=config.env.num_segments_per_arm, use_p_control=True, use_torque_control=False
         )
@@ -50,16 +53,16 @@ class Environment:
 
         self.__create_environment()
 
+        self.num_arms = config.env.num_arms
+        self.num_segments = config.env.num_segments_per_arm
+
         self.rng = jax.random.PRNGKey(seed=0)
 
-        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, config.rl.amount_environments + 2))
-        # self.env_state = self.jit_env_reset(self.sub_rngs)
-
-        # self.rng, reset_key = jax.random.split(self.rng)
+        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.amount_environments + 2))
 
         self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
         self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
-        cpg_keys = jax.random.split(reset_key, config.rl.amount_environments)
+        cpg_keys = jax.random.split(reset_key, self.amount_environments)
         self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)
         self.env_state = self.environment.reset(reset_key)
 
@@ -82,35 +85,28 @@ class Environment:
             },
             "individual_per_arm": {
                 "segment_contact": 3,
-                # Derived
                 "angle_to_target": 1,
-                "arm_identification": config.env.num_arms,
+                "arm_identification": self.num_arms,
             },
         }
 
+        valid_keys = (
+            list(self.state_space["central"].keys()) +
+            list(self.state_space["individual_per_segment"].keys()) +
+            list(self.state_space["individual_per_arm"].keys())
+        )
+
         if observations is None:
-            self.observations = (
-                list(self.state_space["central"].keys())
-                + list(self.state_space["individual_per_segment"].keys())
-                + list(self.state_space["individual_per_arm"].keys())
-                + list(self.state_space["derived"].keys())
-            )
+            self.observations = valid_keys
         else:
             for obs in observations:
-                obs_exists = (
-                    obs in self.state_space["central"]
-                    or obs in self.state_space["individual_per_segment"]
-                    or obs in self.state_space["individual_per_arm"]
-                    or obs in self.state_space["derived"]
-                )
-                assert obs_exists, f"Observation {obs} not in state space {self.state_space}"
+                assert obs in valid_keys, f"Observation {obs} not in state space."
             self.observations = observations
 
         self.observation_space_size = self.get_observation_size()
 
         self.jit_env_step = jax.jit(jax.vmap(self.environment.step)) # TODO vmap
         self.jit_env_reset = jax.jit(jax.vmap(self.environment.reset)) # TODO vmap
-        # self.vmap_modulate_rowing_gait = jax.vmap(modulate_rowing_gait) # TODO vmap
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def __step_compiled(
@@ -120,7 +116,16 @@ class Environment:
         masks: jnp.ndarray, # shape (5 x 5)
         max_limit
     ):  
-        """Pure JAX function to run simulation substeps."""
+        """
+        Processes one environment's worth of physics and control.
+        
+        :param env_state: Current MJX environment state.
+        :param cpg_state: Current CPG oscillator states.
+        :param masks: Tuple of boolean masks for gait modulation.
+        :param max_limit: Maximum joint excursion limit.
+
+        :return: Tuple of (final_env_state, final_cpg_state, trajectory, summed_reward).
+        """
         cpg_state = modulate_rowing_gait(cpg_state, masks, max_joint_limit=max_limit)
 
         def _cpg_loop_body(_state, _):
@@ -137,17 +142,6 @@ class Environment:
         final_env_state, (trajectory, rewards) = jax.lax.scan(_env_loop_body, env_state, action_trajectory)
 
         return final_env_state, cpg_state, trajectory, jnp.sum(rewards)
-
-    def run_iteration(self, action_values: jnp.ndarray, max_limit: float = 1.0):
-        """Python wrapper to prepare masks and update instance state."""
-        masks = jnp.array([action_values == i for i in range(5)])
-
-        new_env_state, new_cpg_state, trajectory, _ = self.__step_compiled(self.env_state, self.cpg_state, masks, max_limit)
-
-        self.env_state = new_env_state
-        self.cpg_state = new_cpg_state
-
-        return trajectory
 
     def __create_environment(self):
         """create an environment configuration based on the self.morphology_specification, self.arena_configuration and self.environment_configuration"""
@@ -173,31 +167,36 @@ class Environment:
         return processed_frame
 
     def render_video(self, trajectory, output_path: str = "out/test-video.mp4"):
-        """processes the trajectory into a video file using the environment's render logic."""
-        logger.info(f"Rendering results to {output_path}")
+        """Processes trajectory for ALL environments and stacks them vertically."""
+        logger.info(f"Rendering all environments to {output_path}")
         frames = []
 
-        actual_steps = jax.tree_util.tree_leaves(trajectory)[0].shape[0]
-        render_indices = range(0, actual_steps, config.env.render_every)
+        # dimensions: (n_envs, steps, ...)
+        first_leaf = jax.tree_util.tree_leaves(trajectory)[0]
+        total_steps = first_leaf.shape[1]
+        num_steps = first_leaf.shape[0]
+        render_indices = range(0, total_steps, config.env.render_every)
 
         for i in tqdm(render_indices, desc="Generating Video Frames"):
-            step_state = jax.tree_util.tree_map(lambda x: x[i], trajectory)
+            env_frames_for_this_step = []
+            
+            for e in range(num_steps):
+                # extract state for step 'e' and time 'i'
+                step_state = jax.tree_util.tree_map(lambda x: x[e, i], trajectory)
+                raw_frames = self.environment.render(step_state)
+                
+                if raw_frames is not None:
+                    processed_list = [np.asarray(f) for f in raw_frames]
+                    combined_camera_view = self.__post_render(processed_list)
+                    env_frames_for_this_step.append(combined_camera_view)
 
-            raw_frames = self.environment.render(step_state)
-            if raw_frames is not None:
-                processed_list = [np.asarray(f) for f in raw_frames]
-
-                combined_frame = self.__post_render(processed_list)
-
-                if combined_frame is not None:
-                    frames.append(combined_frame)
+            frames.extend(env_frames_for_this_step)
 
         if frames:
             output_file = Path(output_path)
             output_file.parent.mkdir(parents=True, exist_ok=True)
-
             media.write_video(str(output_file), np.array(frames), fps=20)
-            logger.info(f"Successfully saved video ({len(frames)} frames) to {output_path}")
+            logger.info(f"Saved multi-env video ({len(frames)} frames) to {output_path}")
 
     def show_video(self, video_path: str):
         """display the video in a notebook environment."""
@@ -208,20 +207,17 @@ class Environment:
         """Step in the environment.
 
         :param actions: Actions to take in the environment, one float for each actuator.
-        :type jnp.ndarray: actions
+        :type jnp.ndarray: actions (n_envs, n_agents)
 
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
         prev_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
 
-        masks = jnp.array([
-            [actions[env_index] == i for i in range(config.env.num_arms)]
-            for env_index in range(config.rl.amount_environments)
-        ])
+        masks = actions[:, None, :] == jnp.arange(5)[None, :, None]
 
         vmapped_step = jax.vmap(self.__step_compiled, in_axes=(0, 0, 0, None))
-        new_env_state, new_cpg_state, _, summed_reward = vmapped_step(
+        new_env_state, new_cpg_state, trajectory, _ = vmapped_step(
             self.env_state,
             self.cpg_state,
             masks,
@@ -241,7 +237,7 @@ class Environment:
         if jnp.any(self.env_state.terminated):
             reward += 10.0
 
-        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
+        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
 
     def reset(self):
         """Reset both the MJX environment and the CPG controllers."""
@@ -250,15 +246,18 @@ class Environment:
 
         # Generate keys for each environment's CPG
         self.rng, cpg_reset_key = jax.random.split(self.rng)
-        cpg_keys = jax.random.split(cpg_reset_key, config.rl.amount_environments)
+        cpg_keys = jax.random.split(cpg_reset_key, self.amount_environments)
         self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)
 
         return self.env_state
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:
+        # oversight: every arm needs to know where it is and where the target is.
+        # broadcasts central data (like disk velocity) to all arms.
+        # resulting shape: (num_envs, num_arms, total_obs_per_arm)
         obs_list = []
-        num_envs = config.rl.amount_environments
+        num_envs = self.amount_environments
         num_arms = config.env.num_arms
 
         for obs in self.observations:
