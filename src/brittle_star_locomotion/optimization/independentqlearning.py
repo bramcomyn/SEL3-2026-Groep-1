@@ -8,17 +8,15 @@ from cpprb import ReplayBuffer
 from flax import nnx
 
 import wandb
-from brittle_star_locomotion.config.config_loader import load_config
 from brittle_star_locomotion.environment import Environment
 from brittle_star_locomotion.neural.checkpoint import save_checkpoint
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 
 logger = logging.getLogger(__name__)
-config = load_config("configs/base_config.yaml")
 
 class IndependentQLearning:
     def __init__(self, optimizer: optax.GradientTransformationExtraArgs, n_agents: int, env: Environment, **kwargs):
-        self.replay_buffer_size = config.rl.replay_buffer_size
+        self.replay_buffer_size = env.config.rl.replay_buffer_size
         self.n_agents = n_agents
         self.env = env
         self.observation_size = self.env.get_observation_size()
@@ -32,10 +30,10 @@ class IndependentQLearning:
         self.value_networks = [
             QNetwork(
                 input_size=self.observation_size, 
-                output_size=config.rl.action_space_dim, 
+                output_size=self.env.config.rl.action_space_dim, 
                 rngs=nnx.Rngs(i),
-                hidden_size=config.rl.hidden_layer_size,
-                amount_of_hidden_layers=config.rl.amount_of_hidden_layers
+                hidden_size=self.env.config.rl.hidden_layer_size,
+                amount_of_hidden_layers=self.env.config.rl.amount_of_hidden_layers
             ) 
             for i in range(n_agents)
         ]
@@ -44,10 +42,10 @@ class IndependentQLearning:
         self.target_networks = [
             QNetwork(
                 input_size=self.observation_size, 
-                output_size=config.rl.action_space_dim, 
+                output_size=self.env.config.rl.action_space_dim, 
                 rngs=nnx.Rngs(i + n_agents),
-                hidden_size=config.rl.hidden_layer_size,
-                amount_of_hidden_layers=config.rl.amount_of_hidden_layers
+                hidden_size=self.env.config.rl.hidden_layer_size,
+                amount_of_hidden_layers=self.env.config.rl.amount_of_hidden_layers
             ) 
             for i in range(n_agents)
         ]
@@ -92,11 +90,11 @@ class IndependentQLearning:
 
             subkey, sk1, sk2 = jax.random.split(subkey, 3) # TODO
 
-            random_values = jax.random.uniform(sk1, (config.rl.amount_environments))
+            random_values = jax.random.uniform(sk1, (self.env.config.rl.amount_environments))
 
             actions_for_agent = jnp.where(
                 random_values < epsilon,
-                jax.random.randint(sk2, shape=(config.rl.amount_environments,), minval=0, maxval=config.rl.action_space_dim),
+                jax.random.randint(sk2, shape=(self.env.config.rl.amount_environments,), minval=0, maxval=self.env.config.rl.action_space_dim),
                 jnp.argmax(self.value_networks[agent](observations[:, agent]), axis=1)
             )
 
@@ -140,20 +138,20 @@ class IndependentQLearning:
             name=f"IQL-{self.n_agents}-agents-{time.strftime("%Y%m%d-%H%M%S")}"
         )
         
-        num_episodes       = config.rl.num_episodes
-        epsilon            = config.rl.epsilon
-        epsilon_min        = config.rl.epsilon_min
-        epsilon_decay      = config.rl.epsilon_decay # Slowed decay for better exploration
-        discount           = config.rl.discount
-        batch_size         = config.rl.batch_size
-        target_update_freq = config.rl.target_update_freq # Sync every 100 steps
+        num_episodes       = self.env.config.rl.num_episodes
+        epsilon            = self.env.config.rl.epsilon
+        epsilon_min        = self.env.config.rl.epsilon_min
+        epsilon_decay      = self.env.config.rl.epsilon_decay # Slowed decay for better exploration
+        discount           = self.env.config.rl.discount
+        batch_size         = self.env.config.rl.batch_size
+        target_update_freq = self.env.config.rl.target_update_freq # Sync every 100 steps
         
         total_steps = 0
 
         for episode in range(num_episodes):
             self.env.reset()
             done = False
-            episode_reward = jnp.zeros((config.rl.amount_environments,))
+            episode_reward = jnp.zeros((self.env.config.rl.amount_environments,))
 
             epsilon = self.epsilon_update(epsilon, epsilon_min, epsilon_decay)
 
@@ -169,7 +167,7 @@ class IndependentQLearning:
 
                 # Experience replay and learning for each agent independently
                 for agent in range(self.n_agents):
-                    for environment_index in range(config.rl.amount_environments):
+                    for environment_index in range(self.env.config.rl.amount_environments):
                         self.replay_buffers[agent].add(
                             obs=observations[environment_index, agent],
                             act=actions[environment_index, agent],
