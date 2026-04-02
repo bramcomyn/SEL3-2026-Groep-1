@@ -36,7 +36,6 @@ class QNetwork(nnx.Module):
 
         # output layer producing raw Q-values (logits)
         layers.append(nnx.Linear(hidden_size, output_size, rngs=rngs))
-        # TODO: no final activation
 
         # self.mlp is registered as an nnx.List to track sub-module state
         self.mlp = nnx.List(layers)

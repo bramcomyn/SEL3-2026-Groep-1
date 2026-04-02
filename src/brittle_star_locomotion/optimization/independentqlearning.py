@@ -24,10 +24,8 @@ class IndependentQLearning:
         self.observation_size = self.env.get_observation_size()
 
         # Initialize Random Number Generators for NNX
-        # self.rngs = nnx.Rngs(0)
         self.key = jax.random.PRNGKey(0)
 
-        # TODO: DRY
         # Primary Q-Network (The one we update via gradients)
         self.value_networks = [
             QNetwork(
@@ -83,15 +81,11 @@ class IndependentQLearning:
         return max(epsilon_min, epsilon * epsilon_decay)
 
     def epsilon_greedy_actions(self, observations, epsilon):
-        # actions = jnp.zeros((config.rl.amount_environments, self.n_agents), dtype=jnp.int32)
         actions = []
 
-        self.key, subkey = jax.random.split(self.key) # TODO
-
+        self.key, subkey = jax.random.split(self.key)
         for agent in range(self.n_agents):
-
-            subkey, sk1, sk2 = jax.random.split(subkey, 3) # TODO
-
+            subkey, sk1, sk2 = jax.random.split(subkey, 3)
             random_values = jax.random.uniform(sk1, (config.rl.amount_environments))
 
             actions_for_agent = jnp.where(
@@ -99,7 +93,6 @@ class IndependentQLearning:
                 jax.random.randint(sk2, shape=(config.rl.amount_environments,), minval=0, maxval=config.rl.action_space_dim),
                 jnp.argmax(self.value_networks[agent](observations[:, agent]), axis=1)
             )
-
             actions.append(actions_for_agent)
 
         return jnp.stack(actions, axis=1)
@@ -143,10 +136,10 @@ class IndependentQLearning:
         num_episodes       = config.rl.num_episodes
         epsilon            = config.rl.epsilon
         epsilon_min        = config.rl.epsilon_min
-        epsilon_decay      = config.rl.epsilon_decay # Slowed decay for better exploration
+        epsilon_decay      = config.rl.epsilon_decay
         discount           = config.rl.discount
         batch_size         = config.rl.batch_size
-        target_update_freq = config.rl.target_update_freq # Sync every 100 steps
+        target_update_freq = config.rl.target_update_freq
         
         total_steps = 0
 

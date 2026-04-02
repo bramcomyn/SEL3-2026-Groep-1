@@ -105,8 +105,8 @@ class Environment:
 
         self.observation_space_size = self.get_observation_size()
 
-        self.jit_env_step = jax.jit(jax.vmap(self.environment.step)) # TODO vmap
-        self.jit_env_reset = jax.jit(jax.vmap(self.environment.reset)) # TODO vmap
+        self.jit_env_step = jax.jit(jax.vmap(self.environment.step))
+        self.jit_env_reset = jax.jit(jax.vmap(self.environment.reset))
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def __step_compiled(

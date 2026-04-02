@@ -79,8 +79,7 @@ def main():
 
         num_eval_cycles = 20
         for _ in tqdm(range(num_eval_cycles), desc="Evaluation cycles"):
-            # get_observations() returns (num_envs, num_arms, obs_dim)
-            observations = env.get_observations()
+            observations = env.get_observations()   # (num_envs, num_arms, obs_dim)
 
             # shape: (num_envs, num_arms)
             all_env_actions = []
