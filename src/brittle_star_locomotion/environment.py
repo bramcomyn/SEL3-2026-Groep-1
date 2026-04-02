@@ -216,7 +216,7 @@ class Environment:
         """
         previous_distance = self.env_state.observations["xy_distance_to_target"] # (envs, 1)
 
-        masks = actions[:, None, :] == jnp.arange(5)[None, :, None]
+        masks = actions[:, jnp.newaxis, :] == jnp.arange(5)[jnp.newaxis, :, jnp.newaxis]
 
         vmapped_step = jax.vmap(self.__step_compiled, in_axes=(0, 0, 0, None))
         new_env_state, new_cpg_state, trajectory, _ = vmapped_step(
@@ -232,7 +232,7 @@ class Environment:
         current_distance = self.env_state.observations["xy_distance_to_target"] # (envs, 1)
 
         reward = (previous_distance - current_distance)      # (envs, 1)
-        reward += 10.0 * self.env_state.terminated[:, None]  # (envs, 1)
+        reward += 10.0 * self.env_state.terminated[:, jnp.newaxis]  # (envs, 1)
 
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
 
@@ -282,7 +282,7 @@ class Environment:
                     to_arm = arm_pos - disk_position    # (envs, arms, 2)
                     to_arm = to_arm / jnp.linalg.norm(to_arm, axis=-1, keepdims=True)   # (envs, arms, 2)
 
-                    to_target = self.env_state.observations["unit_xy_direction_to_target"][:, None, :] # type: ignore    # (envs, 1, 2)
+                    to_target = self.env_state.observations["unit_xy_direction_to_target"][:, jnp.newaxis, :] # type: ignore    # (envs, 1, 2)
 
                     # Cosine similarity (dot product of unit vectors)
                     angle_obs = jnp.sum(to_arm * to_target, axis=-1, keepdims=True)     # (envs, arms, 1)
