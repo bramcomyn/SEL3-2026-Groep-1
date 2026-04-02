@@ -212,7 +212,7 @@ class Environment:
         :return: The new state, reward, termination status, truncation status, and info.
         :rtype: tuple
         """
-        prev_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
+        previous_distance = self.env_state.observations["xy_distance_to_target"] # (envs, 1)
 
         masks = actions[:, None, :] == jnp.arange(5)[None, :, None]
 
@@ -227,15 +227,18 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        current_position = self.env_state.observations["disk_position"][:, :2] # type: ignore # TODO (envs, 2)
+        current_distance = self.env_state.observations["xy_distance_to_target"] # (envs, 1)
 
-        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:2], axis=-1) # TODO (envs,)
-        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:2], axis=-1) # TODO (envs,)
+        print(f'previous_distance: {previous_distance.shape}')
+        print(f'current_distance: {current_distance.shape}')
 
-        reward = (previous_distance - current_distance) # TODO (envs,)
+        reward = (previous_distance - current_distance) # (envs, 1)
+
+        print(f'reward: {reward.shape}')
+        print(f'terminated: {self.env_state.terminated.shape}')
 
         if jnp.any(self.env_state.terminated):
-            reward += 10.0
+            reward += 10.0 # TODO: only +10 for the envs that terminated, not all of them. need to mask this.
 
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
 
@@ -263,35 +266,32 @@ class Environment:
         for obs in self.observations:
             if obs not in self.derived_states:
                 if obs in self.state_space["central"]:
-                    # Shape: (envs, central_dim) -> (envs, 1, central_dim) -> (envs, arms, central_dim)
-                    data = self.env_state.observations[obs][:, jnp.newaxis, :] # type: ignore
-                    obs_list.append(jnp.broadcast_to(data, (num_envs, num_arms, data.shape[-1])))
+                    data = self.env_state.observations[obs][:, jnp.newaxis, :] # type: ignore       # (envs, 1, central_dim) 
+                    obs_list.append(jnp.broadcast_to(data, (num_envs, num_arms, data.shape[-1])))   # (envs, arms, central_dim)
 
                 elif obs in self.state_space["individual_per_segment"]:
-                    # Shape: (envs, arms, segments, dim) -> (envs, arms, segments * dim)
-                    data = self.env_state.observations[obs]
-                    obs_list.append(data.reshape(num_envs, num_arms, -1))
+                    data = self.env_state.observations[obs]                 # (envs, arms * segments * dim)
+                    obs_list.append(data.reshape(num_envs, num_arms, -1))   # (envs, arms, segments * dim)
 
                 elif obs in self.state_space["individual_per_arm"]:
-                    # Shape: (envs, arms, dim)
-                    obs_list.append(self.env_state.observations[obs].reshape(num_envs, num_arms, -1))
+                    data = self.env_state.observations[obs]                 # (envs, arms * dim) 
+                    obs_list.append(data.reshape(num_envs, num_arms, -1))   # (envs, arms, dim)
 
             else:
                 if obs == "angle_to_target":
-                    # Vectorized calculation for all envs and arms at once
-                    arm_pos = self.env_state.observations["joint_position"].reshape(num_envs, num_arms, -1)[:, :, :2]
-                    disk_pos = self.env_state.observations["disk_position"][:, jnp.newaxis, :2] # type: ignore
-                    target_pos = self.env_state.mj_model.body("target").pos[:2]
+                    joint_position =  self.env_state.observations["joint_position"]      # (envs, arms * segments * dim)
+                    arm_pos = joint_position.reshape(num_envs, num_arms, -1)[:, :, :2]   # (envs, arms, 2)
 
-                    to_arm = arm_pos - disk_pos
-                    to_target = target_pos - disk_pos
-                    
-                    # Unit vectors
-                    to_arm_u = to_arm / (jnp.linalg.norm(to_arm, axis=-1, keepdims=True) + 1e-8)
-                    to_target_u = to_target / (jnp.linalg.norm(to_target, axis=-1, keepdims=True) + 1e-8)
-                    
+                    disk_position = self.env_state.observations["disk_position"]         # (envs, 3)
+                    disk_position = disk_position[:, jnp.newaxis, :2] # type: ignore     # (envs, 1, 2)
+
+                    to_arm = arm_pos - disk_position    # (envs, arms, 2)
+                    to_arm = to_arm / jnp.linalg.norm(to_arm, axis=-1, keepdims=True)   # (envs, arms, 2)
+
+                    to_target = self.env_state.observations["unit_xy_direction_to_target"][:, None, :] # type: ignore    # (envs, 1, 2)
+
                     # Cosine similarity (dot product of unit vectors)
-                    angle_obs = jnp.sum(to_arm_u * to_target_u, axis=-1, keepdims=True)
+                    angle_obs = jnp.sum(to_arm * to_target, axis=-1, keepdims=True)     # (envs, arms, 1)
                     obs_list.append(angle_obs)
 
         return jnp.concatenate(obs_list, axis=-1)
