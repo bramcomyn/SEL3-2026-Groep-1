@@ -34,7 +34,7 @@ class Environment:
         )
 
         self.arena_configuration = AquariumArenaConfiguration(
-            size=config.env.arena.size, sand_ground_color=config.env.arena.sand_ground_color, attach_target=config.env.arena.attach_target, wall_height=config.env.arena.wall_height, wall_thickness=config.env.arena.wall_thickness
+            size=(config.env.arena.size_x, config.env.arena.size_y), sand_ground_color=config.env.arena.sand_ground_color, attach_target=config.env.arena.attach_target, wall_height=config.env.arena.wall_height, wall_thickness=config.env.arena.wall_thickness
         )
 
         self.environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
@@ -45,17 +45,17 @@ class Environment:
             num_physics_steps_per_control_step=config.env.num_physics_steps_per_control_step,
             time_scale=config.env.time_scale,
             camera_ids=(0, 1),
-            render_size=config.env.render_size,
+            render_size=(config.env.render_size_x, config.env.render_size_y),
         )
 
         self.__create_environment()
 
         self.rng = jax.random.PRNGKey(seed=0)
-        self.rng, reset_key = jax.random.split(self.rng)
+        self.rng, self.reset_key = jax.random.split(self.rng)
         self.weights = create_cpg_structure(config.env.num_oscillators_per_segment * config.env.num_arms)
         self.cpg = CPG(self.weights, RK4Solver(), config.cpg.dt)
-        self.cpg_state = self.cpg.reset(reset_key)
-        self.env_state = self.environment.reset(reset_key)
+        self.cpg_state = self.cpg.reset(self.reset_key)
+        self.env_state = self.environment.reset(self.reset_key)
 
         self.derived_states = ["arm_identification", "angle_to_target"]
         self.state_space = {
@@ -215,13 +215,21 @@ class Environment:
 
         current_position = self.env_state.observations["disk_position"][:2] # type: ignore
 
-        move_direction = current_position - prev_position
-        move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
-        target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
+        # move_direction = current_position - prev_position
+        # move_direction_unit = move_direction / (jnp.linalg.norm(move_direction) + 1e-8)
+        # target_direction_unit = self.env_state.observations["unit_xy_direction_to_target"] # type: ignore
 
-        reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
+        # reward = jnp.dot(move_direction_unit, target_direction_unit) * summed_reward
 
-        return self.env_state, summed_reward, self.env_state.terminated, self.env_state.truncated
+        previous_distance = jnp.linalg.norm(prev_position - self.env_state.mj_model.body("target").pos[:2])
+        current_distance = jnp.linalg.norm(current_position - self.env_state.mj_model.body("target").pos[:2])
+
+        reward = (previous_distance - current_distance)
+
+        if jnp.any(self.env_state.terminated):
+            reward += 10.0
+
+        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated
 
     def reset(self):  # TODO return type
         """Reset the environment
@@ -229,7 +237,10 @@ class Environment:
         :return: The new state.
         :rtype: BaseEnvState
         """
-        self.env_state = self.jit_env_reset(self.rng)
+        self.reset_key, reset_key = self.reset_key.split()
+        self.cpg_state = self.cpg.reset(reset_key)
+        self.env_state = self.jit_env_reset(self.reset_key)
+        self.env_state.mj_model.body("target").pos = np.array([1, 1, 0.05])
         return self.env_state
 
     @functools.partial(jax.jit, static_argnums=(0,))

@@ -8,36 +8,41 @@ env:
   simulation_time: 20
   num_physics_steps_per_control_step: 10
   time_scale: 1
-  render_size: (480, 640)
+  render_size_x: 480
+  render_size_y: 640
   arena:
-    size: (15, 15)
+    size_x: 15
+    size_y: 15
     sand_ground_color: False
     attach_target: True
     wall_height: 1.5
-    wall_thickness: 1.1
+    wall_thickness: 0.1
 
 cpg: 
   dt: 0.01
 
 rl:
-  replay_buffer_size: 1000
-  num_episodes: 50
-  epsilon: 0.5
+  replay_buffer_size: 10000
+  num_episodes: 100
+  epsilon: 1.0
   epsilon_min: 0.01
-  epsilon_decay: 0.999
+  epsilon_decay: 0.99
   discount: 0.99
   batch_size: 64
-  target_update_freq: 100
+  target_update_freq: 200
   learning_rate: 0.0001
-  gradient_clip: 10.0
+  gradient_clip: 5.0
+  hidden_layer_size: 32
+  amount_of_hidden_layers: 1
   action_space_dim: 5
   observations_to_use: [
-    "angle_to_target", 
+    "angle_to_target",
+    "unit_xy_direction_to_target",
     "xy_distance_to_target"
   ]
 
 evaluation:
   num_eval_cycles: 20
-  render: False
+  render: True
   fps: 20
   output_video_path: "out/trained_brittle_star.mp4"
