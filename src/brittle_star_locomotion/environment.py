@@ -203,7 +203,7 @@ class Environment:
         if Path(video_path).exists():
             media.show_video(media.read_video(video_path))
 
-    def step(self, actions: jnp.ndarray): # TODO actions: (envs, num_arms)
+    def step(self, actions: jnp.ndarray):
         """Step in the environment.
 
         :param actions: Actions to take in the environment, one float for each actuator.
@@ -227,18 +227,10 @@ class Environment:
         self.env_state = new_env_state
         self.cpg_state = new_cpg_state
 
-        current_distance = self.env_state.observations["xy_distance_to_target"] # (envs, 1)
-
-        print(f'previous_distance: {previous_distance.shape}')
-        print(f'current_distance: {current_distance.shape}')
+        current_distance = self.env_state.observations["xy_distance_to_target"]             # (envs, 1)
 
         reward = (previous_distance - current_distance) # (envs, 1)
-
-        print(f'reward: {reward.shape}')
-        print(f'terminated: {self.env_state.terminated.shape}')
-
-        if jnp.any(self.env_state.terminated):
-            reward += 10.0 # TODO: only +10 for the envs that terminated, not all of them. need to mask this.
+        reward += 10.0 * self.env_state.terminated[:, None]  # (envs, 1)
 
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
 
