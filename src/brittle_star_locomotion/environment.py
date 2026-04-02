@@ -13,14 +13,11 @@ from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorp
 from biorobot.brittle_star.mjcf.morphology.specification.default import default_brittle_star_morphology_specification
 from tqdm import tqdm
 
-from brittle_star_locomotion.config.config_loader import load_config
 from brittle_star_locomotion.cpg.cpg import CPG, create_cpg_structure
 from brittle_star_locomotion.cpg.solver import RK4Solver
 from brittle_star_locomotion.gait.gait import map_cpg_to_brittle_star_actions, modulate_rowing_gait
 
 logger = logging.getLogger(__name__)
-config = load_config("configs/base_config.yaml")
-
 
 class Environment:
     """
@@ -30,8 +27,12 @@ class Environment:
     simulation (MJX) to coordinate multi-arm locomotion.
     """
 
-    def __init__(self, amount_environments: int, observations: None | list[str] = None):
-        self.amount_environments = amount_environments # not pulling from config, because can be changed in __main__.py
+    def __init__(
+            self,
+            config,
+            observations: None | list[str] = None,
+        ):
+        self.amount_environments = config.rl.amount_environments # not pulling from config, because can be changed in __main__.py
         self.morphology_specification = default_brittle_star_morphology_specification(
             num_arms=config.env.num_arms, num_segments_per_arm=config.env.num_segments_per_arm, use_p_control=True, use_torque_control=False
         )
@@ -53,6 +54,7 @@ class Environment:
 
         self.__create_environment()
 
+        self.config = config
         self.num_arms = config.env.num_arms
         self.num_segments = config.env.num_segments_per_arm
 
@@ -130,10 +132,10 @@ class Environment:
 
         def _cpg_loop_body(_state, _):
             _next_state = self.cpg.step(_state)
-            _action = map_cpg_to_brittle_star_actions(_next_state.outputs, config.env.num_arms, config.env.num_segments_per_arm)
+            _action = map_cpg_to_brittle_star_actions(_next_state.outputs, self.config.env.num_arms, self.config.env.num_segments_per_arm)
             return _next_state, _action
 
-        cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=config.env.num_substeps_per_modulation)
+        cpg_state, action_trajectory = jax.lax.scan(_cpg_loop_body, cpg_state, None, length=self.config.env.num_substeps_per_modulation)
 
         def _env_loop_body(_state, _action):
             _next_env_state = self.environment.step(_state, _action)
@@ -175,7 +177,7 @@ class Environment:
         first_leaf = jax.tree_util.tree_leaves(trajectory)[0]
         total_steps = first_leaf.shape[1]
         num_steps = first_leaf.shape[0]
-        render_indices = range(0, total_steps, config.env.render_every)
+        render_indices = range(0, total_steps, self.config.env.render_every)
 
         for i in tqdm(render_indices, desc="Generating Video Frames"):
             env_frames_for_this_step = []
@@ -258,7 +260,7 @@ class Environment:
         # resulting shape: (num_envs, num_arms, total_obs_per_arm)
         obs_list = []
         num_envs = self.amount_environments
-        num_arms = config.env.num_arms
+        num_arms = self.config.env.num_arms
 
         for obs in self.observations:
             if obs not in self.derived_states:
@@ -309,7 +311,7 @@ class Environment:
                 size += self.state_space["central"][obs]
 
             elif obs in self.state_space["individual_per_segment"]:
-                size += config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
+                size += self.config.env.num_segments_per_arm * self.state_space["individual_per_segment"][obs]
 
             elif obs in self.state_space["individual_per_arm"]:
                 size += self.state_space["individual_per_arm"][obs]

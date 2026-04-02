@@ -18,9 +18,10 @@ from brittle_star_locomotion.optimization.independentqlearning import Independen
 def get_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Brittle Star Locomotion Simulator")
     parser.add_argument("-c", "--checkpoint", dest="checkpoint", default="checkpoint")
+    parser.add_argument("-d", "--debug", dest="loglevel", action="store_const", const=logging.DEBUG)
+    parser.add_argument("-f", "--config-file", dest="config_file", type=str, default="configs/base_config.yaml")
     parser.add_argument("-t", "--train", dest="train", action="store_true", default=False)
     parser.add_argument("-v", "--verbose", dest="loglevel", action="store_const", const=logging.INFO, default=logging.INFO)
-    parser.add_argument("-d", "--debug", dest="loglevel", action="store_const", const=logging.DEBUG)
     parser.add_argument("--output", type=str, default="out/brittle_star_sim.mp4")
     return parser.parse_args()
 
@@ -31,13 +32,13 @@ def main():
     logging.basicConfig(level=args.loglevel, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", force=True)
 
     logger = logging.getLogger(__name__)
-    config = load_config("configs/base_config.yaml")
+    config = load_config(args.config_file)
     if not args.train: # if not training, we don't need 1000s of environments
         logging.info("Falling back to single environment.")
         config.rl.amount_environments = 1
 
     obs_to_use = config.rl.observations_to_use
-    env = Environment(config.rl.amount_environments, observations=obs_to_use)
+    env = Environment(config, observations=obs_to_use)
 
     n_agents = config.env.num_arms
     if args.train:
