@@ -26,7 +26,7 @@ rl:
   num_episodes: 100
   epsilon: 1.0
   epsilon_min: 0.01
-  epsilon_decay: 0.99
+  epsilon_decay: 0.975
   discount: 0.99
   batch_size: 64
   target_update_freq: 200
@@ -35,6 +35,7 @@ rl:
   hidden_layer_size: 32
   amount_of_hidden_layers: 1
   action_space_dim: 5
+  amount_environments: 16
   observations_to_use: [
     "angle_to_target",
     "unit_xy_direction_to_target",
@@ -44,5 +45,5 @@ rl:
 evaluation:
   num_eval_cycles: 20
   render: True
-  fps: 20
-  output_video_path: "out/trained_brittle_star.mp4"
+  fps: 60
+  output_video_path: "out/trained_brittle_star"
