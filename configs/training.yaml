@@ -1,0 +1,4 @@
+environment:
+  name: "Brittle Star Locomotion"
+  description: "Environment for the brittle star locomotion project."
+  
