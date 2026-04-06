@@ -209,13 +209,17 @@ class IQLOptimizer:
         for q_net, target_q_net in zip(self._q_networks, self._target_q_networks):
             target_q_net.update_model_parameters(copy_from=q_net)
 
-    def _create_n_qnetworks(self, n: int = 1):
+    def _create_n_qnetworks(self, n: int = 1) -> list[QNetwork]:
+        """Creates `n` QNetwork instances, either shared or separate based on the configuration.
+
+        :param n: The number of QNetwork instances to create (default is 1).
+        :return: A list of QNetwork instances.
+        """
         if self._config.rl.shared_params: # TODO: config
             q_network = self._create_qnetwork()
             return [q_network] * n
         else:
             return [self._create_qnetwork(agent_id) for agent_id in range(n)]
-
 
     def _create_qnetwork(self, agent_id: int = 0) -> QNetwork:
         """Creates a new QNetwork instance with random parameters.
