@@ -13,6 +13,16 @@ import jax.numpy as jnp
 
 class IQLOptimizer:
     def __init__(self, environment: Environment):
+        """Initializes an IQL optimizer for multi-agent reinforcement learning.
+
+        Initializes the replay buffers, Q-networks, target Q-networks, and optimizers for each agent 
+        based on the provided environment and configuration settings.
+
+        Extensions on basic Q-Learning include:
+        - **Double Q-Learning** to reduce maximization bias
+
+        :param environment: An instance of the Environment class that the optimizer will interact with.
+        """
         self._config = Configuration().configuration
         self._seed = self._config.rl.seed # TODO: config
         self._rng = jax.random.PRNGKey(self._seed)
@@ -44,6 +54,8 @@ class IQLOptimizer:
         ]
 
     def optimize(self):
+        """Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment.
+        """
         n_environments = self._config.env.n_environments # TODO: config
         total_train_steps = 0
 
@@ -88,6 +100,8 @@ class IQLOptimizer:
         - The number of agents and segments from the configuration.
         - The agent identifier (e.g., 'agent_0', 'agent_1', etc.).
         - A timestamp to ensure uniqueness.
+
+        :param base_name: A base name for the saved model files (default is 'model').
         """
         for agent_id, q_network in enumerate(self._q_networks):
             config = f'{self._config.rl.n_agents}_agents_{self._config.env.n_segments}_segments' # TODO: config
@@ -98,8 +112,10 @@ class IQLOptimizer:
             q_network.save_checkpoint(model_name)
 
     def _optimize_step(self, agent_id: int):
-        """Performs a single optimization step for the specified agent using the provided mini-batch of experiences.
+        """Performs a single optimization step for the specified agent.
 
+        Optimizes the Q-network for the given `agent_id` by sampling a mini-batch of experiences from its replay buffer,
+        and doing the standard Q-learning update using the Double Q-learning approach to compute the target Q-values.
         This method computes the loss and gradients for the Q-network of the specified agent and updates its parameters accordingly.
 
         :param agent_id: The identifier of the agent for which to perform the optimization step.
@@ -125,20 +141,32 @@ class IQLOptimizer:
         )
         self._q_network_optimizers[agent_id].update(self._q_networks[agent_id], grads)
 
-    def _loss(self, q_network, observations, taken_actions, targets):
-        """TODO Q update
+    def _loss(
+        self, 
+        q_network: QNetwork,
+        observations: jnp.ndarray,
+        taken_actions: jnp.ndarray,
+        targets: jnp.ndarray
+    ) -> float:
+        """Computes the loss for the Q-network.
+
+        :param q_network: The Q-network for which to compute the loss.
+        :param observations: The observations for which to compute the Q-values.
+        :param taken_actions: The actions that were taken.
+        :param targets: The target Q-values.
+        :return: The computed loss.
         """
         q_values = q_network(observations) # shape (batch_size, n_actions)
         action_q_values = jnp.take_along_axis(q_values, taken_actions, axis=-1) # shape (batch_size, 1)
         loss = jnp.mean((action_q_values - targets) ** 2)
-        return loss
+        return float(loss)
 
     def _epsilon_greedy(
         self, 
         observations: jnp.ndarray
     ) -> jnp.ndarray:
-        """TODO
-        
+        """Determines the epsilon-greedy action for each agent for the given observations of the environment.
+
         :param observations: Current environment observations (n_environments, n_agents, observation_size).
         :return: The selected actions (n_environments, n_agents).
         """
