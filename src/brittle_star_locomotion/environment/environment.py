@@ -6,7 +6,7 @@ from biorobot.brittle_star.mjcf.morphology.specification.default import default_
 from biorobot.brittle_star.mjcf.morphology.morphology import MJCFBrittleStarMorphology
 from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration, MJCFAquariumArena
 from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
-from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
+from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment, DualMuJoCoEnvironment
 
 from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitController
 from brittle_star_locomotion.config.configuration import Configuration
@@ -30,12 +30,12 @@ class Environment:
         self.brittle_star_environment = self._create_brittle_star_directed_locomotion_environment()
 
         # Construct CPG
-        self.controllers = [RowingGaitController() for _ in range(self.number_of_environments)]
+        self.controller = RowingGaitController()
 
         self.rng = jax.random.PRNGKey(seed=self.config.env.seed) # TODO: put seed in config
-        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 2)) # Create subkeys for each environment and the reset key
+        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 2))
         
-        self.max_joint_limit = self.brittle_star_environment.action_space.high[0] 
+        self.max_joint_limit = self.brittle_star_environment.action_space.high[0] # type: ignore
 
         self.env_state = self.brittle_star_environment.reset(reset_key)
 
@@ -71,23 +71,20 @@ class Environment:
     def reset(self):
         """Reset both the MJX environment and the CPG controllers."""
         self.env_state = self.jit_env_reset(jnp.array(self.sub_rngs))
-
-        self.cpg_state = jax.vmap(self.cpg.reset)()
-
         return self.env_state
         
 
     def step(self, action: jnp.ndarray):
-        previous_distance = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1)
+        previous_distance: jnp.ndarray = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1) # type: ignore
 
-        vmapped_cpg_modulate = jax.vmap(self.controllers.modulate, in_axes=(0, None)) 
-        vmapped_cpg_modulate(action, self.max_joint_limit) 
+        vmapped_cpg_modulate = jax.vmap(self.controller.modulate, in_axes=(0, None)) 
+        vmapped_cpg_modulate(action, self.max_joint_limit)
 
-        vmapped_cpg_step = jax.vmap(self.controllers.cpg.step)
+        vmapped_cpg_step = jax.vmap(self.controller.step)
 
         def _cpg_loop_body(_state, _):
             _next_action = vmapped_cpg_step()
-            _next_state = self.jit_env_step(_next_action)
+            _next_state = self.jit_env_step(_state, _next_action)
             return _next_state, (_next_state, _next_state.reward)
 
         self.env_state, trajectory = jax.lax.scan(_cpg_loop_body, self.env_state, None, length=self.config.env.num_substeps_per_modulation)
@@ -165,7 +162,7 @@ class Environment:
     def _create_morphology(self) -> MJCFBrittleStarMorphology:
         """Construct the brittle star morphology based on the configuration."""
         morphology_specification = default_brittle_star_morphology_specification(
-            num_arms=self.config.env.num_arms, 
+            num_arms=self.number_of_arms, 
             num_segments_per_arm=self.config.env.num_segments_per_arm, 
             use_p_control=True, 
             use_torque_control=False
@@ -183,7 +180,7 @@ class Environment:
         )
         return MJCFAquariumArena(arena_configuration)
     
-    def _create_brittle_star_directed_locomotion_environment(self) -> BrittleStarDirectedLocomotionEnvironment:
+    def _create_brittle_star_directed_locomotion_environment(self) -> DualMuJoCoEnvironment:
         """Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration."""
         environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
             target_distance=self.config.env.target_distance,
@@ -242,7 +239,6 @@ class Environment:
         :return: relative angle from each arm to the target, shape (envs, arms)
         :rtype: jnp.ndarray
         """
-
         num_arms = self.config.env.num_arms
         absolute_body_rotation = self.env_state.observations["disk_rotation"][:, jnp.newaxis, 2] # type: ignore -- the rotation around the z-axis (this is a scalar angle in radians) -- shape: (envs, 1)
 

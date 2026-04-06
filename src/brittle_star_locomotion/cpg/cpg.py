@@ -11,6 +11,8 @@ from brittle_star_locomotion.cpg.equations import CPGEquations
 @struct.dataclass
 class CPGState:
     """State of a CPG.
+
+    When initialised, the shapes will be (number_of_environments, number_of_oscillators) to allow for vectorised computation across multiple environments.
     
     :ivar time:                current simulation time                            
     :ivar phase:               current phase of each oscillator                   -- $\\phi_i$
@@ -24,17 +26,17 @@ class CPGState:
     :ivar intrinsic_frequency: intrinsic frequency of each oscillator             -- $\\omega_i$
     :ivar target_phase_bias:   target phase bias of each oscillator               -- $\\psi_ij$
     """
-    time:                float
-    phase:               jnp.ndarray
-    amplitude:           jnp.ndarray
-    dot_amplitude:       jnp.ndarray
-    offset:              jnp.ndarray
-    dot_offset:          jnp.ndarray
-    output:              jnp.ndarray
-    target_amplitude:    jnp.ndarray
-    target_offset:       jnp.ndarray
-    intrinsic_frequency: jnp.ndarray
-    target_phase_bias:   jnp.ndarray
+    time:                jnp.ndarray # shape: (number_of_environments,)
+    phase:               jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    amplitude:           jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    dot_amplitude:       jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    offset:              jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    dot_offset:          jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    output:              jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    target_amplitude:    jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    target_offset:       jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    intrinsic_frequency: jnp.ndarray # shape: (number_of_environments, number_of_oscillators)
+    target_phase_bias:   jnp.ndarray # shape: (number_of_environments, number_of_oscillators, number_of_oscillators)
 
 
 class CPG:
@@ -45,10 +47,11 @@ class CPG:
         
         self.solver: Solver = RK4Solver() if self.configuration.cpg_solver == 'rk4' else EulerSolver() # TODO: add "cpg_solver" to configuration
         self.number_of_oscillators = self.configuration.number_of_oscillators # TODO: add "number_of_oscillators" to configuration
+        self.number_of_environments = self.configuration.number_of_environments # TODO: add "number_of_environments" to configuration
         self.time_step = self.configuration.cpg_time_step # TODO: add "cpg_time_step" to configuration
 
         self._initialise_weights()
-        self.reset()
+        self.state = self.reset()
 
     def step(self):
         """Advance the CPG state by one time step using the configured solver."""
@@ -62,7 +65,7 @@ class CPG:
 
         new_output = new_offset + new_amplitude * jnp.cos(new_phase)
 
-        self.state.replace( # type: ignore
+        return self.state.replace( # type: ignore
             time          = self.state.time + self.time_step,
             phase         = new_phase,
             amplitude     = new_amplitude,
@@ -85,21 +88,21 @@ class CPG:
         initial_phase = jax.random.uniform(phase_rng, shape=self.number_of_oscillators, minval=-0.1, maxval=0.1) # small random initial phase to break symmetry
         base_frequency = self.configuration.cpg_base_frequency # TODO: add "cpg_base_frequency" to configuration
         
-        self.state = CPGState(
-            time                = 0.0,
+        state = CPGState(
+            time                = jnp.zeros(self.number_of_environments),
             phase               = initial_phase,
-            amplitude           = jnp.zeros(self.number_of_oscillators),
-            dot_amplitude       = jnp.zeros(self.number_of_oscillators),
-            offset              = jnp.zeros(self.number_of_oscillators),
-            dot_offset          = jnp.zeros(self.number_of_oscillators),
-            output              = jnp.zeros(self.number_of_oscillators),
-            target_amplitude    = jnp.zeros(self.number_of_oscillators),
-            target_offset       = jnp.zeros(self.number_of_oscillators),
-            intrinsic_frequency = jnp.zeros_like(self.number_of_oscillators, base_frequency),
+            amplitude           = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            dot_amplitude       = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            offset              = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            dot_offset          = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            output              = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            target_amplitude    = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            target_offset       = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
+            intrinsic_frequency = jnp.zeros_like(self.number_of_environments, self.number_of_oscillators, base_frequency),
             target_phase_bias   = jnp.zeros_like(self.weights)
         )
 
-        return self.state
+        return state
     
 
     def get_output(self):
@@ -181,7 +184,7 @@ class CPG:
         This specific structure links the oscillators in a ring topology.
         The resulting matrix is scaled to ensure strong entrainment between the oscillators, which is crucial for coordinated movement.
         """
-        self.weights = jnp.zeros((self.number_of_oscillators, self.number_of_oscillators))
+        self.weights = jnp.zeros((self.number_of_environments, self.number_of_oscillators, self.number_of_oscillators))
 
         # identify in-plane and out-of-plane oscillators based on their indices
         ip_idx  = jnp.arange(0, self.number_of_oscillators, 2)
@@ -189,20 +192,20 @@ class CPG:
 
         # determine minimum common length to prevent broadcasting issues
         min_length = min(len(ip_idx), len(oop_idx))
-        ip_idx     = ip_idx[:min_length]
-        oop_idx    = oop_idx[:min_length]
+        ip_idx     = ip_idx[:, :min_length]
+        oop_idx    = oop_idx[:, :min_length]
 
         # couple ip and oop oscillators in same segment
         # this creates the primary functional unit of the cpg
-        self.weights = self.weights.at[ip_idx, oop_idx].set(1.0)
+        self.weights = self.weights.at[:, ip_idx, oop_idx].set(1.0)
 
         # establish a ring topology by coupling each ip unit to the next ip unit and each oop unit to the next oop unit
         # jnp.roll ensures the last unit wraps back to the first, creating a closed loop
         next_ip_idx = jnp.roll(ip_idx, shift=-1)
-        self.weights = self.weights.at[ip_idx, next_ip_idx].set(1.0)
+        self.weights = self.weights.at[:, ip_idx, next_ip_idx].set(1.0)
 
         next_oop_idx = jnp.roll(oop_idx, shift=-1)
-        self.weights = self.weights.at[oop_idx, next_oop_idx].set(1.0)
+        self.weights = self.weights.at[:, oop_idx, next_oop_idx].set(1.0)
 
         # enforce symmetry and apply global coupling strength multiplier
-        self.weights = self.configuration.cpg_coupling_strength * jnp.maximum(self.weights, self.weights.T) # TODO: add "cpg_coupling_strength" to configuration
+        self.weights = self.configuration.cpg_coupling_strength * jnp.maximum(self.weights, self.weights.transpose((0, 2, 1))) # TODO: add "cpg_coupling_strength" to configuration
