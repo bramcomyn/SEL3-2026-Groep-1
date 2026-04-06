@@ -21,6 +21,9 @@ env:
 cpg: 
   dt: 0.01
 
+network:
+  checkpoint_dir: "checkpoints"
+
 rl:
   replay_buffer_size: 10000
   num_episodes: 100
