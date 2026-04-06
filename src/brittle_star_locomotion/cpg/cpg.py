@@ -95,7 +95,7 @@ class CPG:
             output              = jnp.zeros(self.number_of_oscillators),
             target_amplitude    = jnp.zeros(self.number_of_oscillators),
             target_offset       = jnp.zeros(self.number_of_oscillators),
-            intrinsic_frequency = jnp.full_like(self.number_of_oscillators, base_frequency),
+            intrinsic_frequency = jnp.zeros_like(self.number_of_oscillators, base_frequency),
             target_phase_bias   = jnp.zeros_like(self.weights)
         )
 
