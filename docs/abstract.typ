@@ -19,8 +19,8 @@
 
 = Brittle Star-inspired Damage Robustness in Robotics: a Multi-Agent Reinforcement Learning Approach
 
-Building robots that can deal with the real world's often challenging environments is a difficult task.
-In this lab, we explore the concept of enabling robots to deal with damage and continue functioning, inspired by the brittle star's ability to adapt its locomotion when one of its arms is damaged.
+Building robots that can deal with challenging real-world environments is a difficult task.
+Inspired by the brittle star's ability to adapt its locomotion when one of its arms is damaged, we explore the concept of enabling robots to deal with damage while continue functioning.
 We implement a control system based on central pattern generators (CPGs) to replicate a rowing gait and use multi-agent reinforcement learning (MARL) to allow the robot to adapt its gait in response to damage.
-The robot needs to be able to learn how to walk in the first place, before it can adapt to damage.
-This turns out to be a non-trivial task, as the robot needs to learn how to coordinate its arms to achieve locomotion.
+Ofcourse, the first step is to teach the robot how to walk without any damage, which turns out to be a non-trivial task in itself.
+Learning a multi-arm rowing gait is a complex problem that requires significant effort and a complex coordination strategy between multiple oscillators, even when not considering damage at all.
