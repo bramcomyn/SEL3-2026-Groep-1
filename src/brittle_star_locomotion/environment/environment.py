@@ -8,11 +8,10 @@ from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment
 
-from brittle_star_locomotion.cpg.cpg import CPG
+from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitController
 from brittle_star_locomotion.config.configuration import Configuration
 
 # TODO: 
-# - get_observation_size (for 1 agent or all agents?)
 # - step
 # - add types to all functions (parameters and return types)
 # - add docstrings to all functions
@@ -28,18 +27,17 @@ class Environment:
         # Construct the morphology, arena, and environment based on the configuration
         self.morphology = self._create_morphology()
         self.arena = self._create_arena()
-        self.environment = self._create_brittle_star_directed_locomotion_environment()
+        self.brittle_star_environment = self._create_brittle_star_directed_locomotion_environment()
 
         # Construct CPG
-        self.cpg = CPG()
+        self.controllers = [RowingGaitController() for _ in range(self.number_of_environments)]
 
         self.rng = jax.random.PRNGKey(seed=self.config.env.seed) # TODO: put seed in config
         self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 2)) # Create subkeys for each environment and the reset key
         
-        # TODO: don't need to pass rng?
-        cpg_keys = jax.random.split(reset_key, self.number_of_environments)
-        self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)  # TODO: state is being returned but is also maintained internally
-        self.env_state = self.environment.reset(reset_key)
+        self.max_joint_limit = self.brittle_star_environment.action_space.high[0] 
+
+        self.env_state = self.brittle_star_environment.reset(reset_key)
 
         # Observations
         self.derived_states = ["arm_identification", "angle_to_target"]
@@ -66,32 +64,44 @@ class Environment:
             },
         }
         self.observations_to_use = self._get_observations_to_use()
-        
 
-        self.jit_env_step = jax.jit(jax.vmap(self.environment.step))
-        self.jit_env_reset = jax.jit(jax.vmap(self.environment.reset))
+        self.jit_env_step = jax.jit(jax.vmap(self.brittle_star_environment.step))
+        self.jit_env_reset = jax.jit(jax.vmap(self.brittle_star_environment.reset))
 
     def reset(self):
         """Reset both the MJX environment and the CPG controllers."""
         self.env_state = self.jit_env_reset(jnp.array(self.sub_rngs))
 
-
-        # TODO: don't need to pass rng?
-        self.rng, cpg_reset_key = jax.random.split(self.rng)
-        cpg_keys = jax.random.split(cpg_reset_key, self.number_of_environments)
-        self.cpg_state = jax.vmap(self.cpg.reset)(cpg_keys)
+        self.cpg_state = jax.vmap(self.cpg.reset)()
 
         return self.env_state
         
 
-    def step(self, action):
-        # rowing gate controller - modulate(actions, max_joint_limit) -> void - step = cpg.step -> [] welke actions elke arm moet doen
-        # env.state.actionspace.shape[0] = max_joint_limit
+    def step(self, action: jnp.ndarray):
+        previous_distance = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1)
 
-        pass
+        vmapped_cpg_modulate = jax.vmap(self.controllers.modulate, in_axes=(0, None)) 
+        vmapped_cpg_modulate(action, self.max_joint_limit) 
 
-    #@functools.partial(jax.jit, static_argnums=(0,))
-    def get_observations(self): # (envs, arms, total_obs_per_arm)
+        vmapped_cpg_step = jax.vmap(self.controllers.cpg.step)
+
+        def _cpg_loop_body(_state, _):
+            _next_action = vmapped_cpg_step()
+            _next_state = self.jit_env_step(_next_action)
+            return _next_state, (_next_state, _next_state.reward)
+
+        self.env_state, trajectory = jax.lax.scan(_cpg_loop_body, self.env_state, None, length=self.config.env.num_substeps_per_modulation)
+
+        current_distance = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1)
+
+        reward = (previous_distance - current_distance)             # shape: (envs, 1)
+        reward += 10.0 * self.env_state.terminated[:, jnp.newaxis]  # shape: (envs, 1)
+        reward = reward.squeeze()                                   # shape: (envs,)
+
+        return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
+
+    @functools.partial(jax.jit, static_argnums=(0,))
+    def get_observations(self) -> jnp.ndarray:  # (envs, arms, total_obs_per_arm)
         """Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
         This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state, 
         and constructs a tensor of shape (num_envs, num_arms, total_obs_per_arm) that contains the observations for each arm in each environment. 
@@ -127,13 +137,13 @@ class Environment:
                     data = data.reshape(num_envs, num_arms, -1)             # (envs, arms, dim)  - reshape the observation to be separate for each arm
                     obs_list.append(data)
 
-            # elif obs == "angle_to_target":
-            #     relative_angle_arm_to_target = self._get_angle_arm_to_target()      # shape: (envs, arms, 1)
-            #     obs_list.append(relative_angle_arm_to_target)
+            elif obs == "angle_to_target":
+                relative_angle_arm_to_target = self._get_angle_arm_to_target()      # shape: (envs, arms, 1)
+                obs_list.append(relative_angle_arm_to_target)
 
         return jnp.concatenate(obs_list, axis=-1)
 
-    def get_observation_size(self):
+    def get_observation_size(self) -> int:
         """Calculate the total size of the observation vector for each arm based on the specified observations to use in the configuration and the state space.
         :return: total size of the observation vector for each arm
         """
@@ -152,7 +162,7 @@ class Environment:
 
         return size
 
-    def _create_morphology(self):
+    def _create_morphology(self) -> MJCFBrittleStarMorphology:
         """Construct the brittle star morphology based on the configuration."""
         morphology_specification = default_brittle_star_morphology_specification(
             num_arms=self.config.env.num_arms, 
@@ -162,7 +172,7 @@ class Environment:
         )
         return MJCFBrittleStarMorphology(morphology_specification)
     
-    def _create_arena(self):
+    def _create_arena(self) -> MJCFAquariumArena:
         """Construct the aquarium arena based on the configuration."""
         arena_configuration = AquariumArenaConfiguration(
             size=(self.config.env.arena.size_x, self.config.env.arena.size_y), 
@@ -173,7 +183,7 @@ class Environment:
         )
         return MJCFAquariumArena(arena_configuration)
     
-    def _create_brittle_star_directed_locomotion_environment(self):
+    def _create_brittle_star_directed_locomotion_environment(self) -> BrittleStarDirectedLocomotionEnvironment:
         """Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration."""
         environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
             target_distance=self.config.env.target_distance,
@@ -182,7 +192,7 @@ class Environment:
             simulation_time=self.config.env.simulation_time,
             num_physics_steps_per_control_step=self.config.env.num_physics_steps_per_control_step,
             time_scale=self.config.env.time_scale,
-            camera_ids=(0, 1),
+            camera_ids=self.config.env.camera_ids,
             render_size=(self.config.env.render_size_x, self.config.env.render_size_y),
         )
 
@@ -190,7 +200,7 @@ class Environment:
             self.morphology, self.arena, environment_configuration, "MJX"
         )
     
-    def _get_observations_to_use(self):
+    def _get_observations_to_use(self) -> list[str]:
         """Determine which observations to use based on the configuration and validate them against the state space.
         If no observations are specified in the configuration, use all available observations from the state space.
         """
@@ -234,7 +244,6 @@ class Environment:
         """
 
         num_arms = self.config.env.num_arms
-        print(self.env_state.observations["disk_rotation"].shape) # (envs, 3) - the rotation of the body in Euler angles (roll, pitch, yaw) in radians
         absolute_body_rotation = self.env_state.observations["disk_rotation"][:, jnp.newaxis, 2] # type: ignore -- the rotation around the z-axis (this is a scalar angle in radians) -- shape: (envs, 1)
 
         relative_arm_rotation  = jnp.array([
