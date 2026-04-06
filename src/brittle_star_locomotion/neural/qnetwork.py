@@ -56,7 +56,7 @@ class QNetwork(nnx.Module):
             x = layer(x)
         return x
     
-    def update_model_parameters(self, copy_from: nnx.Module) -> nnx.Module:
+    def update_model_parameters(self, copy_from: nnx.Module):
         """Update the parameters of the model by copying them from another model.
 
         :param nnx.Module copy_from: The model to copy parameters from.
