@@ -6,7 +6,7 @@ class Configuration(metaclass=Singleton):
     """
     Configuration class for the brittle star locomotion project.
     """
-    def __init__(self, configuration_file_path: str="config/base_config.yaml"):
+    def __init__(self, configuration_file_path: str="configs/base_config.yaml"):
         """
         Initialize the configuration.
 

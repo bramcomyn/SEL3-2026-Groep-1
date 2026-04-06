@@ -10,6 +10,8 @@ env:
   time_scale: 1
   render_size_x: 480
   render_size_y: 640
+  seed: 42
+  camera_ids: [0, 1]
   arena:
     size_x: 15
     size_y: 15
@@ -38,6 +40,7 @@ rl:
   hidden_layer_size: 32
   amount_of_hidden_layers: 1
   action_space_dim: 5
+  number_of_environments: 16
   observations_to_use: [
     "angle_to_target",
     "unit_xy_direction_to_target",
