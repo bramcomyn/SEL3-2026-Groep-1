@@ -35,14 +35,9 @@ class IQLOptimizer:
             self._create_replay_buffer() 
             for _ in range(self._config.rl.num_agents) # TODO: config
         ]
-        self._q_networks = [
-            self._create_qnetwork(agent_id) 
-            for agent_id in range(self._config.rl.num_agents) # TODO: config
-        ]
-        self._target_q_networks = [
-            self._create_qnetwork(agent_id)
-            for agent_id in range(self._config.rl.num_agents) # TODO: config
-        ]
+
+        self._q_networks = self._create_n_qnetworks(self._config.rl.num_agents) # TODO: config
+        self._target_q_networks = self._create_n_qnetworks(self._config.rl.num_agents) # TODO: config
         self._synchronize_target_networks()
 
         optimizer = optax.chain(
@@ -213,6 +208,14 @@ class IQLOptimizer:
         """Synchronizes the parameters of the target Q-networks with the current Q-networks."""
         for q_net, target_q_net in zip(self._q_networks, self._target_q_networks):
             target_q_net.update_model_parameters(copy_from=q_net)
+
+    def _create_n_qnetworks(self, n: int = 1):
+        if self._config.rl.shared_params: # TODO: config
+            q_network = self._create_qnetwork()
+            return [q_network] * n
+        else:
+            return [self._create_qnetwork(agent_id) for agent_id in range(n)]
+
 
     def _create_qnetwork(self, agent_id: int = 0) -> QNetwork:
         """Creates a new QNetwork instance with random parameters.
