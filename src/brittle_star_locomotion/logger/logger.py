@@ -13,16 +13,34 @@ class _ColorFormatter(logging.Formatter):
         logging.ERROR: "\033[31m",    # Red
         logging.CRITICAL: "\033[35m", # Magenta
     }
+
+    NAME_COLOR = "\033[34m"  # Blue
+    TIME_COLOR = "\033[90m"  # Bright black / gray
     RESET = "\033[0m"
 
     def format(self, record: logging.LogRecord) -> str:
         color = self.COLORS.get(record.levelno, self.RESET)
+
         original_levelname = record.levelname
+        original_name = record.name
+        original_asctime = getattr(record, "asctime", None)
+
         record.levelname = f"{color}{record.levelname}{self.RESET}"
+        record.name = f"{self.NAME_COLOR}{record.name}{self.RESET}"
+
         try:
-            return super().format(record)
+            record.message = record.getMessage()
+            if self.usesTime():
+                record.asctime = f"{self.TIME_COLOR}{self.formatTime(record, self.datefmt)}{self.RESET}"
+            return self.formatMessage(record)
         finally:
             record.levelname = original_levelname
+            record.name = original_name
+
+            if original_asctime is None:
+                delattr(record, "asctime")
+            else:
+                record.asctime = original_asctime
 
 class Logger(metaclass=Singleton):
     """
@@ -62,7 +80,3 @@ class Logger(metaclass=Singleton):
     def error(self, message: str):
         """Log an error message to the console."""
         self.logger.error(message)
-
-    def critical(self, message: str):
-        """Log a critical message to the console."""
-        self.logger.critical(message)
