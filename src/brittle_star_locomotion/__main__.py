@@ -22,12 +22,16 @@ def train():
     logger = Logger()
     logger.debug("Starting training process...")
 
+    # TODO: Implement the training logic here
+
     logger.debug("Training process completed.")
 
 def evaluate():
     """Evaluate the brittle star locomotion model."""
     logger = Logger()
     logger.debug("Starting evaluation process...")
+
+    # TODO: Implement the evaluation logic here
 
     logger.debug("Evaluation process completed.")
 
@@ -38,6 +42,7 @@ def _parse_arguments():
     parser.add_argument("-c", "--config",  type=str, default="configs/base_config.yaml",         help="path to the configuration file")
     parser.add_argument("-v", "--verbose", action="store_true",                                  help="enable verbose logging")
     parser.add_argument("-m", "--mode",    type=str, choices=mode_dictionary.keys(), default="train", help="mode to run the project in (training or evaluation)")
+    parser.add_argument("-p", "--checkpoint", type=str, default="checkpoints/test_checkpoint", help="path to the model checkpoint for evaluation (prefix for the checkpoint files)")
 
     return parser.parse_args()
 
