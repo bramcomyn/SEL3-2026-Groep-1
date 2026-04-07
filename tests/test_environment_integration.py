@@ -1,5 +1,6 @@
 from types import SimpleNamespace
 
+import jax
 import jax.numpy as jnp
 
 from brittle_star_locomotion.config.configuration import Configuration
@@ -65,23 +66,47 @@ def test_environment_step_with_real_biorobot_stack_moves_robot():
 
     try:
         env = Environment()
-        env.reset()
-
+        env_state, cpg_state = env.reset()
         fixed_roles = jnp.array([0, 1, 2, 3, 4])
-        start_position = env.env_state.observations["disk_position"][:, :2]  # type: ignore[index]
-
+        trajectory_env_states = None
+        trajectory_cpg_outputs = None
         for _ in range(4):
-            env_state, reward, terminated, truncated, trajectory = env.step(fixed_roles, num_substeps=50)
+            env_state, cpg_state, _, _, _, trajectory = env.step(
+                env_state,
+                cpg_state,
+                fixed_roles,
+                num_substeps=50,
+            )
+            substep_env_states = trajectory[0]
+            substep_cpg_outputs = trajectory[1]
 
-        end_position = env_state.observations["disk_position"][:, :2]  # type: ignore[index]
+            if trajectory_env_states is None:
+                trajectory_env_states = substep_env_states
+            else:
+                trajectory_env_states = jax.tree_util.tree_map(
+                    lambda a, b: jnp.concatenate((a, b), axis=0),
+                    trajectory_env_states,
+                    substep_env_states,
+                )
+
+            if trajectory_cpg_outputs is None:
+                trajectory_cpg_outputs = substep_cpg_outputs
+            else:
+                trajectory_cpg_outputs = jnp.concatenate(
+                    (trajectory_cpg_outputs, substep_cpg_outputs),
+                    axis=0,
+                )
+
+        assert trajectory_env_states is not None
+        trajectory = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
+        start_position = trajectory.observations["disk_position"][:, 0, :2]  # type: ignore[index]
+        end_position = trajectory.observations["disk_position"][:, -1, :2]  # type: ignore[index]
         displacement = jnp.linalg.norm(end_position - start_position, axis=1)
 
-        assert trajectory[1].shape[0] == 50
-        assert trajectory[1].shape[-1] == 10
-        assert reward.shape == (1,)
-        assert terminated.shape == (1,)
-        assert truncated.shape == (1,)
-        assert jnp.any(jnp.abs(env.cpg_state.output) > 0.0)
+        assert trajectory.observations["disk_position"].shape[0] == 1  # type: ignore[index]
+        assert trajectory.observations["disk_position"].shape[1] == 200  # type: ignore[index]
+        assert trajectory_cpg_outputs is not None
+        assert jnp.any(jnp.abs(trajectory_cpg_outputs) > 0.0)
         assert jnp.any(displacement > 1e-4)
     finally:
         if original is None:

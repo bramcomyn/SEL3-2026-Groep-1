@@ -1,1 +1,36 @@
-value: 1
+rl:
+  number_of_environments: 1
+  observations_to_use: null
+
+env:
+  seed: 0
+  num_arms: 5
+  num_segments_per_arm: 2
+  target_distance: 2.0
+  simulation_time: 20.0
+  num_physics_steps_per_control_step: 10
+  time_scale: 2
+  camera_ids:
+    - 0
+    - 1
+  render_size_x: 600
+  render_size_y: 480
+  render_every: 5
+  num_substeps_per_modulation: 50
+  arena:
+    size_x: 5.0
+    size_y: 5.0
+    sand_ground_color: false
+    attach_target: true
+    wall_height: 0.5
+    wall_thickness: 0.2
+
+cpg_seed: 0
+cpg_solver: rk4
+cpg_time_step: 0.02
+cpg_base_frequency: 3.14
+cpg_coupling_strength: 1.0
+number_of_environments: 1
+number_of_oscillators: 10
+number_of_oscillators_per_arm: 2
+number_of_arms: 5
