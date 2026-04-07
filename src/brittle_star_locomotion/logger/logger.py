@@ -2,7 +2,29 @@ import logging
 
 from brittle_star_locomotion.util.singleton import Singleton
 
-class Logger:
+
+class _ColorFormatter(logging.Formatter):
+    """Formatter that colors log levels for terminal output."""
+
+    COLORS = {
+        logging.DEBUG: "\033[36m",    # Cyan
+        logging.INFO: "\033[32m",     # Green
+        logging.WARNING: "\033[33m",  # Yellow
+        logging.ERROR: "\033[31m",    # Red
+        logging.CRITICAL: "\033[35m", # Magenta
+    }
+    RESET = "\033[0m"
+
+    def format(self, record: logging.LogRecord) -> str:
+        color = self.COLORS.get(record.levelno, self.RESET)
+        original_levelname = record.levelname
+        record.levelname = f"{color}{record.levelname}{self.RESET}"
+        try:
+            return super().format(record)
+        finally:
+            record.levelname = original_levelname
+
+class Logger(metaclass=Singleton):
     """
     Logger class for the brittle star locomotion project.
     """
@@ -13,6 +35,30 @@ class Logger:
         :param name: Name of the logger.
         :param verbose: Whether to print verbose logs.
         """
-        logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', force=True)
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+        if not self.logger.handlers:
+            handler = logging.StreamHandler()
+            handler.setFormatter(
+                _ColorFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            )
+
+            self.logger.addHandler(handler)
+            self.logger.propagate = False
+
+    def debug(self, message: str):
+        """Log a debug message to the console."""
+        self.logger.debug(message)
+
+    def info(self, message: str):
+        """Log an info message to the console."""
+        self.logger.info(message)
+
+    def warning(self, message: str):
+        """Log a warning message to the console."""
+        self.logger.warning(message)
+
+    def error(self, message: str):
+        """Log an error message to the console."""
+        self.logger.error(message)
