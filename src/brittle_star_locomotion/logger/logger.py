@@ -62,3 +62,7 @@ class Logger(metaclass=Singleton):
     def error(self, message: str):
         """Log an error message to the console."""
         self.logger.error(message)
+
+    def critical(self, message: str):
+        """Log a critical message to the console."""
+        self.logger.critical(message)
