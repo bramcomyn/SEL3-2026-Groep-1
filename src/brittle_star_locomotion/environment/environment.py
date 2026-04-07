@@ -31,13 +31,14 @@ class Environment:
 
         # Construct CPG
         self.controller = RowingGaitController()
+        self.cpg_state = self.controller.cpg.state
 
         self.rng = jax.random.PRNGKey(seed=self.config.env.seed) # TODO: put seed in config
         self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 2))
         
         self.max_joint_limit = self.brittle_star_environment.action_space.high[0] # type: ignore
 
-        self.env_state = self.brittle_star_environment.reset(reset_key)
+        self.env_state = jax.vmap(self.brittle_star_environment.reset)(jnp.array(self.sub_rngs))
 
         # Observations
         self.derived_states = ["arm_identification", "angle_to_target"]
@@ -71,31 +72,53 @@ class Environment:
     def reset(self):
         """Reset both the MJX environment and the CPG controllers."""
         self.env_state = self.jit_env_reset(jnp.array(self.sub_rngs))
+        self.cpg_state = self.controller.cpg.reset()
         return self.env_state
         
 
-    def step(self, action: jnp.ndarray):
+    def step(self, action: jnp.ndarray, num_substeps: int = 50):
+        """Modulate the rowing gait with arm-role actions and run CPG+physics substeps.
+
+        :param action: arm-role modulation action with shape (arms,) or (envs, arms).
+        :param num_substeps: number of CPG/physics substeps to execute per call.
+        """
         previous_distance: jnp.ndarray = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1) # type: ignore
 
-        vmapped_cpg_modulate = jax.vmap(self.controller.modulate, in_axes=(0, None)) 
-        vmapped_cpg_modulate(action, self.max_joint_limit)
+        if action.ndim == 1:
+            action = jnp.broadcast_to(action[jnp.newaxis, :], (self.number_of_environments, action.shape[0]))
 
-        vmapped_cpg_step = jax.vmap(self.controller.step)
+        self.cpg_state = self.controller.modulate(self.cpg_state, action, self.max_joint_limit)
 
-        def _cpg_loop_body(_state, _):
-            _next_action = vmapped_cpg_step()
-            _next_state = self.jit_env_step(_state, _next_action)
-            return _next_state, (_next_state, _next_state.reward)
+        def _cpg_loop_body(carry, _):
+            _env_state, _cpg_state = carry
+            _next_cpg_state, _next_cpg_action = self.controller.step(_cpg_state)
+            _next_env_action = self._map_cpg_output_to_environment_action(_next_cpg_action)
+            _next_env_state = self.jit_env_step(_env_state, _next_env_action)
+            return (_next_env_state, _next_cpg_state), (_next_env_state, _next_cpg_action)
 
-        self.env_state, trajectory = jax.lax.scan(_cpg_loop_body, self.env_state, None, length=self.config.env.num_substeps_per_modulation)
+        (self.env_state, self.cpg_state), trajectory = jax.lax.scan(
+            _cpg_loop_body,
+            (self.env_state, self.cpg_state),
+            None,
+            length=num_substeps,
+        )
 
         current_distance = self.env_state.observations["xy_distance_to_target"] # shape: (envs, 1)
 
         reward = (previous_distance - current_distance)             # shape: (envs, 1)
-        reward += 10.0 * self.env_state.terminated[:, jnp.newaxis]  # shape: (envs, 1)
-        reward = reward.squeeze()                                   # shape: (envs,)
+        terminated = jnp.asarray(self.env_state.terminated).reshape(-1, 1)
+        reward += 10.0 * terminated                                  # shape: (envs, 1)
+        reward = reward.reshape(-1)                                 # shape: (envs,)
 
         return self.env_state, reward, self.env_state.terminated, self.env_state.truncated, trajectory
+
+    def _map_cpg_output_to_environment_action(self, cpg_output: jnp.ndarray) -> jnp.ndarray:
+        """Map one IP/OOP pair per arm to per-segment actuator controls expected by biorobot."""
+        ip = cpg_output[:, 0::2]
+        oop = cpg_output[:, 1::2]
+        per_arm = jnp.stack([ip, oop], axis=-1)  # (envs, arms, 2)
+        per_segment = jnp.repeat(per_arm[:, :, jnp.newaxis, :], self.config.env.num_segments_per_arm, axis=2)
+        return per_segment.reshape(cpg_output.shape[0], -1)
 
     @functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:  # (envs, arms, total_obs_per_arm)
@@ -268,6 +291,5 @@ class Environment:
             relative_angle_arm_to_target_unnormalized - 2 * jnp.pi,
             relative_angle_arm_to_target_unnormalized
         ) # return the signed angle in the range [-pi, pi]
-
 
         return relative_angle_arm_to_target[:, :, jnp.newaxis] # shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)
