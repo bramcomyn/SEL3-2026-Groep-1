@@ -43,12 +43,12 @@ class CPG:
     def __init__(self):
         """Initialise a new CPG"""
         self.configuration  = Configuration().configuration
-        self.rng = jax.random.PRNGKey(self.configuration.cpg_seed) # TODO: add "cpg_seed" to configuration
+        self.rng = jax.random.PRNGKey(self.configuration.cpg.seed)
         
-        self.solver: Solver = RK4Solver() if self.configuration.cpg_solver == 'rk4' else EulerSolver() # TODO: add "cpg_solver" to configuration
-        self.number_of_oscillators = self.configuration.number_of_oscillators # TODO: add "number_of_oscillators" to configuration
-        self.number_of_environments = self.configuration.number_of_environments # TODO: add "number_of_environments" to configuration
-        self.time_step = self.configuration.cpg_time_step # TODO: add "cpg_time_step" to configuration
+        self.solver: Solver = RK4Solver() if self.configuration.cpg.solver == 'rk4' else EulerSolver()
+        self.number_of_oscillators = self.configuration.environment.number_of_arms * 2
+        self.number_of_environments = self.configuration.environment.number_of_environments
+        self.time_step = self.configuration.cpg.time_step
 
         self._initialise_weights()
         self.state = self.reset()
@@ -126,7 +126,7 @@ class CPG:
             maxval=0.1,
         )
 
-        base_frequency = self.configuration.cpg_base_frequency # TODO: add "cpg_base_frequency" to configuration
+        base_frequency = self.configuration.cpg.base_frequency_multiplier * jnp.pi
         
         state = CPGState(
             time                = jnp.zeros(self.number_of_environments),
@@ -249,4 +249,4 @@ class CPG:
         self.weights = self.weights.at[:, oop_idx, next_oop_idx].set(1.0)
 
         # enforce symmetry and apply global coupling strength multiplier
-        self.weights = self.configuration.cpg_coupling_strength * jnp.maximum(self.weights, self.weights.transpose((0, 2, 1))) # TODO: add "cpg_coupling_strength" to configuration
+        self.weights = self.configuration.cpg.coupling_strength * jnp.maximum(self.weights, self.weights.transpose((0, 2, 1)))

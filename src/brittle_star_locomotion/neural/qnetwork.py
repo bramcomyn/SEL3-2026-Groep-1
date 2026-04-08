@@ -5,7 +5,9 @@ import pickle
 from collections.abc import Callable
 from flax import nnx
 
-CHECKPOINT_DIR = "checkpoints" # TODO: use value from config file
+from brittle_star_locomotion.config.configuration import Configuration
+
+CHECKPOINT_DIR = Configuration().configuration.checkpoint_directory
 
 class QNetwork(nnx.Module):
     """

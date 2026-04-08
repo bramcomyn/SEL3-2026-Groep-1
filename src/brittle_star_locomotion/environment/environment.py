@@ -8,22 +8,16 @@ from biorobot.brittle_star.mjcf.arena.aquarium import AquariumArenaConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.shared import BrittleStarDirectedLocomotionEnvironmentConfiguration
 from biorobot.brittle_star.environment.directed_locomotion.dual import BrittleStarDirectedLocomotionEnvironment, DualMuJoCoEnvironment
 
-from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitController
+from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitModulator
 from brittle_star_locomotion.config.configuration import Configuration
-
-# TODO: 
-# - step
-# - add types to all functions (parameters and return types)
-# - add docstrings to all functions
-
 
 class Environment:
     def __init__(self):
         self.config = Configuration().configuration
 
-        self.number_of_environments = self.config.rl.number_of_environments # TODO: put number_of_environments in config
-        self.number_of_arms = self.config.env.num_arms # TODO: add number_of_arms to configuration file
-        self._number_of_segments_per_arm = self.config.env.num_segments_per_arm # TODO: add number_of_segments_per_arm to configuration file
+        self.number_of_environments = self.config.environment.number_of_environments
+        self.number_of_arms = self.config.environment.number_of_arms
+        self._number_of_segments_per_arm = self.config.environment.number_of_segments_per_arm
 
         # Construct the morphology, arena, and environment based on the configuration
         self.morphology = self._create_morphology()
@@ -31,13 +25,14 @@ class Environment:
         self.brittle_star_environment = self._create_brittle_star_directed_locomotion_environment()
 
         # Construct CPG
-        self.controller = RowingGaitController()
+        self.controller = RowingGaitModulator()
         self.cpg_state = self.controller.cpg.state
 
-        self.rng = jax.random.PRNGKey(seed=self.config.env.seed) # TODO: put seed in config
-        self.rng, reset_key, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 2))
+        self.rng = jax.random.PRNGKey(seed=self.config.environment.seed)
+        self.rng, *self.sub_rngs = jnp.array(jax.random.split(self.rng, self.number_of_environments + 1))
         
         self.max_joint_limit = self.brittle_star_environment.action_space.high[0] # type: ignore
+
         # Observations
         self.derived_states = ["arm_identification", "angle_to_target"]
         self.state_space = {
@@ -193,7 +188,7 @@ class Environment:
 
             elif obs in self.state_space["individual_per_segment"]:
                 size_per_segment = self.state_space["individual_per_segment"][obs]
-                size += self.config.env.num_segments_per_arm * size_per_segment
+                size += self.config.environment.number_of_segments_per_arm * size_per_segment
 
             elif obs in self.state_space["individual_per_arm"]:
                 size += self.state_space["individual_per_arm"][obs]
@@ -204,7 +199,7 @@ class Environment:
         """Construct the brittle star morphology based on the configuration."""
         morphology_specification = default_brittle_star_morphology_specification(
             num_arms=self.number_of_arms, 
-            num_segments_per_arm=self.config.env.num_segments_per_arm, 
+            num_segments_per_arm=self.config.environment.number_of_segments_per_arm,
             use_p_control=True, 
             use_torque_control=False
         )
@@ -213,25 +208,25 @@ class Environment:
     def _create_arena(self) -> MJCFAquariumArena:
         """Construct the aquarium arena based on the configuration."""
         arena_configuration = AquariumArenaConfiguration(
-            size=(self.config.env.arena.size_x, self.config.env.arena.size_y), 
-            sand_ground_color=self.config.env.arena.sand_ground_color, 
-            attach_target=self.config.env.arena.attach_target, 
-            wall_height=self.config.env.arena.wall_height, 
-            wall_thickness=self.config.env.arena.wall_thickness
+            size=(self.config.environment.arena.size_x, self.config.environment.arena.size_y), 
+            sand_ground_color=self.config.environment.arena.sand_ground_color, 
+            attach_target=self.config.environment.arena.attach_target, 
+            wall_height=self.config.environment.arena.wall_height, 
+            wall_thickness=self.config.environment.arena.wall_thickness
         )
         return MJCFAquariumArena(arena_configuration)
     
     def _create_brittle_star_directed_locomotion_environment(self) -> DualMuJoCoEnvironment:
         """Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration."""
         environment_configuration = BrittleStarDirectedLocomotionEnvironmentConfiguration(
-            target_distance=self.config.env.target_distance,
+            target_distance=self.config.environment.target_distance,
             joint_randomization_noise_scale=0.0,
             render_mode="rgb_array",
-            simulation_time=self.config.env.simulation_time,
-            num_physics_steps_per_control_step=self.config.env.num_physics_steps_per_control_step,
-            time_scale=self.config.env.time_scale,
-            camera_ids=self.config.env.camera_ids,
-            render_size=(self.config.env.render_size_x, self.config.env.render_size_y),
+            simulation_time=self.config.environment.simulation_time,
+            num_physics_steps_per_control_step=self.config.environment.number_of_physics_steps_per_control_step,
+            time_scale=self.config.environment.time_scale,
+            camera_ids=self.config.environment.camera_ids,
+            render_size=(self.config.environment.render_size_x, self.config.environment.render_size_y),
         )
 
         return BrittleStarDirectedLocomotionEnvironment.from_morphology_and_arena(
@@ -280,7 +275,7 @@ class Environment:
         :return: relative angle from each arm to the target, shape (envs, arms)
         :rtype: jnp.ndarray
         """
-        num_arms = self.config.env.num_arms
+        num_arms = self.config.environment.number_of_arms
         absolute_body_rotation = self.env_state.observations["disk_rotation"][:, jnp.newaxis, 2] # type: ignore -- the rotation around the z-axis (this is a scalar angle in radians) -- shape: (envs, 1)
 
         relative_arm_rotation  = jnp.array([

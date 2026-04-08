@@ -27,13 +27,13 @@ class RowingGaitModulator:
         if cpg_state.target_amplitude.shape[0] != num_envs:
             raise ValueError("action environment dimension must match cpg_state")
 
-        # 0: leading, 1: left rower, 2: right rower, 3: left secondary, 4: right secondary
+        # 0: leading, 1: right rower, 2: left rower, 3: right secondary, 4: left secondary
         masks = action[:, jnp.newaxis, :] == jnp.arange(5)[jnp.newaxis, :, jnp.newaxis]
         leading_mask     = masks[:, 0, :]
-        left_rower_mask  = masks[:, 1, :]
-        right_rower_mask = masks[:, 2, :]
-        left_sec_mask    = masks[:, 3, :]
-        right_sec_mask   = masks[:, 4, :]
+        right_rower_mask = masks[:, 1, :]
+        left_rower_mask  = masks[:, 2, :]
+        right_sec_mask   = masks[:, 3, :]
+        left_sec_mask    = masks[:, 4, :]
 
         all_arms = jnp.arange(num_arms)
         ip_idx, oop_idx = self._get_oscillator_indices(all_arms)
@@ -85,8 +85,4 @@ class RowingGaitModulator:
     def _map_cpg_to_brittle_star_actions(self, cpg_state: CPGState) -> jnp.ndarray:
         """Map the CPG outputs to the brittle star's joint angles."""
         return self.cpg.get_output(cpg_state)
-
-
-class RowingGaitController(RowingGaitModulator):
-    """Compatibility name for the rowing gait modulator."""
     
