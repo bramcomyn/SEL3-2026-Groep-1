@@ -1,6 +1,5 @@
 # Software Engineering Lab 3 - Brittle Star Locomotion
 
-
 This repository contains the implementation of our Brittle Star Locomotion research project.
 Currently, we've decided on our research topic:
 
