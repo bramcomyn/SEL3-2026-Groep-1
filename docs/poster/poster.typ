@@ -1,16 +1,16 @@
 #set page(
   paper: "a0",
-  margin: (x: 40mm, top: 30mm, bottom: 10mm),
-  fill: gray.lighten(90%),
-  columns: 3,
+  margin: (x: 20mm, top: 0mm, bottom: 10mm),
+  fill: gray.lighten(80%),
+  columns: 2,
 )
 
-#set text(font: "Red Hat Display", size: 28pt)
+#set text(font: "Red Hat Display", size: 36pt)
+#set heading(numbering: "1")
 
-#set heading(numbering: "01")
 #show heading: set text(font: "Red Hat Display", size: 48pt, weight: "bold")
-
 #show link: set text(fill: blue)
+#show figure.caption: set text(size: 28pt, weight: "medium", fill: gray)
 
 #let seperator = [
   #v(2mm)
@@ -24,7 +24,6 @@
   float: true
 )[
   #include "poster-header.typ"
-  #seperator
 ]
 
 #include "poster-body.typ"

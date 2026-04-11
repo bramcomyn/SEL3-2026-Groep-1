@@ -95,7 +95,7 @@ def main():
             actions = jnp.stack(all_env_actions, axis=0)
 
             # Use the standard step() method
-            *_, trajectory = env.step(actions)
+            *_, trajectory = env.step(jnp.zeros_like(actions))
             eval_trajectory.append(trajectory)
 
             if jnp.any(env.env_state.terminated):

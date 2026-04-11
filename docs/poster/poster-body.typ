@@ -1,55 +1,105 @@
-#let figure-placeholder = rect(width: 100%, height: 150pt, fill: white, stroke: gray)[
+#import "@preview/xarrow:0.4.0": *
+
+#let figure-placeholder(height: 150pt) = rect(width: 100%, height: height, fill: white, stroke: gray)[
   #set align(center + horizon)
   #text(gray)[(Figure Placeholder)]
 ]
 
-= Introduction
+#let content-block(content) = rect(
+  width: 100%, 
+  fill: white, 
+  stroke: gray,
+  inset: (x: 10mm, y: 10mm),
+  radius: 5mm
+)[
+  #content
+]
 
-Transitioning robots from safe test environments to real-world scenarios can be challenging, and might lead to *unexpected damage*.
-Ideally, this damage would not render the robot unfunctional, but building robots that can withstand damage is a complex task.
+#let intro-figure-height = 120mm
 
-Often, nature has already solved the problem at hand, as is the case with animals that can survive severe injuries.
-For example, the brittle star is able to sustain the loss of a limb, which lead to the idea of building robots that can *survive damage by mimicking the brittle star's structure and behavior*.
-
-#figure(
-  image("../assets/brittle-stars.jpg"),
+#let brittle-star-figure = figure(
+  image("../assets/brittle-stars.jpg", height: intro-figure-height),
   caption: [
-    Image showing three brittle stars, where the one on the right is showing clear signs of damage  (#link("https://ecology.wa.gov/blog/march-2018/eyes-under-puget-sound-critter-of-the-month-the", "source")).
+    Two intact (left) and one damaged (right) brittle stars.
   ]
 )
 
-We implement a *Multi-Agent Reinforcement Learning* (MARL) algorithm to train a brittle star-inspired robot to survive damage and continue performing its task.
-The algorithm is trained to choose from a specific set of motor actions, which are implemented as *central pattern generators* (CPGs) that control the robot's movement to *mimick a simplified rowing gait*.
-
-= Methodology
-
-We built our robot using adapted versions of provided code and open-source packages, and implemented the following components:
-
-- provided CPG code, with some adjustments *allow for vectorized environments*;
-- rowing gait modulation: each arm can *pick from 5 different roles*, allowing multiple arms to pick the same role;
-- JAX-based implementation of *Independent Q-Learning* (IQL): MARL algorithm where each agent learns its own Q-function independently.
-
-In order to make training simpler, we started with a single, fixed target, no damage and the following settings for the IQL algorithm:
-
-- *reward:* distance moved closer to the target in each step, with an extra bonus of 10 for reaching a terminal state in the environment;
-- *action space:* 1 discrete action per arm, with 5 possible actions (corresponding to 5 different roles in the rowing gait);
-- *observation space:* angle (per arm), direction and distance to target.
-
-= Results
-
-After our first training runs, which used *single environments with a fixed random target and no damage*, the robot was *able to reach the target*, although these results were inconsistent across runs.
-
-Training runs resulted in highly variable performance, which led us to believe our reward function might not show enough correlation with the actual task of reaching the target.
-
-#figure(
-  image("../assets/two-runs-single-env-trained.png"),
+#let simulated-brittle-star-figure = figure(
+  image("../assets/simulated-brittle-star.png", height: intro-figure-height),
   caption: [
-    Two training runs of 100 episodes each, showing the moving average of the reward per episode, with a window size of 10 episodes.
+    Brittle star-inspired robot with 5 arms in a simulated environment.
   ]
 )
 
-= Conclusion
+#let brittle-star-moving-figures = range(1, 5).map(i => {
+  figure(
+    image("../assets/brittle-star-moving-" + str(i) + ".png", height: 80mm),
+  )
+})
 
-= Acknowledgements
+#content-block[
 
-= References
+  = Damage Robustness
+
+  Real-world robots might sustain damage in operation.
+  Nature already has solutions to this problem, e.g. brittle stars:
+
+  #grid(
+    columns: (auto, auto),
+    brittle-star-figure,
+    simulated-brittle-star-figure
+  )
+
+  #align(center)[brittle star damage robustness $xarrow(sym: -->, ?)$ damage-robust robots]
+
+]
+
+#content-block[
+  
+  = Research Goal
+
+  Build damage-robust robots by learning brittle star-inspired locomotion gaits with the help of central pattern generators (CPGs) and multi-agent reinforcement learning (MARL).
+
+]
+
+#content-block[
+
+  = Methodology
+
+  + develop training algorithm for learning locomotion gaits
+  + adding damage events during training
+  + succes?
+  
+]
+
+#content-block[
+
+  = Results
+
+  #grid(
+    columns: (auto, auto),
+    column-gutter: 10mm,
+    rows: (auto, auto, auto, auto),
+    row-gutter: 10mm,
+    ..brittle-star-moving-figures
+  )
+  
+]
+
+#content-block[
+
+  = Conclusions
+  
+]
+
+#content-block[
+
+  = Acknowledgements
+  
+]
+
+#content-block[
+
+  = References
+  
+]
