@@ -22,6 +22,30 @@ class QNetwork(nnx.Module):
     :param amount_of_hidden_layers: The number of additional hidden layers to insert 
         between the initial projection and the output layer. Defaults to 0.
     """
+    @staticmethod
+    def load_checkpoint(model_callback: Callable[[], nnx.Module], name: str) -> nnx.Module:
+        """Load a checkpoint of a model.
+
+        :param Callable[[], nnx.Module] model_callback:
+            A callback that returns the model to load the checkpoint into.
+        :param str name: The name of the checkpoint.
+        :return: The model with the loaded checkpoint.
+
+        >>> model = QNetwork.load_checkpoint(lambda: MyModel(), "my_checkpoint")
+        """
+        path_to_checkpoint = os.path.join(CHECKPOINT_DIR, f"{name}")
+
+        abstract_model = nnx.eval_shape(lambda: model_callback())
+        graphdef, abstract_state = nnx.split(abstract_model)
+
+        with open(path_to_checkpoint, "rb") as input_file:
+            restored_pure_dict = pickle.load(input_file)
+
+        nnx.replace_by_pure_dict(abstract_state, restored_pure_dict)
+
+        model = nnx.merge(graphdef, abstract_state)
+        return model
+
     def __init__(
         self, 
         input_size: int, 
@@ -90,27 +114,3 @@ class QNetwork(nnx.Module):
         pure_dict_state = nnx.to_pure_dict(state)
         with open(path_to_checkpoint, "wb") as output_file:
             pickle.dump(pure_dict_state, output_file)
-
-    @staticmethod
-    def load_checkpoint(model_callback: Callable[[], nnx.Module], name: str) -> nnx.Module:
-        """Load a checkpoint of a model.
-
-        :param Callable[[], nnx.Module] model_callback:
-            A callback that returns the model to load the checkpoint into.
-        :param str name: The name of the checkpoint.
-        :return: The model with the loaded checkpoint.
-
-        >>> model = QNetwork.load_checkpoint(lambda: MyModel(), "my_checkpoint")
-        """
-        path_to_checkpoint = os.path.join(CHECKPOINT_DIR, f"{name}")
-
-        abstract_model = nnx.eval_shape(lambda: model_callback())
-        graphdef, abstract_state = nnx.split(abstract_model)
-
-        with open(path_to_checkpoint, "rb") as input_file:
-            restored_pure_dict = pickle.load(input_file)
-
-        nnx.replace_by_pure_dict(abstract_state, restored_pure_dict)
-
-        model = nnx.merge(graphdef, abstract_state)
-        return model
