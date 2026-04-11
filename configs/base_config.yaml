@@ -23,7 +23,7 @@ cpg:
 
 rl:
   replay_buffer_size: 10000
-  num_episodes: 100
+  num_episodes: 1
   epsilon: 1.0
   epsilon_min: 0.01
   epsilon_decay: 0.975
@@ -38,7 +38,6 @@ rl:
   amount_environments: 16
   observations_to_use: [
     "angle_to_target",
-    "unit_xy_direction_to_target",
     "xy_distance_to_target"
   ]
 

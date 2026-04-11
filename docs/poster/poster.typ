@@ -1,7 +1,8 @@
 #set page(
   paper: "a0",
   margin: (x: 40mm, top: 30mm, bottom: 10mm),
-  fill: gray.lighten(90%)
+  fill: gray.lighten(90%),
+  columns: 3,
 )
 
 #set text(font: "Red Hat Display", size: 28pt)
@@ -17,25 +18,22 @@
   #v(2mm)
 ]
 
-#grid(
-  columns: (100%),
-  rows: (auto, 1fr, auto),
-  inset: 0.5em,
-  gutter: 2em,
+#place(
+  top + center,
+  scope: "parent",
+  float: true
+)[
+  #include "poster-header.typ"
+  #seperator
+]
 
-  block[
-    #include "poster-header.typ"
-    #seperator
-  ],
+#include "poster-body.typ"
 
-  block(height: 100%)[
-    #columns(3, gutter: 0.5em)[
-      #include "poster-body.typ"
-    ]
-  ],
-
-  block[
-    #seperator
-    #include "poster-footer.typ"
-  ]
-)
+#place(
+  bottom + center,
+  scope: "parent",
+  float: true
+)[
+  #seperator
+  #include "poster-footer.typ"
+]
