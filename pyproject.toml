@@ -12,9 +12,11 @@ dependencies = [
     "evosax>=0.2.0",
     "matplotlib>=3.10.8",
     "mediapy>=1.2.6",
+    "omegaconf>=2.3.0",
     "pyopengl>=3.1.10",
     "pyopengl-accelerate>=3.1.10",
     "wandb>=0.25.0",
+    "warp>=1.0.4",
 ]
 
 [project.optional-dependencies]
@@ -31,10 +33,6 @@ dev = [
     "hatch>=1.16.3",
     "tensorboard>=2.20.0",
 ]
-
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-ra --cov=src"
 
 [tool.ruff]
 line-length = 150

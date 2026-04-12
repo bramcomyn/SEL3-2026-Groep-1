@@ -69,3 +69,5 @@ coverage.xml
 Thumbs.db
 
 /out/
+/wandb/
+/checkpoints/
