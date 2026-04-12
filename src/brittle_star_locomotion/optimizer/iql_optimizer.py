@@ -1,7 +1,6 @@
-import time
-
 from brittle_star_locomotion.config.configuration import Configuration
 from brittle_star_locomotion.environment.environment import Environment
+from brittle_star_locomotion.logger.logger import Logger
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 
 from cpprb import ReplayBuffer
@@ -29,20 +28,39 @@ class IQLOptimizer:
 
         self._epsilon = self._config.rl.epsilon # TODO: config
         self._environment = environment
-        self._observation_size = 16 # TODO: actual observation size
+        self._observation_size = self._environment.get_observation_size()
+        self._n_agents = self._environment.number_of_arms
+        self._n_environments = self._environment.number_of_environments
+        self._n_actions = 5
+
+        self._logger = Logger()
+        self._logger.info(
+            "IQL optimizer initialized with "
+            f"{self._n_agents} agents, {self._n_environments} environments, "
+            f"{self._n_actions} actions, observation size {self._observation_size}, "
+            f"episodes={self._config.rl.n_episodes}, batch_size={self._config.rl.batch_size}, "
+            f"target_update_freq={self._config.rl.target_update_freq}"
+        )
+
+        self._logger.info(
+            f"Training hyperparameters: seed={self._seed}, epsilon={self._epsilon:.4f}, "
+            f"epsilon_decay={self._config.rl.epsilon_decay}, epsilon_min={self._config.rl.epsilon_min}, "
+            f"learning_rate={self._config.rl.learning_rate}, gamma={self._config.rl.gamma}"
+        )
 
         self._replay_buffers = [
             self._create_replay_buffer() 
-            for _ in range(self._config.rl.num_agents) # TODO: config
+            for _ in range(self._n_agents)
         ]
 
-        self._q_networks = self._create_n_qnetworks(self._config.rl.num_agents) # TODO: config
-        self._target_q_networks = self._create_n_qnetworks(self._config.rl.num_agents) # TODO: config
+        self._q_networks = self._create_n_qnetworks(self._n_agents)
+        self._target_q_networks = self._create_n_qnetworks(self._n_agents)
         self._synchronize_target_networks()
 
         optimizer = optax.chain(
             optax.adam(self._config.rl.learning_rate) # TODO: config
         )
+
         self._q_network_optimizers = [
             nnx.Optimizer(q_network, optimizer, wrt=nnx.Param)
             for q_network in self._q_networks
@@ -51,59 +69,202 @@ class IQLOptimizer:
     def optimize(self):
         """Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment.
         """
-        n_environments = self._config.env.n_environments # TODO: config
+        n_environments = self._environment.number_of_environments
         total_train_steps = 0
+        environment_steps = 0
 
-        for _ in range(self._config.rl.n_episodes): # TODO: config
-            self._environment.reset()
-            self._update_epsilon()
-            environment_is_done = False
-            reward = jnp.zeros((n_environments,)) # Reward per environment -- shape (n_envs,)
+        self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config)
+        self._logger.info(
+            f"Starting IQL training for {self._config.rl.n_episodes} episodes "
+            f"across {n_environments} environments"
+        )
 
-            while not environment_is_done:
-                observations = self._environment.get_observations() # shape (n_envs, n_agents, observation_size)
-                actions = self._epsilon_greedy(observations)        # shape (n_envs, n_agents)
+        for episode_index in range(self._config.rl.n_episodes): # TODO: config
+            total_train_steps, environment_steps = self._run_episode(
+                episode_index=episode_index + 1,
+                n_environments=n_environments,
+                total_train_steps=total_train_steps,
+                environment_steps=environment_steps,
+            )
 
-                _, reward, terminated, truncated, _ = self._environment.step(actions)
+        self._logger.info(
+            f"Finished IQL training after {environment_steps} environment steps and "
+            f"{total_train_steps} optimization steps"
+        )
 
-                environment_is_done = bool(jnp.logical_or(jnp.any(terminated), jnp.any(truncated)))
-                episode_reward += reward                                 # shape (n_envs,)
-                next_observations = self._environment.get_observations() # shape (n_envs, n_agents, observation_size)
+    def _run_episode(
+        self,
+        episode_index: int,
+        n_environments: int,
+        total_train_steps: int,
+        environment_steps: int,
+    ) -> tuple[int, int]:
+        """Run a single episode across all vectorized environments."""
+        env_state, cpg_state = self._environment.reset()
+        previous_epsilon = self._epsilon
+        self._update_epsilon()
+        self._logger.info(
+            f"Episode {episode_index}/{self._config.rl.n_episodes} started: "
+            f"epsilon {previous_epsilon:.4f} -> {self._epsilon:.4f}"
+        )
 
-                for agent_id in range(self._config.rl.num_agents): # TODO: config
-                    for environment_id in range(self._config.rl.n_envs): # TODO: config
-                        self._replay_buffers[agent_id].add(
-                            obs=observations[environment_id, agent_id],
-                            act=actions[environment_id, agent_id],
-                            rew=reward[environment_id],
-                            next_obs=next_observations[environment_id, agent_id],
-                            done=bool(terminated[environment_id] | truncated[environment_id])
-                        )
+        done_environments = jnp.zeros((n_environments,), dtype=bool)
+        episode_steps = 0
+        episode_reward_sum = 0.0
+        episode_loss_sum = 0.0
+        episode_terminated_count = 0
+        episode_truncated_count = 0
+        episode_done_count = 0
 
-                    if self._replay_buffers[agent_id].get_stored_size() >= self._config.rl.batch_size: # TODO: config
-                        self._optimize_step(agent_id)
+        while not bool(jnp.all(done_environments)):
+            transition = self._collect_transition(
+                env_state=env_state,
+                cpg_state=cpg_state,
+                done_environments=done_environments
+            )
 
-                        total_train_steps += 1
-                        if total_train_steps % self._config.rl.target_update_freq == 0: # TODO: config
-                            self._synchronize_target_networks()
+            env_state = transition["next_env_state"]
+            cpg_state = transition["next_cpg_state"]
+            done_environments = transition["done_environments"]
 
-    def save_model(self, base_name: str = 'model'):
-        """Saves the model parameters of all Q-networks to disk with a timestamped filename.
+            loss_per_environment = self._compute_step_loss_per_environment(
+                observations=transition["observations"],
+                actions=transition["actions"],
+                rewards=transition["reward"],
+                next_observations=transition["next_observations"],
+                dones=transition["current_done"],
+            )
 
-        The filename is constructed with:
-        - `base_name`: A base name for the model (default is 'model').
-        - The number of agents and segments from the configuration.
-        - The agent identifier (e.g., 'agent_0', 'agent_1', etc.).
-        - A timestamp to ensure uniqueness.
+            self._store_replay_transitions(
+                observations=transition["observations"],
+                actions=transition["actions"],
+                rewards=transition["reward"],
+                next_observations=transition["next_observations"],
+                current_done=transition["current_done"],
+                previously_done=transition["previously_done"],
+            )
 
-        :param base_name: A base name for the saved model files (default is 'model').
+            optimize_losses, total_train_steps = self._optimize_agents(total_train_steps=total_train_steps)
+
+            step_reward_mean = float(jnp.mean(transition["reward"]))
+            step_loss_mean = float(jnp.mean(loss_per_environment))
+            episode_reward_sum += step_reward_mean
+            episode_loss_sum += step_loss_mean
+            episode_terminated_count += int(jnp.sum(transition["terminated"]))
+            episode_truncated_count += int(jnp.sum(transition["truncated"]))
+            episode_done_count += int(jnp.sum(transition["current_done"]))
+            episode_steps += 1
+
+            self._log_step_metrics(
+                step=environment_steps,
+                rewards=transition["reward"],
+                losses=loss_per_environment,
+                terminated=transition["terminated"],
+                truncated=transition["truncated"],
+                done=transition["current_done"],
+                optimize_losses=jnp.asarray(optimize_losses) if len(optimize_losses) > 0 else None,
+            )
+
+            environment_steps += 1
+
+        self._logger.info(
+            f"Episode {episode_index}/{self._config.rl.n_episodes} finished after {episode_steps} steps: "
+            f"mean_step_reward={episode_reward_sum / max(1, episode_steps):.4f}, "
+            f"mean_step_loss={episode_loss_sum / max(1, episode_steps):.4f}, "
+            f"terminated={episode_terminated_count}, truncated={episode_truncated_count}, "
+            f"done={episode_done_count}, total_train_steps={total_train_steps}"
+        )
+
+        return total_train_steps, environment_steps
+
+    def _collect_transition(self, env_state, cpg_state, done_environments: jnp.ndarray) -> dict:
+        """Collect one transition step for all environments with action-masking for finished envs."""
+        observations = self._environment.get_observations()
+        actions = self._epsilon_greedy(observations)
+        previously_done = done_environments
+
+        actions = jnp.where(previously_done[:, None], 0, actions)
+
+        next_env_state, next_cpg_state, reward, terminated, truncated, _ = self._environment.step(
+            env_state, cpg_state, actions
+        )
+        
+        # Update environment's internal state for get_observations() calls
+        self._environment.env_state = next_env_state
+        self._environment.cpg_state = next_cpg_state
+
+        # Reshape reward from (n_envs, 1) to (n_envs,)
+        reward = jnp.asarray(reward).reshape(-1)
+        terminated = jnp.asarray(terminated).reshape(-1)
+        truncated = jnp.asarray(truncated).reshape(-1)
+
+        current_done = jnp.asarray(terminated | truncated).reshape(-1)
+
+        next_done_environments = done_environments | current_done
+        next_observations = self._environment.get_observations()
+
+        return {
+            "observations": observations,
+            "actions": actions,
+            "reward": reward,
+            "next_observations": next_observations,
+            "terminated": terminated,
+            "truncated": truncated,
+            "current_done": current_done,
+            "previously_done": previously_done,
+            "done_environments": next_done_environments,
+            "next_env_state": next_env_state,
+            "next_cpg_state": next_cpg_state,
+        }
+
+    def _store_replay_transitions(
+        self,
+        observations: jnp.ndarray,
+        actions: jnp.ndarray,
+        rewards: jnp.ndarray,
+        next_observations: jnp.ndarray,
+        current_done: jnp.ndarray,
+        previously_done: jnp.ndarray,
+    ) -> None:
+        """Store transitions for active environments in each agent replay buffer."""
+        n_environments = self._environment.number_of_environments
+        for agent_id in range(self._n_agents):
+            for environment_id in range(n_environments):
+                if bool(previously_done[environment_id]):
+                    continue
+
+                self._replay_buffers[agent_id].add(
+                    observation=observations[environment_id, agent_id],
+                    action=actions[environment_id, agent_id],
+                    reward=rewards[environment_id],
+                    next_observation=next_observations[environment_id, agent_id],
+                    done=bool(current_done[environment_id])
+                )
+
+    def _optimize_agents(self, total_train_steps: int) -> tuple[list[float], int]:
+        """Optimize all trainable agents once and return losses with updated train step counter."""
+        optimize_losses = []
+        for agent_id in range(self._n_agents):
+            if self._replay_buffers[agent_id].get_stored_size() >= self._config.rl.batch_size: # TODO: config
+                optimize_loss = self._optimize_step(agent_id)
+                optimize_losses.append(optimize_loss)
+
+                total_train_steps += 1
+                if total_train_steps % self._config.rl.target_update_freq == 0: # TODO: config
+                    self._synchronize_target_networks()
+                    self._logger.debug(
+                        f"Synchronized target networks at train step {total_train_steps}"
+                    )
+
+        return optimize_losses, total_train_steps
+
+    def save_model(self, checkpoint_prefix: str = 'model'):
+        """Save one checkpoint per agent using <checkpoint_prefix>_<agent_id>.
+
+        :param checkpoint_prefix: Prefix used for all checkpoint filenames.
         """
         for agent_id, q_network in enumerate(self._q_networks):
-            config = f'{self._config.rl.n_agents}_agents_{self._config.env.n_segments}_segments' # TODO: config
-            agent = f'agent_{agent_id}'
-            timestamp = time.strftime("%Y%m%d-%H%M%S")
-
-            model_name = f'{base_name}_{config}_{agent}_{timestamp}'
+            model_name = f'{checkpoint_prefix}_{agent_id}'
             q_network.save_checkpoint(model_name)
 
     def _optimize_step(self, agent_id: int):
@@ -134,7 +295,69 @@ class IQLOptimizer:
             mini_batch['action'], 
             targets
         )
+
         self._q_network_optimizers[agent_id].update(self._q_networks[agent_id], grads)
+        return float(loss)
+
+    def _compute_step_loss_per_environment(
+        self,
+        observations: jnp.ndarray,
+        actions: jnp.ndarray,
+        rewards: jnp.ndarray,
+        next_observations: jnp.ndarray,
+        dones: jnp.ndarray,
+    ) -> jnp.ndarray:
+        """Compute one-step TD loss per environment, averaged over agents."""
+        losses_by_agent = []
+
+        for agent_id in range(self._n_agents):
+            q_values = self._q_networks[agent_id](observations[:, agent_id, :])
+            taken_actions = actions[:, agent_id].astype(int).reshape(-1, 1)
+            q_taken = jnp.take_along_axis(q_values, taken_actions, axis=-1).reshape(-1)
+
+            next_q_values_online = self._q_networks[agent_id](next_observations[:, agent_id, :])
+            next_actions = jnp.argmax(next_q_values_online, axis=-1, keepdims=True)
+            next_q_values_target = self._target_q_networks[agent_id](next_observations[:, agent_id, :])
+            next_q = jnp.take_along_axis(next_q_values_target, next_actions, axis=-1).reshape(-1)
+
+            targets = rewards + self._config.rl.gamma * next_q * (1.0 - dones.astype(jnp.float32))
+            td_loss = (q_taken - jax.lax.stop_gradient(targets)) ** 2
+            losses_by_agent.append(td_loss)
+
+        return jnp.stack(losses_by_agent, axis=0).mean(axis=0)
+
+    def _log_step_metrics(
+        self,
+        step: int,
+        rewards: jnp.ndarray,
+        losses: jnp.ndarray,
+        terminated: jnp.ndarray,
+        truncated: jnp.ndarray,
+        done: jnp.ndarray,
+        optimize_losses: jnp.ndarray | None,
+    ) -> None:
+        """Log per-environment and aggregate training metrics to Weights & Biases."""
+        log_data = {
+            "train/reward_mean": float(jnp.mean(rewards)),
+            "train/loss_mean": float(jnp.mean(losses)),
+            "train/terminated_count": int(jnp.sum(terminated)),
+            "train/truncated_count": int(jnp.sum(truncated)),
+            "train/done_count": int(jnp.sum(done)),
+            "train/terminated_ratio": float(jnp.mean(terminated.astype(jnp.float32))),
+            "train/done_ratio": float(jnp.mean(done.astype(jnp.float32))),
+        }
+
+        if optimize_losses is not None:
+            log_data["train/optimize_loss_mean"] = float(jnp.mean(optimize_losses))
+
+        for environment_id in range(self._environment.number_of_environments):
+            log_data[f"train/reward/env_{environment_id}"] = float(rewards[environment_id])
+            log_data[f"train/loss/env_{environment_id}"] = float(losses[environment_id])
+            log_data[f"train/terminated/env_{environment_id}"] = int(terminated[environment_id])
+            log_data[f"train/truncated/env_{environment_id}"] = int(truncated[environment_id])
+            log_data[f"train/done/env_{environment_id}"] = int(done[environment_id])
+
+        self._logger.log_metrics(log_data, step=step)
 
     def _loss(
         self, 
@@ -142,7 +365,7 @@ class IQLOptimizer:
         observations: jnp.ndarray,
         taken_actions: jnp.ndarray,
         targets: jnp.ndarray
-    ) -> float:
+    ) -> jnp.ndarray:
         """Computes the loss for the Q-network.
 
         :param q_network: The Q-network for which to compute the loss.
@@ -152,9 +375,11 @@ class IQLOptimizer:
         :return: The computed loss.
         """
         q_values = q_network(observations) # shape (batch_size, n_actions)
+        # Cast actions to int if needed (replay buffer stores as float)
+        taken_actions = taken_actions.astype(jnp.int32)
         action_q_values = jnp.take_along_axis(q_values, taken_actions, axis=-1) # shape (batch_size, 1)
         loss = jnp.mean((action_q_values - targets) ** 2)
-        return float(loss)
+        return loss.astype(float)
 
     def _epsilon_greedy(
         self, 
@@ -170,21 +395,23 @@ class IQLOptimizer:
 
         random_probabilities = jax.random.uniform(
             key=probabilities_key,
-            shape=(self._config.rl.n_envs, self._config.rl.n_agents) # TODO: config
+            shape=(self._n_environments, self._n_agents)
         ) # shape (n_environments, n_agents)
 
         random_actions = jax.random.randint(
             key=actions_key,
-            shape=(self._config.rl.n_envs, self._config.rl.n_agents), # TODO: config
+            shape=(self._n_environments, self._n_agents),
             minval=0,
-            maxval=self._config.rl.n_actions # TODO: add "num_agents" to config
+            maxval=self._n_actions
         ) # shape (n_environments, n_agents)
 
-        q_values = jax.vmap(
-            lambda model, obs: model(obs),
-            in_axes=(0, 1), # Iterate over first axis of q_networks and second axis of observations (n_agents)
-            out_axes=1 # Stack results into axis 1 (n_agents)
-        )(self._q_networks, observations)
+        q_values_list = []
+        for agent_id in range(self._n_agents):
+            agent_obs = observations[:, agent_id, :]
+            agent_q_values = self._q_networks[agent_id](agent_obs)  # shape (n_envs, n_actions)
+            q_values_list.append(agent_q_values)
+
+        q_values = jnp.stack(q_values_list, axis=1)  # shape (n_envs, n_agents, n_actions)
         greedy_actions = jnp.argmax(q_values, axis=-1) # shape (n_environments, n_agents)
 
         epsilon_greedy = jnp.where(
@@ -232,7 +459,7 @@ class IQLOptimizer:
         """
         return QNetwork(
             input_size=self._observation_size,
-            output_size=self._config.rl.action_size, # TODO: config
+            output_size=self._n_actions,
             rngs=nnx.Rngs(agent_id),
             hidden_size=self._config.rl.hidden_size, # TODO: config
             amount_of_hidden_layers=self._config.rl.amount_of_hidden_layers # TODO: config

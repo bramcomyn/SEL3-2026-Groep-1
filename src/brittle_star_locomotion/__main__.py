@@ -1,13 +1,17 @@
 import argparse
+import os
 import time
 
 import jax
 import jax.numpy as jnp
+from flax import nnx
 
 from brittle_star_locomotion.config.configuration import Configuration
 from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.environment.render import EnvironmentRenderer
 from brittle_star_locomotion.logger.logger import Logger
+from brittle_star_locomotion.neural.qnetwork import QNetwork
+from brittle_star_locomotion.optimizer.iql_optimizer import IQLOptimizer
 
 def main():
     """Main entry point for the brittle star locomotion project."""
@@ -23,14 +27,24 @@ def main():
 
     logger.info("Finished brittle star locomotion project.")
 
-def train(_arguments: argparse.Namespace):
+def train(arguments: argparse.Namespace):
     """Train the brittle star locomotion model."""
     logger = Logger()
-    logger.debug("Starting training process...")
+    started_at = time.perf_counter()
+    logger.info("Starting training process...")
 
-    # TODO: Implement the training logic here
-
-    logger.debug("Training process completed.")
+    environment = Environment()
+    optimizer = IQLOptimizer(environment)
+    
+    logger.info(f"Training with {environment.number_of_environments} parallel environments")
+    optimizer.optimize()
+    
+    checkpoint_base = _normalize_checkpoint_base_name(arguments.checkpoint, Configuration().configuration.checkpoint_directory)
+    optimizer.save_model(checkpoint_prefix=checkpoint_base)
+    
+    elapsed = time.perf_counter() - started_at
+    logger.info(f"Training completed in {elapsed:.1f}s")
+    logger.debug("Training process finished.")
 
 def evaluate(arguments: argparse.Namespace):
     """Evaluate the brittle star locomotion model."""
@@ -40,21 +54,17 @@ def evaluate(arguments: argparse.Namespace):
 
     config = Configuration().configuration
 
-    fixed_action = _parse_fixed_action(config.environment.fixed_evaluation_action)
-
-    if fixed_action.shape[0] != config.environment.number_of_arms:
-        raise ValueError(
-            f"Expected {config.environment.number_of_arms} action entries, got {fixed_action.shape[0]}"
-        )
-
-    fixed_action_second = jnp.roll(fixed_action, shift=1)
-    fixed_action = jnp.stack([fixed_action, fixed_action_second], axis=0)
-
-
     environment = Environment()
+    checkpoint_base = _normalize_checkpoint_base_name(arguments.checkpoint, config.checkpoint_directory)
+    q_networks = _load_qnetworks_for_evaluation(
+        environment=environment,
+        checkpoint_base=checkpoint_base,
+        logger=logger,
+    )
+
     render_trajectory = _collect_render_trajectory(
         environment,
-        fixed_action,
+        q_networks,
         num_modulation_steps=config.gait.fixed_number_of_evaluation_modulation_steps,
         num_substeps=config.gait.fixed_number_of_evaluation_substeps_per_modulation,
         log_every=config.environment.render_every_x_frames,
@@ -71,43 +81,134 @@ def evaluate(arguments: argparse.Namespace):
     logger.debug("Evaluation process completed.")
 
 
-def _parse_fixed_action(value: str) -> jnp.ndarray:
-    """Parse a comma-separated list of arm roles into an integer JAX array."""
-    entries = [item.strip() for item in value.split(",") if item.strip()]
-    if not entries:
-        raise ValueError("fixed action must contain at least one role value")
-    return jnp.array([int(x) for x in entries], dtype=jnp.int32)
+def _normalize_checkpoint_base_name(checkpoint_argument: str, checkpoint_directory: str) -> str:
+    """Convert checkpoint CLI input to a basename used by QNetwork.load_checkpoint."""
+    normalized = checkpoint_argument.replace("\\", "/")
+    checkpoint_directory = checkpoint_directory.rstrip("/")
+
+    if os.path.isabs(normalized):
+        return os.path.basename(normalized)
+
+    if normalized.startswith(f"{checkpoint_directory}/"):
+        normalized = normalized[len(checkpoint_directory) + 1 :]
+
+    normalized = normalized.split("/")[-1]
+
+    return normalized
+
+
+def _resolve_agent_checkpoint_name(checkpoint_base: str, agent_id: int, checkpoint_directory: str) -> str:
+    """Resolve the checkpoint filename for a specific agent."""
+    checkpoint_name = f"{checkpoint_base}_{agent_id}"
+    checkpoint_path = os.path.join(checkpoint_directory, checkpoint_name)
+
+    if not os.path.exists(checkpoint_path):
+        raise FileNotFoundError(
+            f"Checkpoint for agent {agent_id} was not found at {checkpoint_path}. "
+            f"Expected naming pattern: <checkpoint_prefix>_<agent_id>."
+        )
+
+    return checkpoint_name
+
+
+def _load_qnetworks_for_evaluation(
+    environment: Environment,
+    checkpoint_base: str,
+    logger: Logger,
+) -> list[QNetwork]:
+    """Load one Q-network checkpoint per agent for greedy policy evaluation."""
+    config = Configuration().configuration
+    observation_size = environment.get_observation_size()
+    checkpoint_directory = config.checkpoint_directory
+    q_networks = []
+
+    for agent_id in range(config.environment.number_of_arms):
+        checkpoint_name = _resolve_agent_checkpoint_name(
+            checkpoint_base=checkpoint_base,
+            agent_id=agent_id,
+            checkpoint_directory=checkpoint_directory,
+        )
+
+        logger.info(f"Loading checkpoint for agent {agent_id}: {checkpoint_name}")
+
+        q_network = QNetwork.load_checkpoint(
+            model_callback=lambda agent_id=agent_id: QNetwork(
+                input_size=observation_size,
+                output_size=5,
+                rngs=nnx.Rngs(agent_id),
+                hidden_size=config.rl.hidden_size,
+                amount_of_hidden_layers=config.rl.amount_of_hidden_layers,
+            ),
+            name=checkpoint_name,
+        )
+
+        q_networks.append(q_network)
+
+    return q_networks
+
+
+def _select_policy_actions(
+    observations: jnp.ndarray,
+    q_networks: list[QNetwork],
+) -> jnp.ndarray:
+    """Select greedy actions from the loaded per-agent Q-networks."""
+    q_values_by_agent = []
+    for agent_id, q_network in enumerate(q_networks):
+        q_values_by_agent.append(q_network(observations[:, agent_id, :]))
+
+    q_values = jnp.stack(q_values_by_agent, axis=1)
+    return jnp.argmax(q_values, axis=-1).astype(jnp.int32)
 
 
 def _collect_render_trajectory(
     environment: Environment,
-    fixed_action: jnp.ndarray,
+    q_networks: list[QNetwork],
     num_modulation_steps: int,
     num_substeps: int,
     log_every: int,
     logger: Logger,
 ):
-    """Run repeated fixed-action rollouts and stack the renderable environment trajectory."""
+    """Run a single greedy-policy episode and stack the renderable environment trajectory."""
     env_state, cpg_state = environment.reset()
     logger.info(
-        f"Starting fixed-action rollout with {num_modulation_steps} modulation steps and {num_substeps} substeps per step"
+        f"Starting policy rollout with {num_modulation_steps} modulation steps and {num_substeps} substeps per step"
     )
 
+    done_environments = jnp.zeros((environment.number_of_environments,), dtype=bool)
     trajectory_env_states_list = []
+
     for step_index in range(num_modulation_steps):
+        if bool(jnp.all(done_environments)):
+            break
+
         if step_index % max(1, log_every) == 0 or step_index == num_modulation_steps - 1:
             logger.info(f"Evaluation progress: modulation step {step_index + 1}/{num_modulation_steps}")
 
-        env_state, cpg_state, _, _, _, trajectory = environment.step(
+        observations = environment.get_observations()
+        actions = _select_policy_actions(observations=observations, q_networks=q_networks)
+        actions = jnp.where(done_environments[:, None], 0, actions)
+
+        env_state, cpg_state, _, terminated, truncated, trajectory = environment.step(
             env_state,
             cpg_state,
-            fixed_action,
+            actions,
             num_substeps,
         )
+
+        terminated = jnp.asarray(terminated).reshape(-1)
+        truncated = jnp.asarray(truncated).reshape(-1)
+        done_environments = done_environments | terminated | truncated
+
+        environment.env_state = env_state
+        environment.cpg_state = cpg_state
 
         substep_env_states = trajectory[0]
 
         trajectory_env_states_list.append(substep_env_states)
+
+    logger.info(
+        f"Policy rollout finished after {len(trajectory_env_states_list)} modulation steps"
+    )
 
     if not trajectory_env_states_list:
         raise ValueError("No trajectory data collected during evaluation")
