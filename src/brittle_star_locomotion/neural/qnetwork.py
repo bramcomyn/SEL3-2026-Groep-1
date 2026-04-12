@@ -57,21 +57,31 @@ class QNetwork(nnx.Module):
         layers = []
 
         # initial layer projection
+        # initial layer projection
         layers.append(nnx.Linear(input_size, hidden_size, rngs=rngs))
         layers.append(nnx.relu)
 
+        # optional additional hidden layers
         # optional additional hidden layers
         for _ in range(amount_of_hidden_layers):
             layers.append(nnx.Linear(hidden_size, hidden_size, rngs=rngs))
             layers.append(nnx.relu)
 
         # output layer producing raw Q-values (logits)
+        # output layer producing raw Q-values (logits)
         layers.append(nnx.Linear(hidden_size, output_size, rngs=rngs))
 
+        # self.mlp is registered as an nnx.List to track sub-module state
         # self.mlp is registered as an nnx.List to track sub-module state
         self.mlp = nnx.List(layers)
 
     def __call__(self, x: jax.Array) -> jax.Array:
+        """
+        Performs a forward pass of the network to compute Q-values for the given input.
+
+        :param x: A JAX array representing the input state (or a batch of states).
+        :return: A JAX array of Q-values with shape (..., output_size).
+        """
         """
         Performs a forward pass of the network to compute Q-values for the given input.
 

@@ -176,6 +176,7 @@ dependencies = [
     { name = "pyopengl" },
     { name = "pyopengl-accelerate" },
     { name = "wandb" },
+    { name = "warp" },
 ]
 
 [package.optional-dependencies]
@@ -210,6 +211,7 @@ requires-dist = [
     { name = "pyopengl", specifier = ">=3.1.10" },
     { name = "pyopengl-accelerate", specifier = ">=3.1.10" },
     { name = "wandb", specifier = ">=0.25.0" },
+    { name = "warp", specifier = ">=1.0.4" },
 ]
 provides-extras = ["cpu", "gpu"]
 
@@ -3343,6 +3345,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/cc/fb/9578eed2c01b2fc6c8b693da110aa9c73a33d7bb556480f5cfc42e48c94e/wandb-0.25.0-py3-none-win32.whl", hash = "sha256:020b42ca4d76e347709d65f59b30d4623a115edc28f462af1c92681cb17eae7c", size = 24604118, upload-time = "2026-02-13T00:17:37.641Z" },
     { url = "https://files.pythonhosted.org/packages/25/97/460f6cb738aaa39b4eb2e6b4c630b2ae4321cdd70a79d5955ea75a878981/wandb-0.25.0-py3-none-win_amd64.whl", hash = "sha256:78307ac0b328f2dc334c8607bec772851215584b62c439eb320c4af4fb077a00", size = 24604122, upload-time = "2026-02-13T00:17:39.991Z" },
     { url = "https://files.pythonhosted.org/packages/27/6c/5847b4dda1dfd52630dac08711d4348c69ed657f0698fc2d949c7f7a6622/wandb-0.25.0-py3-none-win_arm64.whl", hash = "sha256:c6174401fd6fb726295e98d57b4231c100eca96bd17de51bfc64038a57230aaf", size = 21785298, upload-time = "2026-02-13T00:17:42.475Z" },
+]
+
+[[package]]
+name = "warp"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5b/d8/3b6a858a3509390034fbc228858ced7dacfd3610aae5a73cba36bd0240c0/warp-1.0.4.tar.gz", hash = "sha256:bab40b58d5e82fcb549390b4793205b65792fa68a5dbfed7602dd76c7390533e", size = 6071, upload-time = "2022-03-29T06:10:39.388Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/75/ca/22c0b316e96e7e929f6dbb48f2af6e11baffe2efcb6cd96ee71af3268186/warp-1.0.4-py3-none-any.whl", hash = "sha256:6b56c39727bea5ecc5dd3088753ddea24e79fb18529ac08ac591ce03519b3226", size = 6080, upload-time = "2022-03-29T06:10:38.302Z" },
 ]
 
 [[package]]
