@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitController
+from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitModulator
 from brittle_star_locomotion.cpg.cpg import CPGState
 
 
@@ -50,7 +50,7 @@ class _Config:
 
 def test_get_oscillator_indices_maps_arms_to_ip_oop_pairs():
     """Arm i should map to in-plane index 2i and out-of-plane index 2i+1."""
-    controller = RowingGaitController.__new__(RowingGaitController)
+    controller = RowingGaitModulator.__new__(RowingGaitModulator)
 
     ip_idx, oop_idx = controller._get_oscillator_indices(jnp.array([0, 1, 4]))
 
@@ -61,7 +61,7 @@ def test_get_oscillator_indices_maps_arms_to_ip_oop_pairs():
 
 def test_map_cpg_to_brittle_star_actions_returns_cpg_output():
     """Current mapping function is identity, so controller output should equal CPG output."""
-    controller = RowingGaitController.__new__(RowingGaitController)
+    controller = RowingGaitModulator.__new__(RowingGaitModulator)
     controller.cpg = _FakeCPG(output=jnp.array([[0.2, -0.4, 0.6]])) # type: ignore
     state = controller.cpg.state # type: ignore
 
@@ -73,7 +73,7 @@ def test_map_cpg_to_brittle_star_actions_returns_cpg_output():
 
 def test_step_functional_returns_new_state_and_actions():
     """Functional step should return both next CPG state and mapped actions."""
-    controller = RowingGaitController.__new__(RowingGaitController)
+    controller = RowingGaitModulator.__new__(RowingGaitModulator)
     controller.cpg = _FakeCPG(output=jnp.array([[1.0, 2.0]])) # type: ignore
     input_state = controller.cpg.state # type: ignore
 
@@ -86,7 +86,7 @@ def test_step_functional_returns_new_state_and_actions():
 
 def test_modulate_functional_updates_targets_without_mutating_input_state():
     """Functional modulate should return updated targets and keep input state unchanged."""
-    controller = RowingGaitController.__new__(RowingGaitController)
+    controller = RowingGaitModulator.__new__(RowingGaitModulator)
     controller.configuration = _Config() # type: ignore
     controller.cpg = _FakeCPG(output=jnp.zeros((1, 10))) # type: ignore
 

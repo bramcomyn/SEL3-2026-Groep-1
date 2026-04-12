@@ -19,38 +19,57 @@ def _make_test_configuration() -> SimpleNamespace:
         wall_thickness=0.2,
     )
 
-    env = SimpleNamespace(
+    environment = SimpleNamespace(
         seed=0,
-        num_arms=5,
-        num_segments_per_arm=5,
+        number_of_arms=5,
+        number_of_segments_per_arm=5,
+        number_of_environments=1,
         target_distance=2.0,
         simulation_time=10.0,
-        num_physics_steps_per_control_step=5,
+        number_of_physics_steps_per_control_step=5,
         time_scale=1.0,
         camera_ids=[0],
         render_size_x=240,
         render_size_y=240,
-        num_substeps_per_modulation=50,
+        render_every_x_frames=2,
+        frames_per_second=50,
         arena=arena,
     )
 
     rl = SimpleNamespace(
-        number_of_environments=1,
+        seed=0,
+        epsilon=1.0,
+        epsilon_decay=0.995,
+        epsilon_min=0.01,
+        learning_rate=0.001,
+        gamma=0.99,
+        hidden_size=128,
+        amount_of_hidden_layers=2,
+        shared_params=False,
+        n_episodes=25,
+        batch_size=32,
+        target_update_freq=1000,
+        replay_buffer_size=100000,
         observations_to_use=None,
     )
 
+    cpg = SimpleNamespace(
+        seed=0,
+        solver="rk4",
+        time_step=0.05,
+        base_frequency_multiplier=1.0,
+        coupling_strength=1.0,
+    )
+
     return SimpleNamespace(
-        env=env,
+        checkpoint_directory="checkpoints",
+        environment=environment,
         rl=rl,
-        cpg_seed=0,
-        cpg_solver="rk4",
-        number_of_oscillators=10,
-        number_of_environments=1,
-        cpg_time_step=0.05,
-        cpg_base_frequency=1.0,
-        cpg_coupling_strength=1.0,
-        number_of_arms=5,
-        number_of_oscillators_per_arm=2,
+        gait=SimpleNamespace(
+            fixed_number_of_evaluation_modulation_steps=20,
+            fixed_number_of_evaluation_substeps_per_modulation=50,
+        ),
+        cpg=cpg,
     )
 
 

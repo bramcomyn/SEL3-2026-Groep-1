@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 
-from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitController
+from brittle_star_locomotion.controller.rowing_gait_controller import RowingGaitModulator
 from brittle_star_locomotion.cpg.cpg import CPG, CPGState
 from brittle_star_locomotion.cpg.solver import EulerSolver, RK4Solver
 
@@ -25,7 +25,7 @@ def _make_state(num_envs: int = 2, num_arms: int = 5) -> CPGState:
     )
 
 
-def _make_controller_with_real_cpg(state: CPGState, solver) -> RowingGaitController:
+def _make_controller_with_real_cpg(state: CPGState, solver) -> RowingGaitModulator:
     """Build a controller instance that uses the real CPG stepping logic with a chosen solver."""
     cpg = CPG.__new__(CPG)
     cpg.time_step = 0.1
@@ -33,7 +33,7 @@ def _make_controller_with_real_cpg(state: CPGState, solver) -> RowingGaitControl
     cpg.weights = jnp.zeros((state.phase.shape[0], state.phase.shape[1], state.phase.shape[1]))
     cpg.state = state
 
-    controller = RowingGaitController.__new__(RowingGaitController)
+    controller = RowingGaitModulator.__new__(RowingGaitModulator)
     controller.cpg = cpg  # type: ignore
     return controller
 
