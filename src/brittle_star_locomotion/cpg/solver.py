@@ -8,7 +8,7 @@ class Solver(ABC):
     """abstract base class for numerical ordinary differential equation (ode) solvers."""
 
     @abstractmethod
-    def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
+    def __call__(self, current_time: jnp.ndarray, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
         """standard interface for numerical ode solvers.
 
         :param current_time: the current simulation time (t).
@@ -27,7 +27,7 @@ class RK4Solver(Solver):
     points within the time step to compute a weighted average slope.
     """
 
-    def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
+    def __call__(self, current_time: jnp.ndarray, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
         """integrates the state using the rk4 method.
 
         :param current_time: current simulation time.
@@ -55,7 +55,7 @@ class EulerSolver(Solver):
     following the tangent line at the current state.
     """
 
-    def __call__(self, current_time: float, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
+    def __call__(self, current_time: jnp.ndarray, y: jnp.ndarray, derivative_fn: Callable, delta_time: float) -> jnp.ndarray:
         """integrates the state using the euler method.
 
         :param current_time: current simulation time.
