@@ -43,37 +43,71 @@ class CPG:
     def __init__(self):
         """Initialise a new CPG"""
         self.configuration  = Configuration().configuration
-        self.rng = jax.random.PRNGKey(self.configuration.cpg_seed) # TODO: add "cpg_seed" to configuration
+        self.rng = jax.random.PRNGKey(self.configuration.cpg.seed)
         
-        self.solver: Solver = RK4Solver() if self.configuration.cpg_solver == 'rk4' else EulerSolver() # TODO: add "cpg_solver" to configuration
-        self.number_of_oscillators = self.configuration.number_of_oscillators # TODO: add "number_of_oscillators" to configuration
-        self.number_of_environments = self.configuration.number_of_environments # TODO: add "number_of_environments" to configuration
-        self.time_step = self.configuration.cpg_time_step # TODO: add "cpg_time_step" to configuration
+        self.solver: Solver = RK4Solver() if self.configuration.cpg.solver == 'rk4' else EulerSolver()
+        self.number_of_oscillators = self.configuration.environment.number_of_arms * 2
+        self.number_of_environments = self.configuration.environment.number_of_environments
+        self.time_step = self.configuration.cpg.time_step
 
         self._initialise_weights()
         self.state = self.reset()
 
-    def step(self):
-        """Advance the CPG state by one time step using the configured solver."""
-        new_phase = self.solver(self.state.time, self.state.phase, self._phase_dynamics, self.time_step)
+    def step(self, state: CPGState | None = None, *, update_internal_state: bool = False) -> CPGState:
+        """Advance one CPG step in a functional way.
 
-        new_dot_amplitude = self.solver(self.state.time, self.state.dot_amplitude, self._amplitude_acceleration, self.time_step)
-        new_amplitude = self.solver(self.state.time, self.state.amplitude, self._amplitude_velocity, self.time_step)
+        :param state: input CPG state. If None, self.state is used.
+        :param update_internal_state: when True, write the returned state to self.state.
+        :return: next CPG state.
+        """
+        state = self.state if state is None else state
 
-        new_dot_offset = self.solver(self.state.time, self.state.dot_offset, self._offset_acceleration, self.time_step)
-        new_offset = self.solver(self.state.time, self.state.offset, self._offset_velocity, self.time_step)
+        new_phase = self.solver(state.time, state.phase, lambda t, y: self._phase_dynamics(state, t, y), self.time_step)
+
+        new_dot_amplitude = self.solver(
+            state.time,
+            state.dot_amplitude,
+            lambda t, y: self._amplitude_acceleration(state, t, y),
+            self.time_step,
+        )
+
+        new_amplitude = self.solver(
+            state.time,
+            state.amplitude,
+            lambda t, y: self._amplitude_velocity(state, t, y),
+            self.time_step,
+        )
+
+        new_dot_offset = self.solver(
+            state.time,
+            state.dot_offset,
+            lambda t, y: self._offset_acceleration(state, t, y),
+            self.time_step,
+        )
+
+        new_offset = self.solver(
+            state.time,
+            state.offset,
+            lambda t, y: self._offset_velocity(state, t, y),
+            self.time_step,
+        )
 
         new_output = new_offset + new_amplitude * jnp.cos(new_phase)
 
-        return self.state.replace( # type: ignore
-            time          = self.state.time + self.time_step,
-            phase         = new_phase,
-            amplitude     = new_amplitude,
-            dot_amplitude = new_dot_amplitude,
-            offset        = new_offset,
-            dot_offset    = new_dot_offset,
-            output        = new_output
+        next_state = state.replace(  # type: ignore
+            time=state.time + self.time_step,
+            phase=new_phase,
+            amplitude=new_amplitude,
+            dot_amplitude=new_dot_amplitude,
+            offset=new_offset,
+            dot_offset=new_dot_offset,
+            output=new_output,
         )
+
+        if update_internal_state:
+            self.state = next_state
+
+        return next_state
 
     def reset(self) -> CPGState:
         """Reset the CPG to its initial state.
@@ -85,35 +119,42 @@ class CPG:
         :return: The initial state of the CPG after reset.
         """
         self.rng, phase_rng = jax.random.split(self.rng)
-        initial_phase = jax.random.uniform(phase_rng, shape=self.number_of_oscillators, minval=-0.1, maxval=0.1) # small random initial phase to break symmetry
-        base_frequency = self.configuration.cpg_base_frequency # TODO: add "cpg_base_frequency" to configuration
+        initial_phase = jax.random.uniform(
+            phase_rng,
+            shape=(self.number_of_environments, self.number_of_oscillators),
+            minval=-0.1,
+            maxval=0.1,
+        )
+
+        base_frequency = self.configuration.cpg.base_frequency_multiplier * jnp.pi
         
         state = CPGState(
             time                = jnp.zeros(self.number_of_environments),
             phase               = initial_phase,
-            amplitude           = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            dot_amplitude       = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            offset              = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            dot_offset          = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            output              = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            target_amplitude    = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            target_offset       = jnp.zeros(self.number_of_environments, self.number_of_oscillators),
-            intrinsic_frequency = jnp.zeros_like(self.number_of_environments, self.number_of_oscillators, base_frequency),
+            amplitude           = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            dot_amplitude       = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            offset              = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            dot_offset          = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            output              = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            target_amplitude    = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            target_offset       = jnp.zeros((self.number_of_environments, self.number_of_oscillators)),
+            intrinsic_frequency = jnp.full((self.number_of_environments, self.number_of_oscillators), base_frequency),
             target_phase_bias   = jnp.zeros_like(self.weights)
         )
 
         return state
     
 
-    def get_output(self):
+    def get_output(self, state: CPGState | None = None):
         """Get the current output of the CPG, which is calculated as the sum of the offset and the product of amplitude and cosine of phase for each oscillator.
         
         :return: current output of each oscillator, which represents the signal that would be sent to the motors in a robotic implementation. 
             This output is what ultimately drives the locomotion pattern generated by the CPG.
         """
-        return self.state.output
+        state = self.state if state is None else state
+        return state.output
 
-    def _phase_dynamics(self, _time: float, phase: jnp.ndarray) -> jnp.ndarray:
+    def _phase_dynamics(self, state: CPGState, _time: float, phase: jnp.ndarray) -> jnp.ndarray:
         """Calculate the phase dynamics of the CPG based on the current state and weights.
         
         :param _time: current simulation time (not used in this calculation but included for consistency with solver interface)
@@ -121,15 +162,15 @@ class CPG:
         :return: rate of change of phase for each oscillator, which is calculated using a phase coupling function that incorporates the weights, current amplitude, target phase bias, and intrinsic frequency of each oscillator. 
              This function captures how the oscillators influence each other's phase based on their coupling structure and current state, which is essential for generating coordinated oscillations that underlie locomotion patterns.
         """
-        return CPGEquations.phase_de(
+        return jax.vmap(CPGEquations.phase_de)(
             self.weights,
-            self.state.amplitude,
+            state.amplitude,
             phase,
-            self.state.target_phase_bias,
-            self.state.intrinsic_frequency
+            state.target_phase_bias,
+            state.intrinsic_frequency,
         )
 
-    def _amplitude_acceleration(self, _time: float, dot_amplitude: jnp.ndarray) -> jnp.ndarray:
+    def _amplitude_acceleration(self, state: CPGState, _time: float, dot_amplitude: jnp.ndarray) -> jnp.ndarray:
         """Calculate the amplitude acceleration of the CPG based on the current state and target amplitude.
 
         :param _time: current simulation time (not used in this calculation but included for consistency with solver interface)
@@ -138,12 +179,12 @@ class CPG:
             This allows the amplitude to change smoothly over time, which is important for generating naturalistic locomotion patterns.
         """
         return CPGEquations.second_order_de(
-            self.state.target_amplitude,
-            self.state.amplitude,
+            state.target_amplitude,
+            state.amplitude,
             dot_amplitude
         )
 
-    def _amplitude_velocity(self, _time: float, _amplitude: jnp.ndarray) -> jnp.ndarray:
+    def _amplitude_velocity(self, state: CPGState, _time: float, _amplitude: jnp.ndarray) -> jnp.ndarray:
         """Calculate the amplitude velocity of the CPG, which is simply the current derivative of amplitude.
         
         :param _time: current simulation time (not used in this calculation but included for consistency with solver interface)
@@ -151,9 +192,9 @@ class CPG:
         :return: current derivative of amplitude of each oscillator, which represents the velocity of the amplitude change.
             This is used by the solver to update the amplitude in the next time step.
         """
-        return self.state.dot_amplitude
+        return state.dot_amplitude
 
-    def _offset_acceleration(self, _time: float, dot_offset: jnp.ndarray) -> jnp.ndarray:
+    def _offset_acceleration(self, state: CPGState, _time: float, dot_offset: jnp.ndarray) -> jnp.ndarray:
         """Calculate the offset acceleration of the CPG based on the current state and target offset.
         
         :param _time: current simulation time (not used in this calculation but included for consistency with solver interface)
@@ -162,12 +203,12 @@ class CPG:
             This allows the offset to change smoothly over time, which is important for generating naturalistic locomotion patterns.
         """
         return CPGEquations.second_order_de(
-            self.state.target_offset,
-            self.state.offset,
+            state.target_offset,
+            state.offset,
             dot_offset
         )
 
-    def _offset_velocity(self, _time: float, _offset: jnp.ndarray) -> jnp.ndarray:
+    def _offset_velocity(self, state: CPGState, _time: float, _offset: jnp.ndarray) -> jnp.ndarray:
         """Calculate the offset velocity of the CPG, which is simply the current derivative of offset.
         
         :param _time: current simulation time (not used in this calculation but included for consistency with solver interface)
@@ -175,7 +216,7 @@ class CPG:
         :return: current derivative of offset of each oscillator, which represents the velocity of the offset change.
             This is used by the solver to update the offset in the next time step.
         """
-        return self.state.dot_offset
+        return state.dot_offset
 
     def _initialise_weights(self):
         """Initialise the weights of the CPG based on the configuration.
@@ -192,8 +233,8 @@ class CPG:
 
         # determine minimum common length to prevent broadcasting issues
         min_length = min(len(ip_idx), len(oop_idx))
-        ip_idx     = ip_idx[:, :min_length]
-        oop_idx    = oop_idx[:, :min_length]
+        ip_idx     = ip_idx[:min_length]
+        oop_idx    = oop_idx[:min_length]
 
         # couple ip and oop oscillators in same segment
         # this creates the primary functional unit of the cpg
@@ -208,4 +249,4 @@ class CPG:
         self.weights = self.weights.at[:, oop_idx, next_oop_idx].set(1.0)
 
         # enforce symmetry and apply global coupling strength multiplier
-        self.weights = self.configuration.cpg_coupling_strength * jnp.maximum(self.weights, self.weights.transpose((0, 2, 1))) # TODO: add "cpg_coupling_strength" to configuration
+        self.weights = self.configuration.cpg.coupling_strength * jnp.maximum(self.weights, self.weights.transpose((0, 2, 1)))

@@ -33,10 +33,6 @@ dev = [
     "tensorboard>=2.20.0",
 ]
 
-[tool.pytest.ini_options]
-testpaths = ["tests"]
-addopts = "-ra --cov=src"
-
 [tool.ruff]
 line-length = 150
 target-version = "py312"

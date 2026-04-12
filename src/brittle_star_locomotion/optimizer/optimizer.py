@@ -1,2 +1,0 @@
-class Optimzer:
-    pass
