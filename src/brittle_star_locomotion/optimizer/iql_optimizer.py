@@ -23,10 +23,10 @@ class IQLOptimizer:
         :param environment: An instance of the Environment class that the optimizer will interact with.
         """
         self._config = Configuration().configuration
-        self._seed = self._config.rl.seed # TODO: config
+        self._seed = self._config.rl.seed
         self._rng = jax.random.PRNGKey(self._seed)
 
-        self._epsilon = self._config.rl.epsilon # TODO: config
+        self._epsilon = self._config.rl.epsilon
         self._environment = environment
         self._observation_size = self._environment.get_observation_size()
         self._n_agents = self._environment.number_of_arms
@@ -58,7 +58,7 @@ class IQLOptimizer:
         self._synchronize_target_networks()
 
         optimizer = optax.chain(
-            optax.adam(self._config.rl.learning_rate) # TODO: config
+            optax.adam(self._config.rl.learning_rate)
         )
 
         self._q_network_optimizers = [
@@ -79,7 +79,7 @@ class IQLOptimizer:
             f"across {n_environments} environments"
         )
 
-        for episode_index in range(self._config.rl.n_episodes): # TODO: config
+        for episode_index in range(self._config.rl.n_episodes):
             total_train_steps, environment_steps = self._run_episode(
                 episode_index=episode_index + 1,
                 n_environments=n_environments,
@@ -245,12 +245,12 @@ class IQLOptimizer:
         """Optimize all trainable agents once and return losses with updated train step counter."""
         optimize_losses = []
         for agent_id in range(self._n_agents):
-            if self._replay_buffers[agent_id].get_stored_size() >= self._config.rl.batch_size: # TODO: config
+            if self._replay_buffers[agent_id].get_stored_size() >= self._config.rl.batch_size:
                 optimize_loss = self._optimize_step(agent_id)
                 optimize_losses.append(optimize_loss)
 
                 total_train_steps += 1
-                if total_train_steps % self._config.rl.target_update_freq == 0: # TODO: config
+                if total_train_steps % self._config.rl.target_update_freq == 0:
                     self._synchronize_target_networks()
                     self._logger.debug(
                         f"Synchronized target networks at train step {total_train_steps}"
@@ -276,7 +276,7 @@ class IQLOptimizer:
 
         :param agent_id: The identifier of the agent for which to perform the optimization step.
         """
-        mini_batch = self._replay_buffers[agent_id].sample(self._config.rl.batch_size) # TODO: config
+        mini_batch = self._replay_buffers[agent_id].sample(self._config.rl.batch_size)
 
         # Double Q-learning
         target_q_values = self._target_q_networks[agent_id](mini_batch['next_observation']) # shape (batch_size, n_actions)
@@ -286,7 +286,7 @@ class IQLOptimizer:
 
         max_next_q_values = jnp.take_along_axis(target_q_values, greedy_actions, axis=-1)
 
-        targets = mini_batch['reward'] + self._config.rl.gamma * max_next_q_values * (1.0 - mini_batch['done']) # shape (batch_size, 1) # TODO: config
+        targets = mini_batch['reward'] + self._config.rl.gamma * max_next_q_values * (1.0 - mini_batch['done']) # shape (batch_size, 1)
         targets = jax.lax.stop_gradient(targets) # Do not update parameters for inference of target             # shape (batch_size, 1)
         
         loss, grads = nnx.value_and_grad(self._loss)(
@@ -427,8 +427,8 @@ class IQLOptimizer:
         The epsilon value is decayed by multiplying it with `epsilon_decay`, but it will not go below `epsilon_min`.
         """
         self._epsilon = max(
-            self._epsilon * self._config.rl.epsilon_decay, # TODO: config
-            self._config.rl.epsilon_min # TODO: config
+            self._epsilon * self._config.rl.epsilon_decay,
+            self._config.rl.epsilon_min
         ) 
 
     def _synchronize_target_networks(self):
@@ -442,7 +442,7 @@ class IQLOptimizer:
         :param n: The number of QNetwork instances to create (default is 1).
         :return: A list of QNetwork instances.
         """
-        if self._config.rl.shared_params: # TODO: config
+        if self._config.rl.shared_params:
             q_network = self._create_qnetwork()
             return [q_network] * n
         else:
@@ -461,8 +461,8 @@ class IQLOptimizer:
             input_size=self._observation_size,
             output_size=self._n_actions,
             rngs=nnx.Rngs(agent_id),
-            hidden_size=self._config.rl.hidden_size, # TODO: config
-            amount_of_hidden_layers=self._config.rl.amount_of_hidden_layers # TODO: config
+            hidden_size=self._config.rl.hidden_size,
+            amount_of_hidden_layers=self._config.rl.amount_of_hidden_layers
         )
 
     def _create_replay_buffer(self) -> ReplayBuffer:
@@ -473,7 +473,7 @@ class IQLOptimizer:
         :return: A new ReplayBuffer instance.
         """
         return ReplayBuffer(
-            self._config.rl.replay_buffer_size, # TODO: config
+            self._config.rl.replay_buffer_size,
             env_dict={
                 "observation": { "shape": (self._observation_size) },
                 "action": {},
