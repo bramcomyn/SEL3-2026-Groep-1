@@ -2,7 +2,7 @@
 
 #set page(
   paper: "a0",
-  margin: (x: 20mm, top: 0mm, bottom: 10mm),
+  margin: (x: 20mm, top: 0mm, bottom: 0mm),
   fill: gray.lighten(80%),
   columns: 2,
 )
@@ -16,9 +16,7 @@
 #show figure: set figure(supplement: none)
 
 #let seperator = [
-  #v(2mm)
   #line(length: 100%, stroke: gray + 2pt)
-  #v(2mm)
 ]
 
 #place(

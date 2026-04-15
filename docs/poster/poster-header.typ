@@ -3,11 +3,11 @@
 ]
 
 #let authors = [
-  Bram Comyn#super[1], Brent Janssens#super[1], Nyah Van Wayenberge#super[1]
+  Bram Comyn, Brent Janssens, Nyah Van Wayenberge
 ]
 
 #let affiliations = [
-  #super[1] Faculty of Science, Ghent University
+  Faculty of Science, Ghent University
 ]
 
 #rect(
@@ -19,10 +19,10 @@
 )[
   #set text(fill: white)
   #align(center)[
-    #text(size: 96pt, weight: "bold")[#project-title]
+    #text(size: 86pt, weight: "bold")[#project-title]
     #v(2mm)
-    #text(size: 54pt, weight: "medium")[#authors] \
+    #text(size: 48pt, weight: "medium")[#authors] \
     #v(2mm)
-    #text(size: 54pt, weight: "light")[#affiliations]
+    #text(size: 48pt, weight: "light")[#affiliations]
   ]
 ]

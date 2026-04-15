@@ -50,7 +50,14 @@
 #let reward-function-figure = figure(
   image("../assets/reward-function.svg", width: 350mm),
   caption: [
-    average reward over 10 environment steps while training for 100 episodes
+    Average reward over 10 environment steps while training for 100 episodes
+  ]
+)
+
+#let random-reward-function-figure = figure(
+  image("../assets/random-reward-function.svg", width: 350mm),
+  caption: [
+    Same training setup as above, but with random target positions
   ]
 )
 
@@ -86,7 +93,7 @@
 
   = Methodology
 
-  - actions: rowing gait modulation through CPGs:
+  Actions: rowing gait modulation through CPGs:
 
     #table(
       stroke: none,
@@ -94,22 +101,22 @@
       gutter: 5mm,
       inset: 5mm,
       align: (left + horizon),
-      table.header([*action*], [*description*]),
+      table.header([*Action*], [*Description*]),
       table.hline(stroke: gray + 1pt),
-      [leading arm],           [pointing upward],
-      [left rower],            [clockwise rotation],
-      [right rower],           [counterclockwise rotation],
-      [secondary left rower],  [smaller amplitude clockwise],
-      [secondary right rower], [smaller amplitude counterclockwise]
+      [Leading arm],           [Pointing upward],
+      [Left rower],            [Clockwise rotation],
+      [Right rower],           [Counterclockwise rotation],
+      [Secondary left rower],  [Smaller amplitude clockwise],
+      [Secondary right rower], [Smaller amplitude counterclockwise]
     )
 
-  - learning: *action selection* through MARL:
-    - observations: 
-     + *angle* between arm and target, 
-     + *direction* between body and target, 
-     + *distance* between body and target
-    - reward function: *distance reduction* toward target
-    - *fixed* target
+  Learning: *action selection* through MARL:
+    - Observations: 
+     + *Angle* between arm and target, 
+     + *Direction* between body and target, 
+     + *Distance* between body and target
+    - Reward function: *distance reduction* toward target
+    - *Fixed* target position
 
   #methodology-figure
 
@@ -132,10 +139,16 @@
     )
   ]
 
-  However, this did not reflect in high rewards during training:
+  Reward functions shows a *small increase* in reward, but remains close to zero:
 
   #align(center)[
     #reward-function-figure
+  ]
+
+  Moving to random target positions shows the *same results, but with a lower average* reward:
+
+  #align(center)[
+    #random-reward-function-figure
   ]
   
 ]
@@ -143,17 +156,9 @@
 #content-block[
 
   = Conclusions
-  
-]
 
-#content-block[
-
-  = Acknowledgements
-  
-]
-
-#content-block[
-
-  = References
+  + More research is required to *fix the learning process*.
+  + Reward function should be checked for *bugs*.
+  + Cannot say anything about *damage robustness*
   
 ]
