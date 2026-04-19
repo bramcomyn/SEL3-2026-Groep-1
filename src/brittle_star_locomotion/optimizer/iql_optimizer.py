@@ -169,6 +169,7 @@ class IQLOptimizer:
 
         self._logger.info(
             f"Episode {episode_index}/{self._config.rl.n_episodes} finished after {episode_steps} steps: "
+            f"episode_return={episode_reward_sum:.4f}, "
             f"mean_step_reward={episode_reward_sum / max(1, episode_steps):.4f}, "
             f"mean_step_loss={episode_loss_sum / max(1, episode_steps):.4f}, "
             f"terminated={episode_terminated_count}, truncated={episode_truncated_count}, "
