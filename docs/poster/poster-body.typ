@@ -150,6 +150,8 @@
   #align(center)[
     #random-reward-function-figure
   ]
+
+  However, in this case, the robot *doesn't learn to walk*.
   
 ]
 

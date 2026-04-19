@@ -19,7 +19,7 @@
 )[
   #set text(fill: white)
   #align(center)[
-    #text(size: 86pt, weight: "bold")[#project-title]
+    #text(size: 92pt, weight: "bold")[#project-title] \
     #v(2mm)
     #text(size: 48pt, weight: "medium")[#authors] \
     #v(2mm)
