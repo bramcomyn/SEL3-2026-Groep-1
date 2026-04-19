@@ -4,17 +4,34 @@ brittle\_star\_locomotion.cpg package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+brittle\_star\_locomotion.cpg.cpg module
+----------------------------------------
 
-   brittle_star_locomotion.cpg.cpg
-   brittle_star_locomotion.cpg.equations
-   brittle_star_locomotion.cpg.solver
+.. automodule:: brittle_star_locomotion.cpg.cpg
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+brittle\_star\_locomotion.cpg.equations module
+----------------------------------------------
+
+.. automodule:: brittle_star_locomotion.cpg.equations
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
+brittle\_star\_locomotion.cpg.solver module
+-------------------------------------------
+
+.. automodule:: brittle_star_locomotion.cpg.solver
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: brittle_star_locomotion.cpg
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

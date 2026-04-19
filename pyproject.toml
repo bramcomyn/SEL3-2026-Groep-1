@@ -10,6 +10,7 @@ dependencies = [
     "biorobot>=0.4.2",
     "cpprb>=11.0.0",
     "evosax>=0.2.0",
+    "furo>=2025.12.19",
     "matplotlib>=3.10.8",
     "mediapy>=1.2.6",
     "omegaconf>=2.3.0",

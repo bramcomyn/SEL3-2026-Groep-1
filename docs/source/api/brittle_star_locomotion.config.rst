@@ -4,15 +4,18 @@ brittle\_star\_locomotion.config package
 Submodules
 ----------
 
-.. toctree::
-   :maxdepth: 4
+brittle\_star\_locomotion.config.configuration module
+-----------------------------------------------------
 
-   brittle_star_locomotion.config.config_loader
+.. automodule:: brittle_star_locomotion.config.configuration
+   :members:
+   :show-inheritance:
+   :undoc-members:
 
 Module contents
 ---------------
 
 .. automodule:: brittle_star_locomotion.config
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:

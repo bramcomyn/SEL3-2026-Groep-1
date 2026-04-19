@@ -7,8 +7,6 @@ from flax import nnx
 
 from brittle_star_locomotion.config.configuration import Configuration
 
-CHECKPOINT_DIR = Configuration().configuration.checkpoint_directory
-
 class QNetwork(nnx.Module):
     """
     A multi-layer perceptron (MLP) designed for Q-value estimation in reinforcement learning.
@@ -33,7 +31,8 @@ class QNetwork(nnx.Module):
 
         >>> model = QNetwork.load_checkpoint(lambda: MyModel(), "my_checkpoint")
         """
-        path_to_checkpoint = os.path.join(CHECKPOINT_DIR, f"{name}")
+        checkpoint_dir = Configuration().configuration.checkpoint_directory
+        path_to_checkpoint = os.path.join(checkpoint_dir, f"{name}")
 
         abstract_model = nnx.eval_shape(lambda: model_callback())
         graphdef, abstract_state = nnx.split(abstract_model)
@@ -54,6 +53,8 @@ class QNetwork(nnx.Module):
         hidden_size: int = 32,
         amount_of_hidden_layers: int = 0
     ):
+        self.config = Configuration().configuration
+
         layers = []
 
         # initial layer projection
@@ -116,8 +117,8 @@ class QNetwork(nnx.Module):
         >>> model = MyModel()
         >>> model.save_checkpoint("my_checkpoint")
         """
-        os.makedirs(CHECKPOINT_DIR, exist_ok=True)
-        path_to_checkpoint = os.path.join(CHECKPOINT_DIR, name)
+        os.makedirs(self.config.checkpoint_directory, exist_ok=True)
+        path_to_checkpoint = os.path.join(self.config.checkpoint_directory, name)
 
         _, state = nnx.split(self)
 
