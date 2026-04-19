@@ -1,7 +1,7 @@
 checkpoint_directory: "checkpoints"
 
 logging:
-  use_wandb: false
+  use_wandb: True
 
 rl:
   seed: 42
