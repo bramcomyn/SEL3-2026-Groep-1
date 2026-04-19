@@ -63,7 +63,7 @@
   set outline(depth: 3)
   set text(
     font: "Latin Modern Sans",
-    lang: "nl",
+    lang: "en",
     region: "be"
   )
   
