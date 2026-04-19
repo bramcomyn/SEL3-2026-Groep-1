@@ -15,6 +15,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     "pyopengl>=3.1.10",
     "pyopengl-accelerate>=3.1.10",
+    "sphinx>=9.1.0",
     "wandb>=0.25.0",
     "warp>=1.0.4",
 ]
