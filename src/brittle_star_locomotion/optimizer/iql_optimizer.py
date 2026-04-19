@@ -73,7 +73,7 @@ class IQLOptimizer:
         total_train_steps = 0
         environment_steps = 0
 
-        self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config)
+        self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config, enabled=self._config.logging.use_wandb)
         self._logger.info(
             f"Starting IQL training for {self._config.rl.n_episodes} episodes "
             f"across {n_environments} environments"
