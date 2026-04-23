@@ -35,8 +35,6 @@ class IQLOptimizer:
         self._n_agents = self._environment.number_of_arms
         self._n_environments = self._environment.number_of_environments
         self._n_actions = 5
-
-        # TODO extra data
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
         self._total_train_steps = 0
         self._total_environment_steps = 0
@@ -83,17 +81,17 @@ class IQLOptimizer:
     def optimize(self) -> None:
         """Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment."""
         n_environments = self._environment.number_of_environments
-
+        
         self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config, enabled=self._config.logging.use_wandb)
         self._logger.info(
             f"Starting IQL training for {self._config.rl.n_episodes} episodes "
             f"across {n_environments} environments"
         )
 
+        self._total_train_steps = 0
+        self._total_environment_steps = 0
         for episode_index in range(self._config.rl.n_episodes):
             self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
-            self._total_train_steps = 0
-            self._total_environment_steps = 0
 
             self._run_episode(episode_index=episode_index + 1)
 
