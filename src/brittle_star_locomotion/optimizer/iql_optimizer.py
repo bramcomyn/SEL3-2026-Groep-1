@@ -48,13 +48,10 @@ class IQLOptimizer:
             f"learning_rate={self._config.rl.learning_rate}, gamma={self._config.rl.gamma}"
         )
 
-        self._replay_buffers = [
-            self._create_replay_buffer() 
-            for _ in range(self._n_agents)
-        ]
+        self._replay_buffers = self._create_replay_buffers()
 
-        self._q_networks = self._create_n_qnetworks(self._n_agents)
-        self._target_q_networks = self._create_n_qnetworks(self._n_agents)
+        self._q_networks = self._create_n_qnetworks()
+        self._target_q_networks = self._create_n_qnetworks()
         self._synchronize_target_networks()
 
         optimizer = optax.chain(
@@ -437,7 +434,7 @@ class IQLOptimizer:
         for q_net, target_q_net in zip(self._q_networks, self._target_q_networks):
             target_q_net.update_model_parameters(copy_from=q_net)
 
-    def _create_n_qnetworks(self, n: int = 1) -> list[QNetwork]:
+    def _create_n_qnetworks(self) -> list[QNetwork]:
         """Creates `n` QNetwork instances, either shared or separate based on the configuration.
 
         :param n: The number of QNetwork instances to create (default is 1).
@@ -445,9 +442,9 @@ class IQLOptimizer:
         """
         if self._config.rl.shared_params:
             q_network = self._create_qnetwork()
-            return [q_network] * n
+            return [q_network] * self._n_agents
         else:
-            return [self._create_qnetwork(agent_id) for agent_id in range(n)]
+            return [self._create_qnetwork(agent_id) for agent_id in range(self._n_agents)]
 
     def _create_qnetwork(self, agent_id: int = 0) -> QNetwork:
         """Creates a new QNetwork instance with random parameters.
@@ -483,3 +480,15 @@ class IQLOptimizer:
                 "done": {}
             }
         )
+    
+    def _create_replay_buffers(self) -> list[ReplayBuffer]:
+        """Creates a list of replay buffers, one for each agent.
+        If `shared_params` is True in the configuration, all agents will share the same replay buffer instance.
+
+        :return: A list of ReplayBuffer instances, one for each agent.
+        """
+        if self._config.rl.shared_params:
+            shared_buffer = self._create_replay_buffer()
+            return [shared_buffer] * self._n_agents
+        else:
+            return [self._create_replay_buffer() for _ in range(self._n_agents)]
