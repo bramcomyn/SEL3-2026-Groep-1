@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Sphinx docs build allowed
+!build/build/
+
 # Distribution / packaging
 .Python
 build/
