@@ -38,6 +38,9 @@ class IQLOptimizer:
         self._n_actions = 5
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
 
+        # We keep this explicitely # TODO
+        self._env_state, self._cpg_state = self._environment.reset()
+
         self._metrics = TrainingMetrics()
 
         self._logger = Logger()
@@ -91,19 +94,19 @@ class IQLOptimizer:
 
     def _run_episode(self) -> None:
         """Run a single episode across all vectorized environments."""
-        env_state, cpg_state = self._environment.reset()
+        self._env_state, self._cpg_state = self._environment.reset()
 
         self._metrics.new_episode(self._epsilon)
 
         while not bool(jnp.all(self._done_environments)):
-            transition, env_state, cpg_state = self._step_in_environment(env_state, cpg_state)
+            transition = self._step_in_environment()
             self._store_replay_transitions(transition)    
             losses = self._optimize_agents()
             self._metrics.new_episode_step(transition, losses)
 
         self._metrics.end_episode()
 
-    def _step_in_environment(self, env_state, cpg_state) -> tuple[Transition, Any, Any]:  # TODO remove Any
+    def _step_in_environment(self) -> Transition:
         """Collect one transition step for all environments.
 
         Makes observations of the state for each agent and determines the epsilon-greedy actions.
@@ -117,13 +120,13 @@ class IQLOptimizer:
         # Puts all actions to 0 for environments that are done
         actions = jnp.where(self._done_environments[:, None], 0, actions) # shape (n_environments, n_agents)
 
-        next_env_state, next_cpg_state, reward, terminated, truncated, _ = self._environment.step(
-            env_state, cpg_state, actions
+        self._env_state, self._cpg_state, reward, terminated, truncated, _ = self._environment.step(
+            self._env_state, self._cpg_state, actions
         )
 
         # Update environment's internal state for get_observations() calls
-        self._environment.env_state = next_env_state
-        self._environment.cpg_state = next_cpg_state
+        self._environment.env_state = self._env_state
+        self._environment.cpg_state = self._cpg_state
 
         self._done_environments = self._done_environments | terminated | truncated
         next_observations = self._environment.get_observations()
@@ -136,7 +139,7 @@ class IQLOptimizer:
             terminated,
             truncated
         )
-        return transition, next_env_state, next_cpg_state
+        return transition
 
     def _store_replay_transitions(
         self,
