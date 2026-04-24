@@ -229,7 +229,7 @@ def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray
         n_environments = 1
         action_trajectory = action_trajectory[:, None, :]
 
-    with open(f'out/{output_filename}', 'w') as output:
+    with open(f'{output_filename}', 'w') as output:
         output.write(f'environment_id,step_id,agent_id,action\n')
 
         for environment_id in range(n_environments):
