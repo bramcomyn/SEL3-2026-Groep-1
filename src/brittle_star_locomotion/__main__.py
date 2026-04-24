@@ -62,7 +62,7 @@ def evaluate(arguments: argparse.Namespace):
         logger=logger,
     )
 
-    render_trajectory = _collect_render_trajectory(
+    render_trajectory, actions_trajectory = _collect_trajectory(
         environment,
         q_networks,
         num_modulation_steps=config.gait.fixed_number_of_evaluation_modulation_steps,
@@ -73,11 +73,13 @@ def evaluate(arguments: argparse.Namespace):
 
     renderer = EnvironmentRenderer(environment)
     renderer.render_video(render_trajectory, output_path=arguments.output_video)
+    logger.info(f"Saved evaluation video to: {arguments.output_video}")
+
+    _save_action_trajectory(checkpoint_base, actions_trajectory)
+    logger.info("Saving action trajectory")
 
     elapsed = time.perf_counter() - started_at
-    logger.info(f"Saved evaluation video to: {arguments.output_video}")
     logger.info(f"Evaluation completed in {elapsed:.1f}s")
-
     logger.debug("Evaluation process completed.")
 
 
@@ -96,7 +98,6 @@ def _normalize_checkpoint_base_name(checkpoint_argument: str, checkpoint_directo
 
     return normalized
 
-
 def _resolve_agent_checkpoint_name(checkpoint_base: str, agent_id: int, checkpoint_directory: str) -> str:
     """Resolve the checkpoint filename for a specific agent."""
     checkpoint_name = f"{checkpoint_base}_{agent_id}"
@@ -109,7 +110,6 @@ def _resolve_agent_checkpoint_name(checkpoint_base: str, agent_id: int, checkpoi
         )
 
     return checkpoint_name
-
 
 def _load_qnetworks_for_evaluation(
     environment: Environment,
@@ -146,7 +146,6 @@ def _load_qnetworks_for_evaluation(
 
     return q_networks
 
-
 def _select_policy_actions(
     observations: jnp.ndarray,
     q_networks: list[QNetwork],
@@ -159,8 +158,7 @@ def _select_policy_actions(
     q_values = jnp.stack(q_values_by_agent, axis=1)
     return jnp.argmax(q_values, axis=-1).astype(jnp.int32)
 
-
-def _collect_render_trajectory(
+def _collect_trajectory(
     environment: Environment,
     q_networks: list[QNetwork],
     num_modulation_steps: int,
@@ -176,6 +174,7 @@ def _collect_render_trajectory(
 
     done_environments = jnp.zeros((environment.number_of_environments,), dtype=bool)
     trajectory_env_states_list = []
+    trajectory_actions_list = []
 
     for step_index in range(num_modulation_steps):
         if bool(jnp.all(done_environments)):
@@ -186,7 +185,7 @@ def _collect_render_trajectory(
 
         observations = environment.get_observations()
         actions = _select_policy_actions(observations=observations, q_networks=q_networks)
-        actions = jnp.where(done_environments[:, None], 0, actions)
+        actions = jnp.where(done_environments[:, None], 0, actions) # (n_environments, n_agents)
 
         env_state, cpg_state, _, terminated, truncated, trajectory = environment.step(
             env_state,
@@ -205,20 +204,41 @@ def _collect_render_trajectory(
         substep_env_states = trajectory[0]
 
         trajectory_env_states_list.append(substep_env_states)
+        trajectory_actions_list.append(actions)
 
     logger.info(
         f"Policy rollout finished after {len(trajectory_env_states_list)} modulation steps"
     )
 
-    if not trajectory_env_states_list:
+    if not (trajectory_env_states_list and trajectory_actions_list):
         raise ValueError("No trajectory data collected during evaluation")
 
     trajectory_env_states = jax.tree_util.tree_map(
         lambda *xs: jnp.concatenate(xs, axis=0),
         *trajectory_env_states_list,
     )
+    trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
+    trajectory_actions = jnp.concatenate(trajectory_actions_list, axis=0)
 
-    return jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
+    return trajectory_env_states, trajectory_actions
+
+def _save_action_trajectory(checkpoint_base: str, action_trajectory: jnp.ndarray) -> None:
+    if len(action_trajectory.shape) == 3:
+        n_steps, n_environments, n_agents = action_trajectory.shape
+    else:
+        n_steps, n_agents = action_trajectory.shape
+        n_environments = 1
+        action_trajectory = action_trajectory[:, None, :]
+
+    with open(f'out/{checkpoint_base}.csv', 'w') as output:
+        output.write(f'environment_id,step_id,agent_id,action\n')
+
+        for environment_id in range(n_environments):
+            for step_id in range(n_steps):
+                for agent_id in range(n_agents):
+                    output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
+                
+        
 
 def _parse_arguments():
     """Parse command-line arguments."""
