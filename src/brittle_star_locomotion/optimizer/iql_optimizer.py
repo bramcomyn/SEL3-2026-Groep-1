@@ -75,8 +75,8 @@ class IQLOptimizer:
 
         self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config)
         self._logger.info(
-            f"Starting IQL training for {self._config.rl.n_episodes} episodes "
-            f"across {n_environments} environments"
+            f"Starting IQL training for {self._config.rl.n_episodes} episodes across {n_environments} environments; "
+            "WandB metrics are grouped into environment/step, optimization/update, and episode/summary namespaces"
         )
 
         for episode_index in range(self._config.rl.n_episodes):
@@ -88,8 +88,7 @@ class IQLOptimizer:
             )
 
         self._logger.info(
-            f"Finished IQL training after {environment_steps} environment steps and "
-            f"{total_train_steps} optimization steps"
+            f"Finished IQL training after {environment_steps} environment steps and {total_train_steps} optimization steps"
         )
 
     def _run_episode(
@@ -105,10 +104,15 @@ class IQLOptimizer:
         self._update_epsilon()
         self._logger.info(
             f"Episode {episode_index}/{self._config.rl.n_episodes} started: "
-            f"epsilon {previous_epsilon:.4f} -> {self._epsilon:.4f}"
+            f"epsilon {previous_epsilon:.4f} -> {self._epsilon:.4f}; "
+            "step logs go to environment/step/*, updates go to optimization/update/*, "
+            "and episode aggregates go to episode/summary/*"
         )
 
         done_environments = jnp.zeros((n_environments,), dtype=bool)
+        episode_reward_per_environment = jnp.zeros((n_environments,), dtype=jnp.float32)
+        first_done_step_per_environment = [-1 for _ in range(n_environments)]
+        first_done_reason_per_environment = ["running" for _ in range(n_environments)]
         episode_steps = 0
         episode_reward_sum = 0.0
         episode_loss_sum = 0.0
@@ -148,22 +152,70 @@ class IQLOptimizer:
 
             step_reward_mean = float(jnp.mean(transition["reward"]))
             step_loss_mean = float(jnp.mean(loss_per_environment))
+            episode_reward_per_environment = episode_reward_per_environment + transition["reward"]
+
+            for environment_id in range(n_environments):
+                if (
+                    first_done_step_per_environment[environment_id] == -1
+                    and bool(transition["current_done"][environment_id])
+                ):
+                    first_done_step_per_environment[environment_id] = episode_steps
+                    if bool(transition["terminated"][environment_id]):
+                        first_done_reason_per_environment[environment_id] = "terminated"
+                    elif bool(transition["truncated"][environment_id]):
+                        first_done_reason_per_environment[environment_id] = "truncated"
+                    else:
+                        first_done_reason_per_environment[environment_id] = "done"
+
+                    self._logger.debug(
+                        f"Episode {episode_index} env {environment_id} reached "
+                        f"{first_done_reason_per_environment[environment_id]} at step {episode_steps}: "
+                        f"step_reward={float(transition['reward'][environment_id]):.4f}, "
+                        f"cumulative_reward={float(episode_reward_per_environment[environment_id]):.4f}"
+                    )
+
             episode_reward_sum += step_reward_mean
             episode_loss_sum += step_loss_mean
             episode_terminated_count += int(jnp.sum(transition["terminated"]))
             episode_truncated_count += int(jnp.sum(transition["truncated"]))
             episode_done_count += int(jnp.sum(transition["current_done"]))
+
+            per_environment_reward = [
+                float(transition["reward"][environment_id])
+                for environment_id in range(n_environments)
+            ]
+            per_environment_cumulative_reward = [
+                float(episode_reward_per_environment[environment_id])
+                for environment_id in range(n_environments)
+            ]
+            per_environment_done = [
+                int(transition["current_done"][environment_id])
+                for environment_id in range(n_environments)
+            ]
+
+            self._logger.debug(
+                f"Episode {episode_index} environment step {episode_steps}: "
+                f"reward/env={per_environment_reward}, "
+                f"cumulative_reward/env={per_environment_cumulative_reward}, "
+                f"done/env={per_environment_done}"
+            )
+
             episode_steps += 1
 
-            self._log_step_metrics(
+            self._log_environment_step_metrics(
                 step=environment_steps,
                 rewards=transition["reward"],
                 losses=loss_per_environment,
                 terminated=transition["terminated"],
                 truncated=transition["truncated"],
                 done=transition["current_done"],
-                optimize_losses=jnp.asarray(optimize_losses) if len(optimize_losses) > 0 else None,
             )
+
+            if optimize_losses:
+                self._log_optimization_metrics(
+                    step=environment_steps,
+                    optimize_losses=optimize_losses,
+                )
 
             environment_steps += 1
 
@@ -173,6 +225,21 @@ class IQLOptimizer:
             f"mean_step_loss={episode_loss_sum / max(1, episode_steps):.4f}, "
             f"terminated={episode_terminated_count}, truncated={episode_truncated_count}, "
             f"done={episode_done_count}, total_train_steps={total_train_steps}"
+        )
+
+        self._log_episode_summary(
+            episode_index=episode_index,
+            step=environment_steps,
+            episode_steps=episode_steps,
+            episode_reward_sum=episode_reward_sum,
+            episode_loss_sum=episode_loss_sum,
+            episode_terminated_count=episode_terminated_count,
+            episode_truncated_count=episode_truncated_count,
+            episode_done_count=episode_done_count,
+            total_train_steps=total_train_steps,
+            episode_reward_per_environment=episode_reward_per_environment,
+            first_done_step_per_environment=first_done_step_per_environment,
+            first_done_reason_per_environment=first_done_reason_per_environment,
         )
 
         return total_train_steps, environment_steps
@@ -241,19 +308,19 @@ class IQLOptimizer:
                     done=bool(current_done[environment_id])
                 )
 
-    def _optimize_agents(self, total_train_steps: int) -> tuple[list[float], int]:
+    def _optimize_agents(self, total_train_steps: int) -> tuple[list[tuple[int, float]], int]:
         """Optimize all trainable agents once and return losses with updated train step counter."""
-        optimize_losses = []
+        optimize_losses: list[tuple[int, float]] = []
         for agent_id in range(self._n_agents):
             if self._replay_buffers[agent_id].get_stored_size() >= self._config.rl.batch_size:
                 optimize_loss = self._optimize_step(agent_id)
-                optimize_losses.append(optimize_loss)
+                optimize_losses.append((agent_id, optimize_loss))
 
                 total_train_steps += 1
                 if total_train_steps % self._config.rl.target_update_freq == 0:
                     self._synchronize_target_networks()
                     self._logger.debug(
-                        f"Synchronized target networks at train step {total_train_steps}"
+                        f"Optimization update {total_train_steps}: synchronized target networks"
                     )
 
         return optimize_losses, total_train_steps
@@ -326,7 +393,7 @@ class IQLOptimizer:
 
         return jnp.stack(losses_by_agent, axis=0).mean(axis=0)
 
-    def _log_step_metrics(
+    def _log_environment_step_metrics(
         self,
         step: int,
         rewards: jnp.ndarray,
@@ -334,28 +401,85 @@ class IQLOptimizer:
         terminated: jnp.ndarray,
         truncated: jnp.ndarray,
         done: jnp.ndarray,
-        optimize_losses: jnp.ndarray | None,
     ) -> None:
-        """Log per-environment and aggregate training metrics to Weights & Biases."""
+        """Log environment-interaction metrics to Weights & Biases."""
         log_data = {
-            "train/reward_mean": float(jnp.mean(rewards)),
-            "train/loss_mean": float(jnp.mean(losses)),
-            "train/terminated_count": int(jnp.sum(terminated)),
-            "train/truncated_count": int(jnp.sum(truncated)),
-            "train/done_count": int(jnp.sum(done)),
-            "train/terminated_ratio": float(jnp.mean(terminated.astype(jnp.float32))),
-            "train/done_ratio": float(jnp.mean(done.astype(jnp.float32))),
+            "environment/step/reward_mean": float(jnp.mean(rewards)),
+            "environment/step/loss_mean": float(jnp.mean(losses)),
+            "environment/step/terminated_count": int(jnp.sum(terminated)),
+            "environment/step/truncated_count": int(jnp.sum(truncated)),
+            "environment/step/done_count": int(jnp.sum(done)),
+            "environment/step/terminated_ratio": float(jnp.mean(terminated.astype(jnp.float32))),
+            "environment/step/done_ratio": float(jnp.mean(done.astype(jnp.float32))),
         }
 
-        if optimize_losses is not None:
-            log_data["train/optimize_loss_mean"] = float(jnp.mean(optimize_losses))
+        for environment_id in range(self._environment.number_of_environments):
+            log_data[f"environment/step/reward/env_{environment_id}"] = float(rewards[environment_id])
+            log_data[f"environment/step/loss/env_{environment_id}"] = float(losses[environment_id])
+            log_data[f"environment/step/terminated/env_{environment_id}"] = int(terminated[environment_id])
+            log_data[f"environment/step/truncated/env_{environment_id}"] = int(truncated[environment_id])
+            log_data[f"environment/step/done/env_{environment_id}"] = int(done[environment_id])
+
+        self._logger.log_metrics(log_data, step=step)
+
+    def _log_optimization_metrics(self, step: int, optimize_losses: list[tuple[int, float]]) -> None:
+        """Log optimization-update metrics to Weights & Biases."""
+        log_data = {
+            "optimization/update/loss_mean": float(
+                sum(loss for _, loss in optimize_losses) / max(1, len(optimize_losses))
+            ),
+            "optimization/update/count": len(optimize_losses),
+        }
+
+        for agent_id, loss in optimize_losses:
+            log_data[f"optimization/update/loss/agent_{agent_id}"] = float(loss)
+
+        self._logger.log_metrics(log_data, step=step)
+
+    def _log_episode_summary(
+        self,
+        episode_index: int,
+        step: int,
+        episode_steps: int,
+        episode_reward_sum: float,
+        episode_loss_sum: float,
+        episode_terminated_count: int,
+        episode_truncated_count: int,
+        episode_done_count: int,
+        total_train_steps: int,
+        episode_reward_per_environment: jnp.ndarray,
+        first_done_step_per_environment: list[int],
+        first_done_reason_per_environment: list[str],
+    ) -> None:
+        """Log episode-level summary metrics to Weights & Biases."""
+        log_data = {
+            "episode/summary/index": episode_index,
+            "episode/summary/length": episode_steps,
+            "episode/summary/reward_mean": episode_reward_sum / max(1, episode_steps),
+            "episode/summary/loss_mean": episode_loss_sum / max(1, episode_steps),
+            "episode/summary/terminated_count": episode_terminated_count,
+            "episode/summary/truncated_count": episode_truncated_count,
+            "episode/summary/done_count": episode_done_count,
+            "episode/summary/total_train_steps": total_train_steps,
+        }
 
         for environment_id in range(self._environment.number_of_environments):
-            log_data[f"train/reward/env_{environment_id}"] = float(rewards[environment_id])
-            log_data[f"train/loss/env_{environment_id}"] = float(losses[environment_id])
-            log_data[f"train/terminated/env_{environment_id}"] = int(terminated[environment_id])
-            log_data[f"train/truncated/env_{environment_id}"] = int(truncated[environment_id])
-            log_data[f"train/done/env_{environment_id}"] = int(done[environment_id])
+            log_data[f"episode/summary/reward/env_{environment_id}"] = float(
+                episode_reward_per_environment[environment_id]
+            )
+            log_data[f"episode/summary/first_done_step/env_{environment_id}"] = int(
+                first_done_step_per_environment[environment_id]
+            )
+            log_data[f"episode/summary/first_done_reason/env_{environment_id}"] = (
+                first_done_reason_per_environment[environment_id]
+            )
+
+        self._logger.debug(
+            f"Episode {episode_index} summary: "
+            f"reward/env={[float(value) for value in episode_reward_per_environment]}, "
+            f"first_done_step/env={first_done_step_per_environment}, "
+            f"first_done_reason/env={first_done_reason_per_environment}"
+        )
 
         self._logger.log_metrics(log_data, step=step)
 
