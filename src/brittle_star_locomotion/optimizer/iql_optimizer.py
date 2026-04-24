@@ -3,6 +3,7 @@ from brittle_star_locomotion.environment.environment import Environment
 from brittle_star_locomotion.logger.logger import Logger
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 from brittle_star_locomotion.optimizer.transition import Transition
+from brittle_star_locomotion.metrics.training_metrics import TrainingMetrics
 
 from cpprb import ReplayBuffer
 from flax import nnx
@@ -36,8 +37,8 @@ class IQLOptimizer:
         self._n_environments = self._environment.number_of_environments
         self._n_actions = 5
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
-        self._total_train_steps = 0
-        self._total_environment_steps = 0
+
+        self._metrics = TrainingMetrics()
 
         self._logger = Logger()
         self._logger.info(
@@ -47,7 +48,6 @@ class IQLOptimizer:
             f"episodes={self._config.rl.n_episodes}, batch_size={self._config.rl.batch_size}, "
             f"target_update_freq={self._config.rl.target_update_freq}"
         )
-
         self._logger.info(
             f"Training hyperparameters: seed={self._seed}, epsilon={self._epsilon:.4f}, "
             f"epsilon_decay={self._config.rl.epsilon_decay}, epsilon_min={self._config.rl.epsilon_min}, "
@@ -80,85 +80,28 @@ class IQLOptimizer:
 
     def optimize(self) -> None:
         """Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment."""
-        n_environments = self._environment.number_of_environments
-        
-        self._logger.initialize_wandb(project="brittle-star-locomotion", config=self._config, enabled=self._config.logging.use_wandb)
-        self._logger.info(
-            f"Starting IQL training for {self._config.rl.n_episodes} episodes "
-            f"across {n_environments} environments"
-        )
+        self._metrics.new_training()
 
-        self._total_train_steps = 0
-        self._total_environment_steps = 0
-        for episode_index in range(self._config.rl.n_episodes):
+        for _ in range(self._config.rl.n_episodes):
             self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
+            self._update_epsilon()
+            self._run_episode()
 
-            self._run_episode(episode_index=episode_index + 1)
+        self._metrics.end_training()
 
-        self._logger.info(
-            f"Finished IQL training after {self._total_environment_steps} environment steps and "
-            f"{self._total_train_steps} optimization steps"
-        )
-
-    def _run_episode(
-        self,
-        episode_index: int
-    ) -> None:
-        """Run a single episode across all vectorized environments.
-        
-        :param episode_index: The index of the current episode (1-based) for logging purposes.
-        """
+    def _run_episode(self) -> None:
+        """Run a single episode across all vectorized environments."""
         env_state, cpg_state = self._environment.reset()
-        previous_epsilon = self._epsilon
-        self._update_epsilon()
-        self._logger.info(
-            f"Episode {episode_index}/{self._config.rl.n_episodes} started: "
-            f"epsilon {previous_epsilon:.4f} -> {self._epsilon:.4f}"
-        )
 
-        episode_steps = 0
-        episode_reward_sum = jnp.zeros((self._n_environments,), dtype=jnp.float32)
-        episode_loss_sum = jnp.zeros((self._n_agents,), dtype=jnp.float32)
-        episode_terminated_count = 0
-        episode_truncated_count = 0
+        self._metrics.new_episode(self._epsilon)
 
         while not bool(jnp.all(self._done_environments)):
-            transition, env_state, cpg_state = self._step_in_environment(
-                env_state=env_state,
-                cpg_state=cpg_state
-            )
-
-            self._store_replay_transitions(transition)
-
+            transition, env_state, cpg_state = self._step_in_environment(env_state, cpg_state)
+            self._store_replay_transitions(transition)    
             losses = self._optimize_agents()
+            self._metrics.new_episode_step(transition, losses)
 
-            episode_steps += 1
-            episode_reward_sum += transition.rewards
-            episode_loss_sum += losses
-            episode_truncated_count = int(jnp.sum(transition.truncated))
-            episode_terminated_count = int(jnp.sum(transition.terminated))
-
-            # self._log_step_metrics(
-            #     step=total_environment_steps,
-            #     rewards=transition["reward"],
-            #     losses=loss_per_environment,
-            #     terminated=transition["terminated"],
-            #     truncated=transition["truncated"],
-            #     done=transition["current_done"],
-            #     optimize_losses=jnp.asarray(optimize_losses) if len(optimize_losses) > 0 else None,
-            # )
-
-            self._total_environment_steps += 1
-
-        self._logger.info(
-            f"Episode {episode_index}/{self._config.rl.n_episodes} finished: "
-            f"amount_steps={episode_steps}, "
-            f"mean_return={jnp.mean(episode_reward_sum):.4f}, "
-            f"mean_loss={jnp.mean(episode_loss_sum):.4f}, "
-            f"terminated={episode_terminated_count}, "
-            f"truncated={episode_truncated_count}, "
-            f"total_train_steps={self._total_train_steps}"
-        )
+        self._metrics.end_episode()
 
     def _step_in_environment(self, env_state, cpg_state) -> tuple[Transition, Any, Any]:  # TODO remove Any
         """Collect one transition step for all environments.
@@ -194,7 +137,6 @@ class IQLOptimizer:
             truncated
         )
         return transition, next_env_state, next_cpg_state
-
 
     def _store_replay_transitions(
         self,
@@ -269,48 +211,6 @@ class IQLOptimizer:
 
         self._q_network_optimizers[agent_id].update(self._q_networks[agent_id], grads)
         return float(loss)
-
-    def _log_step_metrics(
-        self,
-        step: int,
-        rewards: jnp.ndarray,
-        losses: jnp.ndarray,
-        terminated: jnp.ndarray,
-        truncated: jnp.ndarray,
-        done: jnp.ndarray,
-        optimize_losses: jnp.ndarray | None,
-    ) -> None:
-        """Log per-environment training metrics to Weights & Biases.
-        
-        :param step: The current training step (environment step count).
-        :param rewards: Array of rewards for each environment at this step.
-        :param losses: Array of TD losses for each environment at this step.
-        :param terminated: Boolean array indicating which environments were terminated at this step.
-        :param truncated: Boolean array indicating which environments were truncated at this step.
-        :param done: Boolean array indicating which environments are done (terminated or truncated) at this step.
-
-        """
-        log_data = {
-            "train/reward_mean": float(jnp.mean(rewards)),
-            "train/loss_mean": float(jnp.mean(losses)),
-            "train/terminated_count": int(jnp.sum(terminated)),
-            "train/truncated_count": int(jnp.sum(truncated)),
-            "train/done_count": int(jnp.sum(done)),
-            "train/terminated_ratio": float(jnp.mean(terminated.astype(jnp.float32))),
-            "train/done_ratio": float(jnp.mean(done.astype(jnp.float32))),
-        }
-
-        if optimize_losses is not None:
-            log_data["train/optimize_loss_mean"] = float(jnp.mean(optimize_losses))
-
-        for environment_id in range(self._environment.number_of_environments):
-            log_data[f"train/reward/env_{environment_id}"] = float(rewards[environment_id])
-            log_data[f"train/loss/env_{environment_id}"] = float(losses[environment_id])
-            log_data[f"train/terminated/env_{environment_id}"] = int(terminated[environment_id])
-            log_data[f"train/truncated/env_{environment_id}"] = int(truncated[environment_id])
-            log_data[f"train/done/env_{environment_id}"] = int(done[environment_id])
-
-        self._logger.log_metrics(log_data, step=step)
 
     def _loss(
         self, 

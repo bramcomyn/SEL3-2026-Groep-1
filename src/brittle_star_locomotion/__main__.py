@@ -82,7 +82,6 @@ def evaluate(arguments: argparse.Namespace):
     logger.info(f"Evaluation completed in {elapsed:.1f}s")
     logger.debug("Evaluation process completed.")
 
-
 def _normalize_checkpoint_base_name(checkpoint_argument: str, checkpoint_directory: str) -> str:
     """Convert checkpoint CLI input to a basename used by QNetwork.load_checkpoint."""
     normalized = checkpoint_argument.replace("\\", "/")
