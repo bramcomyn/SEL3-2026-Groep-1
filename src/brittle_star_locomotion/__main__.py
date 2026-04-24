@@ -75,7 +75,7 @@ def evaluate(arguments: argparse.Namespace):
     renderer.render_video(render_trajectory, output_path=arguments.output_video)
     logger.info(f"Saved evaluation video to: {arguments.output_video}")
 
-    _save_action_trajectory(checkpoint_base, actions_trajectory)
+    _save_action_trajectory(arguments.output_trajectory, actions_trajectory)
     logger.info("Saving action trajectory")
 
     elapsed = time.perf_counter() - started_at
@@ -222,7 +222,7 @@ def _collect_trajectory(
 
     return trajectory_env_states, trajectory_actions
 
-def _save_action_trajectory(checkpoint_base: str, action_trajectory: jnp.ndarray) -> None:
+def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray) -> None:
     if len(action_trajectory.shape) == 3:
         n_steps, n_environments, n_agents = action_trajectory.shape
     else:
@@ -230,15 +230,13 @@ def _save_action_trajectory(checkpoint_base: str, action_trajectory: jnp.ndarray
         n_environments = 1
         action_trajectory = action_trajectory[:, None, :]
 
-    with open(f'out/{checkpoint_base}.csv', 'w') as output:
+    with open(f'out/{output_filename}', 'w') as output:
         output.write(f'environment_id,step_id,agent_id,action\n')
 
         for environment_id in range(n_environments):
             for step_id in range(n_steps):
                 for agent_id in range(n_agents):
                     output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
-                
-        
 
 def _parse_arguments():
     """Parse command-line arguments."""
@@ -249,6 +247,7 @@ def _parse_arguments():
     parser.add_argument("-m", "--mode",            type=str, choices=mode_dictionary.keys(), default="train",  help="mode to run the project in (training or evaluation)")
     parser.add_argument("-p", "--checkpoint",      type=str, default="checkpoints/test_checkpoint",            help="path to the model checkpoint for evaluation (prefix for the checkpoint files)")
     parser.add_argument("--output-video",          type=str, default="out/eval.mp4",                           help="path to save evaluation video")
+    parser.add_argument("--output-trajectory",     type=str, default="out/eval.csv",                           help="path to save action trajectory csv")
 
     return parser.parse_args()
 
