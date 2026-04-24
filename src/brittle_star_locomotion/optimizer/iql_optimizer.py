@@ -38,7 +38,8 @@ class IQLOptimizer:
         self._n_actions = 5
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
 
-        # We keep this explicitely # TODO
+        # We explicitely keep this and update environment state accordingly
+        # because this makes the JIT of environment much more efficient
         self._env_state, self._cpg_state = self._environment.reset()
 
         self._metrics = TrainingMetrics()
