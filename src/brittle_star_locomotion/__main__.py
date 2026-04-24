@@ -62,7 +62,7 @@ def evaluate(arguments: argparse.Namespace):
         logger=logger,
     )
 
-    render_trajectory, actions_trajectory = _collect_trajectory(
+    render_trajectory, actions_trajectory, positions_trajectory = _collect_trajectory(
         environment,
         q_networks,
         num_modulation_steps=config.gait.fixed_number_of_evaluation_modulation_steps,
@@ -71,12 +71,16 @@ def evaluate(arguments: argparse.Namespace):
         logger=logger,
     )
 
-    renderer = EnvironmentRenderer(environment)
-    renderer.render_video(render_trajectory, output_path=arguments.output_video)
-    logger.info(f"Saved evaluation video to: {arguments.output_video}")
+    if arguments.render:
+        renderer = EnvironmentRenderer(environment)
+        renderer.render_video(render_trajectory, output_path=arguments.output_video)
+        logger.info(f"Saved evaluation video to: {arguments.output_video}")
 
-    _save_action_trajectory(arguments.output_trajectory, actions_trajectory)
+    _save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
     logger.info("Saving action trajectory")
+
+    _save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory)
+    logger.info("Saving position trajectory")
 
     elapsed = time.perf_counter() - started_at
     logger.info(f"Evaluation completed in {elapsed:.1f}s")
@@ -174,6 +178,7 @@ def _collect_trajectory(
     done_environments = jnp.zeros((environment.number_of_environments,), dtype=bool)
     trajectory_env_states_list = []
     trajectory_actions_list = []
+    trajectory_positions_list = []
 
     for step_index in range(num_modulation_steps):
         if bool(jnp.all(done_environments)):
@@ -204,6 +209,7 @@ def _collect_trajectory(
 
         trajectory_env_states_list.append(substep_env_states)
         trajectory_actions_list.append(actions)
+        trajectory_positions_list.append(environment.env_state.observations["disk_position"])
 
     logger.info(
         f"Policy rollout finished after {len(trajectory_env_states_list)} modulation steps"
@@ -218,8 +224,9 @@ def _collect_trajectory(
     )
     trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
     trajectory_actions = jnp.concatenate(trajectory_actions_list, axis=0)
+    trajectory_positions = jnp.concatenate(trajectory_positions_list, axis=0)
 
-    return trajectory_env_states, trajectory_actions
+    return trajectory_env_states, trajectory_actions, trajectory_positions
 
 def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray) -> None:
     if len(action_trajectory.shape) == 3:
@@ -237,6 +244,31 @@ def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray
                 for agent_id in range(n_agents):
                     output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
 
+def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.ndarray) -> None:
+    """ positions_trajectory - (n_environments, n_steps, 3) or (n_steps, 3)
+    """
+    if len(positions_trajectory.shape) == 3:
+        n_environments, n_steps, _ = positions_trajectory.shape
+    else:
+        n_steps, _ = positions_trajectory.shape
+        n_environments = 1
+        positions_trajectory = positions_trajectory[None, :, :]
+
+    with open(f'{output_filename}', 'w') as output:
+        end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position)
+
+        output.write(f'step_id,x,y,in_trajectory\n')
+        output.write(f'0,0,0,false\n') # Start position
+        output.write(f'0,0,0,true\n')
+
+        for environment_id in range(n_environments):
+            for step_id in range(n_steps):
+                x = positions_trajectory[environment_id, step_id, 0]
+                y = positions_trajectory[environment_id, step_id, 1]
+                output.write(f'{step_id},{x},{y},true\n')
+
+        output.write(f'{n_steps},{end_x},{end_y},false\n') # End position
+
 def _parse_arguments():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Brittle Star Locomotion")
@@ -246,7 +278,9 @@ def _parse_arguments():
     parser.add_argument("-m", "--mode",            type=str, choices=mode_dictionary.keys(), default="train",  help="mode to run the project in (training or evaluation)")
     parser.add_argument("-p", "--checkpoint",      type=str, default="checkpoints/test_checkpoint",            help="path to the model checkpoint for evaluation (prefix for the checkpoint files)")
     parser.add_argument("--output-video",          type=str, default="out/eval.mp4",                           help="path to save evaluation video")
-    parser.add_argument("--output-trajectory",     type=str, default="out/eval.csv",                           help="path to save action trajectory csv")
+    parser.add_argument("--render",                action="store_true",                                        help="render the evaluation trajectory")
+    parser.add_argument("--output-actions-trajectory",       type=str, default="out/eval_actions.csv",         help="path to save action trajectory csv")
+    parser.add_argument("--output-positions-trajectory",     type=str, default="out/eval_positions.csv",       help="path to save positions trajectory csv")
 
     return parser.parse_args()
 
