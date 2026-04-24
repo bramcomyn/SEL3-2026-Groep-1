@@ -169,11 +169,11 @@ class IQLOptimizer:
                 loss = self._optimize_step(agent_id)
                 losses.append(loss)
 
-                self._total_train_steps += 1
-                if self._total_train_steps % self._config.rl.target_update_freq == 0:
+                self._metrics.total_train_steps += 1
+                if self._metrics.total_train_steps % self._config.rl.target_update_freq == 0:
                     self._synchronize_target_networks()
                     self._logger.debug(
-                        f"Synchronized target networks at train step {self._total_train_steps}"
+                        f"Synchronized target networks at train step {self._metrics.total_train_steps}"
                     )
             else:
                 losses.append(0)

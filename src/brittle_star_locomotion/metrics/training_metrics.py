@@ -17,10 +17,17 @@ class TrainingMetrics():
             enabled=self._config.logging.use_wandb
         )
 
-        self.new_training()
-
+        self.total_train_steps = 0
+        self.total_environment_steps = 0
         self.episode_index = 0
-        self.new_episode(epsilon=0.0)
+        self.epsilon = 0.0
+        self.episode_index = 0
+        self.episode_steps = 0
+        self.episode_reward_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
+        self.episode_loss_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
+        self.episode_terminated_count = 0
+        self.episode_truncated_count = 0
+
 
     def new_training(self) -> None:
         self.total_train_steps = 0
@@ -40,8 +47,6 @@ class TrainingMetrics():
     def new_episode(self, epsilon: float) -> None:
         """
         """
-        previous_epsilon = self.epsilon
-
         self.epsilon = epsilon
         self.episode_index += 1
         self.episode_steps = 0
@@ -50,10 +55,11 @@ class TrainingMetrics():
         self.episode_terminated_count = 0
         self.episode_truncated_count = 0
 
+        previous_epsilon = self.epsilon
         self._logger.info(
             f"Episode {self.episode_index}/{self._config.rl.n_episodes} started: "
             f"epsilon {previous_epsilon:.4f} -> {epsilon:.4f}"
-        )
+            )
 
     def new_episode_step(
         self,
@@ -72,12 +78,22 @@ class TrainingMetrics():
     def end_episode(self) -> None:
         """
         """
+        mean_return = float(jnp.mean(self.episode_reward_sum))
+        mean_loss = float(jnp.mean(self.episode_loss_sum))
+
         self._logger.info(
             f"Episode {self.episode_index}/{self._config.rl.n_episodes} finished: "
             f"amount_steps={self.episode_steps}, "
-            f"mean_return={jnp.mean(self.episode_reward_sum):.4f}, "
-            f"mean_loss={jnp.mean(self.episode_loss_sum):.4f}, "
+            f"mean_return={mean_return:.4f}, "
+            f"mean_loss={mean_loss:.4f}, "
             f"terminated={self.episode_terminated_count}, "
             f"truncated={self.episode_truncated_count}, "
             f"total_train_steps={self.total_train_steps}"
         )
+        self._logger.log_metrics({
+            "global/epsilon": self.epsilon,
+            "global/terminated":self.episode_terminated_count,
+            "global/truncated": self.episode_truncated_count,
+            "optimizer/mean_return": mean_return,
+            "optimizer/mean_loss": mean_loss
+        })
