@@ -180,7 +180,7 @@ class IQLOptimizer:
 
         return jnp.array(losses, dtype=jnp.float32)
 
-    def _optimize_step(self, agent_id: int):
+    def _optimize_step(self, agent_id: int) -> None:
         """Performs a single optimization step for the specified agent.
 
         Optimizes the Q-network for the given `agent_id` by sampling a mini-batch of experiences from its replay buffer,
@@ -274,7 +274,7 @@ class IQLOptimizer:
         ) # shape (n_environments, n_agents)
         return epsilon_greedy
 
-    def _update_epsilon(self):
+    def _update_epsilon(self) -> None:
         """Updates the epsilon value for epsilon-greedy action selection.
 
         The epsilon value is decayed by multiplying it with `epsilon_decay`, but it will not go below `epsilon_min`.
@@ -284,7 +284,7 @@ class IQLOptimizer:
             self._config.rl.epsilon_min
         ) 
 
-    def _synchronize_target_networks(self):
+    def _synchronize_target_networks(self) -> None:
         """Synchronizes the parameters of the target Q-networks with the current Q-networks."""
         for q_net, target_q_net in zip(self._q_networks, self._target_q_networks):
             target_q_net.update_model_parameters(copy_from=q_net)
@@ -309,7 +309,6 @@ class IQLOptimizer:
     def _create_qnetworks(self) -> list[QNetwork]:
         """Creates `n` QNetwork instances, either shared or separate based on the configuration.
 
-        :param n: The number of QNetwork instances to create (default is 1).
         :return: A list of QNetwork instances.
         """
         if self._config.rl.shared_params:
