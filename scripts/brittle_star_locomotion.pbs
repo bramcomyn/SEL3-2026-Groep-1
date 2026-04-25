@@ -1,0 +1,32 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=1:gpus=1
+#PBS -l walltime=04:00:00
+
+module load \
+	CMake/3.26.3-GCCcore-12.3.0 \
+	Bazel/6.1.0-GCCcore-12.3.0
+
+export BAZEL_FLAGS="--incompatible_use_platforms_repo_for_constraints=false"
+
+export MUJOCO_PATH=$HOME/.local/mujoco-3.1.6
+export MUJOCO_PLUGIN_PATH=$MUJOCO_PATH/bin/mujoco_plugin
+
+export UV_CACHE_DIR=/data/gent/452/vsc45202/.cache/uv # Otherwise disk quota exceeded
+export BAZEL_WRKDIR=/data/gent/452/vsc45202/.cache/bazel
+
+# Link .venv in $VSC_DATA
+export DATA_VENV_DIR=$VSC_DATA/venv/
+mkdir -p $DATA_VENV_DIR
+if [ ! -L .venv ]; then
+    rm -rf .venv
+    ln -s $DATA_VENV_DIR .venv
+fi
+
+export UV_LINK_MODE=copy
+
+cd $PBS_O_WORKDIR
+
+uv sync --python 3.12 --extra gpu # Python 3.12 is more stable and doesn't crash when loading venv
+uv run -m brittle_star_locomotion
+
