@@ -7,17 +7,23 @@ registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regula
 export function positions_trajectory_chart() {
     const trajectory = load_csv('../out/eval_positions.csv');
 
-    const path = vl.markLine({ point: true, color: "#557086" })
+    const maxAbs = Math.max(
+        ...trajectory.map(d => Math.max(Math.abs(d.x), Math.abs(d.y)))
+    ) - 0.5;
+    const domain = [-maxAbs, maxAbs];
+
+    const path = vl.markLine({ point: { size: 15 }, strokeWidth: 1, color: "#557086" })
         .transform(
             vl.filter("datum.in_trajectory")
         )
         .encode(
-            vl.x().fieldQ("x").axis(null).scale({ padding: 20 }),
-            vl.y().fieldQ("y").axis(null).scale({ padding: 20 }),
-            vl.order().fieldO("step_id")
+            vl.x().fieldQ("x").axis(null).scale({ domain, padding: 20 }),
+            vl.y().fieldQ("y").axis(null).scale({ domain, padding: 20 }),
+            vl.order().fieldO("step_id"),
+            vl.detail().fieldO("environment_id")
         );
 
-    const target = vl.markCircle({ color: "#ff0000", size: 1000 })
+    const target = vl.markCircle({ color: "#ff0000", opacity: 0.4, size: 200 })
         .transform(
             vl.filter("!datum.in_trajectory")
         )
@@ -27,12 +33,10 @@ export function positions_trajectory_chart() {
         );
 
     return vl.layer(path, target)
-        .facet(
-            vl.column().fieldO("environment_id").title("Environment")
-        )
         .data(trajectory)
         .title({
-            text: "Trajectory taking by the Brittle Star",
+            text: "Trajectories taken by the Brittle Star",
+            subtitle: "Targets indicated in red",
             anchor: "middle",
             offset: 30
         })
