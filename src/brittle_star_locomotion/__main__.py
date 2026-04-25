@@ -74,8 +74,6 @@ def evaluate(arguments: argparse.Namespace):
         log_every=config.environment.render_every_x_frames,
         logger=logger,
     )
-    print(f'actions: {actions_trajectory.shape}')
-    print(f'positions: {positions_trajectory.shape}')
 
     if arguments.render:
         renderer = EnvironmentRenderer(environment)
@@ -85,7 +83,7 @@ def evaluate(arguments: argparse.Namespace):
     _save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
     logger.info("Saving action trajectory")
 
-    _save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory)
+    _save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory, environment.target_position)
     logger.info("Saving position trajectory")
 
     elapsed = time.perf_counter() - started_at
@@ -250,7 +248,7 @@ def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray
                 for agent_id in range(n_agents):
                     output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
 
-def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.ndarray) -> None:
+def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.ndarray, target_positions: jnp.ndarray) -> None:
     """ positions_trajectory - (n_environments, n_steps, 3) or (n_steps, 3)
     """
     if len(positions_trajectory.shape) == 3:
@@ -261,19 +259,18 @@ def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.nd
         positions_trajectory = positions_trajectory[None, :, :]
 
     with open(f'{output_filename}', 'w') as output:
-        end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position) # TODO
 
         output.write(f'environment_id,step_id,x,y,in_trajectory\n')
 
-        for environment_id in range(n_environments):
-            output.write(f'{environment_id},0,0,0,false\n') # Start position
-            output.write(f'{environment_id},0,0,0,true\n')
+        for environment_id in range(n_environments): 
+            output.write(f'{environment_id},0,0,0,true\n') # Start position
 
             for step_id in range(n_steps):
                 x = positions_trajectory[environment_id, step_id, 0]
                 y = positions_trajectory[environment_id, step_id, 1]
                 output.write(f'{environment_id},{step_id},{x},{y},true\n')
 
+            end_x, end_y, _ = tuple(target_positions[environment_id])
             output.write(f'{environment_id},{n_steps},{end_x},{end_y},false\n') # End position
 
 def _parse_arguments():

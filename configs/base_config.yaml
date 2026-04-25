@@ -25,13 +25,14 @@ rl:
 
 environment:
   target_position: [1, 1, 0.05]
-  random_target: False
+  target_distance: 1
+  random_target: True
   random_initial_rotation: False
   fixed_evaluation_action: "0,1,3,4,2"
   number_of_arms: 5
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
-  number_of_environments: 2
+  number_of_environments: 4
   seed: 43
   camera_ids: [0, 1]
   frames_per_second: 50
@@ -42,7 +43,6 @@ environment:
     attach_target: True
     wall_height: 0.5
     wall_thickness: 0.1
-  target_distance: 1.5
   simulation_time: 20.0
   number_of_physics_steps_per_control_step: 10
   time_scale: 1.0
