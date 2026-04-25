@@ -9,6 +9,9 @@ __pycache__/
 # Node modules
 plots/node_modules/
 
+# Plots
+plots/out/
+
 # Distribution / packaging
 .Python
 build/
