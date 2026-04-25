@@ -34,7 +34,7 @@ class TrainingMetrics():
         self.episode_index = 0
         self.episode_steps = 0
         self.episode_reward_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
-        self.episode_loss_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
+        self.episode_loss_sum = jnp.zeros((self._config.environment.number_of_arms,), dtype=jnp.float32)
         self.episode_terminated_count = 0
         self.episode_truncated_count = 0
 
@@ -64,7 +64,7 @@ class TrainingMetrics():
         self.episode_index += 1
         self.episode_steps = 0
         self.episode_reward_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
-        self.episode_loss_sum = jnp.zeros((self._config.environment.number_of_environments,), dtype=jnp.float32)
+        self.episode_loss_sum = jnp.zeros((self._config.environment.number_of_arms,), dtype=jnp.float32)
         self.episode_terminated_count = 0
         self.episode_truncated_count = 0
 
