@@ -1,19 +1,9 @@
 import argparse
-import os
-import time
-
-import jax
-import jax.numpy as jnp
-from flax import nnx
 
 from brittle_star_locomotion.config.configuration import Configuration
-from brittle_star_locomotion.environment.environment import Environment
-from brittle_star_locomotion.environment.fixedtargetenvironment import FixedTargetEnvironment
-from brittle_star_locomotion.environment.randomtargetenvironment import RandomTargetEnvironment
-from brittle_star_locomotion.environment.render import EnvironmentRenderer
 from brittle_star_locomotion.logger.logger import Logger
-from brittle_star_locomotion.neural.qnetwork import QNetwork
-from brittle_star_locomotion.optimizer.iql_optimizer import IQLOptimizer
+from brittle_star_locomotion.evaluation import Evaluator
+from brittle_star_locomotion.training import Trainer
 
 def main():
     """Main entry point for the brittle star locomotion project."""
@@ -22,256 +12,12 @@ def main():
     _ = Configuration(arguments.config).configuration
     logger = Logger(name=__name__, verbose=arguments.verbose)
 
-    logger.info(f"Starting brittle star locomotion project.")
+    logger.info("Starting brittle star locomotion project.")
     logger.info(f"Running in {arguments.mode} mode.")
 
     mode_dictionary[arguments.mode](arguments)
 
     logger.info("Finished brittle star locomotion project.")
-
-def train(arguments: argparse.Namespace):
-    """Train the brittle star locomotion model."""
-    logger = Logger()
-    started_at = time.perf_counter()
-    logger.info("Starting training process...")
-
-    config = Configuration().configuration
-
-    environment = RandomTargetEnvironment() if config.environment.random_target else FixedTargetEnvironment()
-    optimizer = IQLOptimizer(environment)
-    
-    logger.info(f"Training with {environment.number_of_environments} parallel environments")
-    optimizer.optimize()
-    
-    checkpoint_base = _normalize_checkpoint_base_name(arguments.checkpoint, Configuration().configuration.checkpoint_directory)
-    optimizer.save_model(checkpoint_prefix=checkpoint_base)
-    
-    elapsed = time.perf_counter() - started_at
-    logger.info(f"Training completed in {elapsed:.1f}s")
-    logger.debug("Training process finished.")
-
-def evaluate(arguments: argparse.Namespace):
-    """Evaluate the brittle star locomotion model."""
-    logger = Logger()
-    logger.debug("Starting evaluation process...")
-    started_at = time.perf_counter()
-
-    config = Configuration().configuration
-
-    environment = RandomTargetEnvironment() if config.environment.random_target else FixedTargetEnvironment()
-    checkpoint_base = _normalize_checkpoint_base_name(arguments.checkpoint, config.checkpoint_directory)
-    q_networks = _load_qnetworks_for_evaluation(
-        environment=environment,
-        checkpoint_base=checkpoint_base,
-        logger=logger,
-    )
-
-    render_trajectory, actions_trajectory, positions_trajectory = _collect_trajectory(
-        environment,
-        q_networks,
-        num_modulation_steps=config.gait.fixed_number_of_evaluation_modulation_steps,
-        num_substeps=config.gait.fixed_number_of_evaluation_substeps_per_modulation,
-        log_every=config.environment.render_every_x_frames,
-        logger=logger,
-    )
-
-    if arguments.render:
-        renderer = EnvironmentRenderer(environment)
-        renderer.render_video(render_trajectory, output_path=arguments.output_video)
-        logger.info(f"Saved evaluation video to: {arguments.output_video}")
-
-    _save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
-    logger.info("Saving action trajectory")
-
-    _save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory)
-    logger.info("Saving position trajectory")
-
-    elapsed = time.perf_counter() - started_at
-    logger.info(f"Evaluation completed in {elapsed:.1f}s")
-    logger.debug("Evaluation process completed.")
-
-def _normalize_checkpoint_base_name(checkpoint_argument: str, checkpoint_directory: str) -> str:
-    """Convert checkpoint CLI input to a basename used by QNetwork.load_checkpoint."""
-    normalized = checkpoint_argument.replace("\\", "/")
-    checkpoint_directory = checkpoint_directory.rstrip("/")
-
-    if os.path.isabs(normalized):
-        return os.path.basename(normalized)
-
-    if normalized.startswith(f"{checkpoint_directory}/"):
-        normalized = normalized[len(checkpoint_directory) + 1 :]
-
-    normalized = normalized.split("/")[-1]
-
-    return normalized
-
-def _resolve_agent_checkpoint_name(checkpoint_base: str, agent_id: int, checkpoint_directory: str) -> str:
-    """Resolve the checkpoint filename for a specific agent."""
-    checkpoint_name = f"{checkpoint_base}_{agent_id}"
-    checkpoint_path = os.path.join(checkpoint_directory, checkpoint_name)
-
-    if not os.path.exists(checkpoint_path):
-        raise FileNotFoundError(
-            f"Checkpoint for agent {agent_id} was not found at {checkpoint_path}. "
-            f"Expected naming pattern: <checkpoint_prefix>_<agent_id>."
-        )
-
-    return checkpoint_name
-
-def _load_qnetworks_for_evaluation(
-    environment: Environment,
-    checkpoint_base: str,
-    logger: Logger,
-) -> list[QNetwork]:
-    """Load one Q-network checkpoint per agent for greedy policy evaluation."""
-    config = Configuration().configuration
-    observation_size = environment.get_observation_size()
-    checkpoint_directory = config.checkpoint_directory
-    q_networks = []
-
-    for agent_id in range(config.environment.number_of_arms):
-        checkpoint_name = _resolve_agent_checkpoint_name(
-            checkpoint_base=checkpoint_base,
-            agent_id=agent_id,
-            checkpoint_directory=checkpoint_directory,
-        )
-
-        logger.info(f"Loading checkpoint for agent {agent_id}: {checkpoint_name}")
-
-        q_network = QNetwork.load_checkpoint(
-            model_callback=lambda agent_id=agent_id: QNetwork(
-                input_size=observation_size,
-                output_size=5,
-                rngs=nnx.Rngs(agent_id),
-                hidden_size=config.rl.hidden_size,
-                amount_of_hidden_layers=config.rl.amount_of_hidden_layers,
-            ),
-            name=checkpoint_name,
-        )
-
-        q_networks.append(q_network)
-
-    return q_networks
-
-def _select_policy_actions(
-    observations: jnp.ndarray,
-    q_networks: list[QNetwork],
-) -> jnp.ndarray:
-    """Select greedy actions from the loaded per-agent Q-networks."""
-    q_values_by_agent = []
-    for agent_id, q_network in enumerate(q_networks):
-        q_values_by_agent.append(q_network(observations[:, agent_id, :]))
-
-    q_values = jnp.stack(q_values_by_agent, axis=1)
-    return jnp.argmax(q_values, axis=-1).astype(jnp.int32)
-
-def _collect_trajectory(
-    environment: Environment,
-    q_networks: list[QNetwork],
-    num_modulation_steps: int,
-    num_substeps: int,
-    log_every: int,
-    logger: Logger,
-):
-    """Run a single greedy-policy episode and stack the renderable environment trajectory."""
-    env_state, cpg_state = environment.reset()
-    logger.info(
-        f"Starting policy rollout with {num_modulation_steps} modulation steps and {num_substeps} substeps per step"
-    )
-
-    done_environments = jnp.zeros((environment.number_of_environments,), dtype=bool)
-    trajectory_env_states_list = []
-    trajectory_actions_list = []
-    trajectory_positions_list = []
-
-    for step_index in range(num_modulation_steps):
-        if bool(jnp.all(done_environments)):
-            break
-
-        if step_index % max(1, log_every) == 0 or step_index == num_modulation_steps - 1:
-            logger.info(f"Evaluation progress: modulation step {step_index + 1}/{num_modulation_steps}")
-
-        observations = environment.get_observations()
-        actions = _select_policy_actions(observations=observations, q_networks=q_networks)
-        actions = jnp.where(done_environments[:, None], 0, actions) # (n_environments, n_agents)
-
-        env_state, cpg_state, _, terminated, truncated, trajectory = environment.step(
-            env_state,
-            cpg_state,
-            actions,
-            num_substeps,
-        )
-
-        terminated = jnp.asarray(terminated).reshape(-1)
-        truncated = jnp.asarray(truncated).reshape(-1)
-        done_environments = done_environments | terminated | truncated
-
-        environment.env_state = env_state
-        environment.cpg_state = cpg_state
-
-        substep_env_states = trajectory[0]
-
-        trajectory_env_states_list.append(substep_env_states)
-        trajectory_actions_list.append(actions)
-        trajectory_positions_list.append(environment.env_state.observations["disk_position"])
-
-    logger.info(
-        f"Policy rollout finished after {len(trajectory_env_states_list)} modulation steps"
-    )
-
-    if not (trajectory_env_states_list and trajectory_actions_list):
-        raise ValueError("No trajectory data collected during evaluation")
-
-    trajectory_env_states = jax.tree_util.tree_map(
-        lambda *xs: jnp.concatenate(xs, axis=0),
-        *trajectory_env_states_list,
-    )
-    trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
-    trajectory_actions = jnp.concatenate(trajectory_actions_list, axis=0)
-    trajectory_positions = jnp.concatenate(trajectory_positions_list, axis=0)
-
-    return trajectory_env_states, trajectory_actions, trajectory_positions
-
-def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray) -> None:
-    if len(action_trajectory.shape) == 3:
-        n_steps, n_environments, n_agents = action_trajectory.shape
-    else:
-        n_steps, n_agents = action_trajectory.shape
-        n_environments = 1
-        action_trajectory = action_trajectory[:, None, :]
-
-    with open(f'{output_filename}', 'w') as output:
-        output.write(f'environment_id,step_id,agent_id,action\n')
-
-        for environment_id in range(n_environments):
-            for step_id in range(n_steps):
-                for agent_id in range(n_agents):
-                    output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
-
-def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.ndarray) -> None:
-    """ positions_trajectory - (n_environments, n_steps, 3) or (n_steps, 3)
-    """
-    if len(positions_trajectory.shape) == 3:
-        n_environments, n_steps, _ = positions_trajectory.shape
-    else:
-        n_steps, _ = positions_trajectory.shape
-        n_environments = 1
-        positions_trajectory = positions_trajectory[None, :, :]
-
-    with open(f'{output_filename}', 'w') as output:
-        end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position)
-
-        output.write(f'step_id,x,y,in_trajectory\n')
-        output.write(f'0,0,0,false\n') # Start position
-        output.write(f'0,0,0,true\n')
-
-        for environment_id in range(n_environments):
-            for step_id in range(n_steps):
-                x = positions_trajectory[environment_id, step_id, 0]
-                y = positions_trajectory[environment_id, step_id, 1]
-                output.write(f'{step_id},{x},{y},true\n')
-
-        output.write(f'{n_steps},{end_x},{end_y},false\n') # End position
 
 def _parse_arguments():
     """Parse command-line arguments."""
@@ -290,8 +36,8 @@ def _parse_arguments():
 
 # mapping of mode strings to functions
 mode_dictionary = {
-    "train": train,
-    "eval": evaluate,
+    "train": Trainer().train,
+    "eval": Evaluator().evaluate,
 }
 
 if __name__ == "__main__":
