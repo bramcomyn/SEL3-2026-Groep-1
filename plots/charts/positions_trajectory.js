@@ -49,13 +49,20 @@ export function positions_trajectory_chart() {
     );
 
     return vl.layer(path, start_and_end, labels)
+        .facet(
+            vl.column().fieldO("environment_id").title("Environment")
+        )
         .data(trajectory)
+        .title({
+            text: "Trajectory taking by the Brittle Star",
+            anchor: "middle",
+            offset: 30
+        })
         .config({
             font: "RedHatDisplay",
             title: {
                 fontSize: 18
             }
         })
-        .title("Trajectory taking by the Brittle Star")
         .toSpec();
 }

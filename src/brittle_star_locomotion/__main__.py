@@ -274,7 +274,7 @@ def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.nd
                 y = positions_trajectory[environment_id, step_id, 1]
                 output.write(f'{environment_id},{step_id},{x},{y},true\n')
 
-        output.write(f'{n_steps},{end_x},{end_y},false\n') # End position
+            output.write(f'{environment_id},{n_steps},{end_x},{end_y},false\n') # End position
 
 def _parse_arguments():
     """Parse command-line arguments."""

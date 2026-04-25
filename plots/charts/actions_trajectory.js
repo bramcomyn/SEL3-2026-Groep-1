@@ -6,11 +6,14 @@ registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regula
 
 export function actions_trajectory_chart() {
     const trajectory = load_csv('../out/eval_actions.csv');
+    const actions = Array.from({ length: 5 }, (_, i) => i);
+    const steps = Array.from({ length: Math.max(...trajectory.map(row => row.step_id))+1 }, (_, i) => i)
 
     return vl.markLine({ strokeWidth: 1.5 })
         .data(trajectory)
         .transform(    
-            vl.calculate("toNumber(datum.action) === 2 ? 3 : toNumber(datum.action) === 3 ? 2 : toNumber(datum.action)")
+            vl.filter("datum.environment_id === 0"), // Plot only one environment
+            vl.calculate("datum.action === 2 ? 3 : datum.action === 3 ? 2 : datum.action")
                 .as("swapped_action")
         )
         .encode(
@@ -20,16 +23,17 @@ export function actions_trajectory_chart() {
                 .axis({ 
                     grid: true, 
                     gridOpacity: 0.75, 
-                    values: Array.from({ length: 20 }, (_, i) => i) 
+                    values: steps
                 })
                 .title("Step"),
             vl.y()
-                .fieldQ("swapped_action")
-                .scale({ padding: 5 })
+                .fieldO("swapped_action")
+                .scale({
+                    domain: actions
+                })
                 .axis({ 
                     grid: false,
-                    values: Array.from({ length: 5 }, (_, i) => i),
-                    labelExpr: "datum.value === 0 ? 'Leading' : datum.value === 1 ? 'Left primary' : datum.value === 2 ? 'Left secondary' : datum.value === 3 ? 'Right primary' : datum.value === 4 ? 'Right secondary' : ''"
+                    labelExpr: "['Leading','Left primary','Left secondary','Right primary','Right secondary'][+datum.value]"
                 })
                 .title("Action"),
             vl.row()

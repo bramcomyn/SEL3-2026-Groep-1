@@ -10,7 +10,8 @@ __pycache__/
 plots/node_modules/
 
 # Plots
-plots/out/
+plots/out/*.svg
+plots/out/*.png
 
 # Distribution / packaging
 .Python
