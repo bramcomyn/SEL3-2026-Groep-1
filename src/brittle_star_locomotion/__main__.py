@@ -2,8 +2,8 @@ import argparse
 
 from brittle_star_locomotion.config.configuration import Configuration
 from brittle_star_locomotion.logger.logger import Logger
-from brittle_star_locomotion.evaluation import Evaluator
-from brittle_star_locomotion.training import Trainer
+from brittle_star_locomotion.modes.evaluation import Evaluator
+from brittle_star_locomotion.modes.training import Trainer
 
 def main():
     """Main entry point for the brittle star locomotion project."""
