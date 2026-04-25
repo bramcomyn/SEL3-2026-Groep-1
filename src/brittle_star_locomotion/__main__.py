@@ -74,6 +74,8 @@ def evaluate(arguments: argparse.Namespace):
         log_every=config.environment.render_every_x_frames,
         logger=logger,
     )
+    print(f'actions: {actions_trajectory.shape}')
+    print(f'positions: {positions_trajectory.shape}')
 
     if arguments.render:
         renderer = EnvironmentRenderer(environment)
@@ -227,14 +229,14 @@ def _collect_trajectory(
         *trajectory_env_states_list,
     )
     trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
-    trajectory_actions = jnp.concatenate(trajectory_actions_list, axis=0)
-    trajectory_positions = jnp.concatenate(trajectory_positions_list, axis=0)
+    trajectory_actions = jnp.stack(trajectory_actions_list, axis=1)
+    trajectory_positions = jnp.stack(trajectory_positions_list, axis=1)
 
     return trajectory_env_states, trajectory_actions, trajectory_positions
 
 def _save_action_trajectory(output_filename: str, action_trajectory: jnp.ndarray) -> None:
     if len(action_trajectory.shape) == 3:
-        n_steps, n_environments, n_agents = action_trajectory.shape
+        n_environments, n_steps, n_agents = action_trajectory.shape
     else:
         n_steps, n_agents = action_trajectory.shape
         n_environments = 1
@@ -259,17 +261,18 @@ def _save_position_trajectory(output_filename: str, positions_trajectory: jnp.nd
         positions_trajectory = positions_trajectory[None, :, :]
 
     with open(f'{output_filename}', 'w') as output:
-        end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position)
+        end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position) # TODO
 
-        output.write(f'step_id,x,y,in_trajectory\n')
-        output.write(f'0,0,0,false\n') # Start position
-        output.write(f'0,0,0,true\n')
+        output.write(f'environment_id,step_id,x,y,in_trajectory\n')
 
         for environment_id in range(n_environments):
+            output.write(f'{environment_id},0,0,0,false\n') # Start position
+            output.write(f'{environment_id},0,0,0,true\n')
+
             for step_id in range(n_steps):
                 x = positions_trajectory[environment_id, step_id, 0]
                 y = positions_trajectory[environment_id, step_id, 1]
-                output.write(f'{step_id},{x},{y},true\n')
+                output.write(f'{environment_id},{step_id},{x},{y},true\n')
 
         output.write(f'{n_steps},{end_x},{end_y},false\n') # End position
 
