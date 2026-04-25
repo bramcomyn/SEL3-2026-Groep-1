@@ -18,7 +18,6 @@ class Environment:
         self.number_of_environments = self.config.environment.number_of_environments
         self.number_of_arms = self.config.environment.number_of_arms
         self._number_of_segments_per_arm = self.config.environment.number_of_segments_per_arm
-        self.target_position = jnp.array(self.config.environment.target_position)
 
         # Construct the morphology, arena, and environment based on the configuration
         self.morphology = self._create_morphology()
@@ -70,11 +69,10 @@ class Environment:
     def _reset_all_envs(self, sub_rngs: jnp.ndarray):
         """Reset all environments while avoiding vmapped-reset instability for single-env runs."""
         if self.number_of_environments == 1:
-            single_env_state = self.jit_env_reset_single(sub_rngs[0], self.target_position)
+            single_env_state = self.jit_env_reset_single(sub_rngs[0])
             return jax.tree_util.tree_map(lambda x: x[jnp.newaxis, ...], single_env_state)
-        
-        target_position_for_all_envs = jnp.broadcast_to(self.target_position, (self.number_of_environments, 3)) # shape: (envs, 3)
-        return self.jit_env_reset(sub_rngs, target_position_for_all_envs)
+
+        return self.jit_env_reset(sub_rngs)
 
     def reset(self):
         """Reset both the MJX environment and the CPG controllers."""
@@ -136,7 +134,6 @@ class Environment:
         per_segment = jnp.repeat(per_arm[:, :, jnp.newaxis, :], self._number_of_segments_per_arm, axis=2)
         return per_segment.reshape(cpg_output.shape[0], -1)
 
-    #@functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:  # (envs, arms, total_obs_per_arm)
         """Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
         This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state, 
@@ -258,7 +255,6 @@ class Environment:
                 assert obs in valid_keys, f"Observation {obs} not in state space."
             return observations_to_use_from_config
 
-    #@functools.partial(jax.jit, static_argnums=(0,))
     def _get_angle_arm_to_target(self) -> jnp.ndarray:
         """Calculate relative angle from each arm to the target
 
