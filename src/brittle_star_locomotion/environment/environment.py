@@ -71,6 +71,7 @@ class Environment:
         if self.number_of_environments == 1:
             single_env_state = self.jit_env_reset_single(sub_rngs[0])
             return jax.tree_util.tree_map(lambda x: x[jnp.newaxis, ...], single_env_state)
+
         return self.jit_env_reset(sub_rngs)
 
     def reset(self):
@@ -226,6 +227,7 @@ class Environment:
             time_scale=self.config.environment.time_scale,
             camera_ids=self.config.environment.camera_ids,
             render_size=(self.config.environment.render_size_x, self.config.environment.render_size_y),
+            random_initial_rotation=self.config.environment.random_initial_rotation,
         )
 
         return BrittleStarDirectedLocomotionEnvironment.from_morphology_and_arena(
@@ -303,4 +305,4 @@ class Environment:
             relative_angle_arm_to_target_unnormalized
         ) # return the signed angle in the range [-pi, pi]
 
-        return relative_angle_arm_to_target[:, :, jnp.newaxis] # shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)
+        return relative_angle_arm_to_target[:, :, jnp.newaxis] / jnp.pi # shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)
