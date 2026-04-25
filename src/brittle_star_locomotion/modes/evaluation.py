@@ -50,13 +50,12 @@ class Evaluator:
         self._save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
         self.logger.info("Saving action trajectory")
 
-        self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory)
+        self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory, self.environment.target_position)
         self.logger.info("Saving position trajectory")
 
         elapsed = time.perf_counter() - started_at
         self.logger.info(f"Evaluation completed in {elapsed:.1f}s")
         self.logger.debug("Evaluation process completed.")
-
 
     def _load_qnetworks_for_evaluation(
         self,
@@ -90,7 +89,6 @@ class Evaluator:
             q_networks.append(q_network)
 
         return q_networks
-    
 
     def _select_policy_actions(
         self,
@@ -166,15 +164,14 @@ class Evaluator:
             *trajectory_env_states_list,
         )
         trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
-        trajectory_actions = jnp.concatenate(trajectory_actions_list, axis=0)
-        trajectory_positions = jnp.concatenate(trajectory_positions_list, axis=0)
+        trajectory_actions = jnp.stack(trajectory_actions_list, axis=1)
+        trajectory_positions = jnp.stack(trajectory_positions_list, axis=1)
 
         return trajectory_env_states, trajectory_actions, trajectory_positions
-    
 
     def _save_action_trajectory(self, output_filename: str, action_trajectory: jnp.ndarray) -> None:
         if len(action_trajectory.shape) == 3:
-            n_steps, n_environments, n_agents = action_trajectory.shape
+            n_environments, n_steps, n_agents = action_trajectory.shape
         else:
             n_steps, n_agents = action_trajectory.shape
             n_environments = 1
@@ -188,7 +185,7 @@ class Evaluator:
                     for agent_id in range(n_agents):
                         output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
 
-    def _save_position_trajectory(self, output_filename: str, positions_trajectory: jnp.ndarray) -> None:
+    def _save_position_trajectory(self, output_filename: str, positions_trajectory: jnp.ndarray, target_positions: jnp.ndarray) -> None:
         """ positions_trajectory - (n_environments, n_steps, 3) or (n_steps, 3)
         """
         if len(positions_trajectory.shape) == 3:
@@ -199,16 +196,15 @@ class Evaluator:
             positions_trajectory = positions_trajectory[None, :, :]
 
         with open(f'{output_filename}', 'w') as output:
-            end_x, end_y, _ = tuple(Configuration().configuration.environment.target_position)
+            output.write(f'environment_id,step_id,x,y,in_trajectory\n')
 
-            output.write('step_id,x,y,in_trajectory\n')
-            output.write('0,0,0,false\n') # Start position
-            output.write('0,0,0,true\n')
+            for environment_id in range(n_environments): 
+                output.write(f'{environment_id},0,0,0,true\n') # Start position
 
-            for environment_id in range(n_environments):
                 for step_id in range(n_steps):
                     x = positions_trajectory[environment_id, step_id, 0]
                     y = positions_trajectory[environment_id, step_id, 1]
-                    output.write(f'{step_id},{x},{y},true\n')
+                    output.write(f'{environment_id},{step_id},{x},{y},true\n')
 
-            output.write(f'{n_steps},{end_x},{end_y},false\n') # End position
+                end_x, end_y, _ = tuple(target_positions[environment_id])
+                output.write(f'{environment_id},{n_steps},{end_x},{end_y},false\n') # End position
