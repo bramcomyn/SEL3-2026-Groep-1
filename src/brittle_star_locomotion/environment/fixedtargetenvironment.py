@@ -7,9 +7,10 @@ from brittle_star_locomotion.environment.environment import Environment
 class FixedTargetEnvironment(Environment):
     """Environment where the target position is fixed at the start of each episode."""
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
         config = Configuration().configuration
-        self.target_position = config.target_position
+        self.target_position = jnp.array(config.environment.target_position)
+
+        super().__init__(*args, **kwargs)
 
     def _reset_all_envs(self, sub_rngs: jnp.ndarray):
         """Reset all environments while avoiding vmapped-reset instability for single-env runs."""

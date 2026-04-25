@@ -8,6 +8,8 @@ from flax import nnx
 
 from brittle_star_locomotion.config.configuration import Configuration
 from brittle_star_locomotion.environment.environment import Environment
+from brittle_star_locomotion.environment.fixedtargetenvironment import FixedTargetEnvironment
+from brittle_star_locomotion.environment.randomtargetenvironment import RandomTargetEnvironment
 from brittle_star_locomotion.environment.render import EnvironmentRenderer
 from brittle_star_locomotion.logger.logger import Logger
 from brittle_star_locomotion.neural.qnetwork import QNetwork
@@ -33,7 +35,9 @@ def train(arguments: argparse.Namespace):
     started_at = time.perf_counter()
     logger.info("Starting training process...")
 
-    environment = Environment()
+    config = Configuration().configuration
+
+    environment = RandomTargetEnvironment() if config.environment.random_target else FixedTargetEnvironment()
     optimizer = IQLOptimizer(environment)
     
     logger.info(f"Training with {environment.number_of_environments} parallel environments")
@@ -54,7 +58,7 @@ def evaluate(arguments: argparse.Namespace):
 
     config = Configuration().configuration
 
-    environment = Environment()
+    environment = RandomTargetEnvironment() if config.environment.random_target else FixedTargetEnvironment()
     checkpoint_base = _normalize_checkpoint_base_name(arguments.checkpoint, config.checkpoint_directory)
     q_networks = _load_qnetworks_for_evaluation(
         environment=environment,
