@@ -71,6 +71,7 @@ class Environment:
         if self.number_of_environments == 1:
             single_env_state = self.jit_env_reset_single(sub_rngs[0])
             return jax.tree_util.tree_map(lambda x: x[jnp.newaxis, ...], single_env_state)
+
         return self.jit_env_reset(sub_rngs)
 
     def reset(self):
@@ -133,7 +134,6 @@ class Environment:
         per_segment = jnp.repeat(per_arm[:, :, jnp.newaxis, :], self._number_of_segments_per_arm, axis=2)
         return per_segment.reshape(cpg_output.shape[0], -1)
 
-    @functools.partial(jax.jit, static_argnums=(0,))
     def get_observations(self) -> jnp.ndarray:  # (envs, arms, total_obs_per_arm)
         """Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
         This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state, 
@@ -227,6 +227,7 @@ class Environment:
             time_scale=self.config.environment.time_scale,
             camera_ids=self.config.environment.camera_ids,
             render_size=(self.config.environment.render_size_x, self.config.environment.render_size_y),
+            random_initial_rotation=self.config.environment.random_initial_rotation,
         )
 
         return BrittleStarDirectedLocomotionEnvironment.from_morphology_and_arena(
@@ -254,7 +255,6 @@ class Environment:
                 assert obs in valid_keys, f"Observation {obs} not in state space."
             return observations_to_use_from_config
 
-    @functools.partial(jax.jit, static_argnums=(0,))
     def _get_angle_arm_to_target(self) -> jnp.ndarray:
         """Calculate relative angle from each arm to the target
 
@@ -305,4 +305,4 @@ class Environment:
             relative_angle_arm_to_target_unnormalized
         ) # return the signed angle in the range [-pi, pi]
 
-        return relative_angle_arm_to_target[:, :, jnp.newaxis] # shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)
+        return relative_angle_arm_to_target[:, :, jnp.newaxis] / jnp.pi # shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)
