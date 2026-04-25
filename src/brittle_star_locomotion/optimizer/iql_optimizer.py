@@ -11,8 +11,6 @@ import optax
 import jax
 import jax.numpy as jnp
 
-from typing import Any # TODO remove
-
 
 class IQLOptimizer:
     def __init__(self, environment: Environment):
