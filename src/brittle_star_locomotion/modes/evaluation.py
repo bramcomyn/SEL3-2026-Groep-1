@@ -50,7 +50,7 @@ class Evaluator:
         self._save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
         self.logger.info("Saving action trajectory")
 
-        self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory)
+        self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory, self.environment.target_position)
         self.logger.info("Saving position trajectory")
 
         elapsed = time.perf_counter() - started_at
