@@ -13,7 +13,7 @@ rl:
   hidden_size: 64
   amount_of_hidden_layers: 2
   shared_params: true
-  n_episodes: 100
+  n_episodes: 5
   batch_size: 256
   target_update_freq: 300
   replay_buffer_size: 10000
@@ -32,7 +32,7 @@ environment:
   number_of_arms: 5
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
-  number_of_environments: 1
+  number_of_environments: 2
   seed: 43
   camera_ids: [0, 1]
   frames_per_second: 50
