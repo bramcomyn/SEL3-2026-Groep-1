@@ -12,6 +12,7 @@ from brittle_star_locomotion.environment.render import EnvironmentRenderer
 from brittle_star_locomotion.logger.logger import Logger
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 from brittle_star_locomotion.util.checkpoint_naming import normalize_checkpoint_base_name, resolve_agent_checkpoint_name
+from brittle_star_locomotion.damage.arm_damage import ArmDamage
 
 class Evaluator:
     def __init__(self):
@@ -121,21 +122,26 @@ class Evaluator:
         trajectory_actions_list = []
         trajectory_positions_list = []
 
-        for step_index in range(num_modulation_steps):
+        arm_damage = ArmDamage()
+
+        for step_idx in range(num_modulation_steps):
             if bool(jnp.all(done_environments)):
                 break
 
-            if step_index % max(1, log_every) == 0 or step_index == num_modulation_steps - 1:
-                self.logger.info(f"Evaluation progress: modulation step {step_index + 1}/{num_modulation_steps}")
+            if step_idx % max(1, log_every) == 0 or step_idx == num_modulation_steps - 1:
+                self.logger.info(f"Evaluation progress: modulation step {step_idx + 1}/{num_modulation_steps}")
 
             observations = self.environment.get_observations()
             actions = self._select_policy_actions(observations=observations, q_networks=q_networks)
             actions = jnp.where(done_environments[:, None], 0, actions) # (n_environments, n_agents)
     
+            arm_damage.break_arms(step_idx)
+
             env_state, cpg_state, _, terminated, truncated, trajectory = self.environment.step(
                 env_state,
                 cpg_state,
                 actions,
+                arm_damage.get_active_arms(),
                 num_substeps,
             )
 
