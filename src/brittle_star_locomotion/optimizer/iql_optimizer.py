@@ -34,7 +34,9 @@ class IQLOptimizer:
         self._n_agents = self._environment.number_of_arms
         self._n_environments = self._environment.number_of_environments
         self._n_actions = 5
+
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
+        self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
 
         # We explicitely keep this and update environment state accordingly
         # because this makes the JIT of environment much more efficient
@@ -86,6 +88,7 @@ class IQLOptimizer:
 
         for _ in range(self._config.rl.n_episodes):
             self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
+            self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
             self._update_epsilon()
             self._run_episode()
 
@@ -120,7 +123,7 @@ class IQLOptimizer:
         actions = jnp.where(self._done_environments[:, None], 0, actions) # shape (n_environments, n_agents)
 
         self._env_state, self._cpg_state, reward, terminated, truncated, _ = self._environment.step(
-            self._env_state, self._cpg_state, actions
+            self._env_state, self._cpg_state, actions, self._active_arms
         )
 
         # Update environment's internal state for get_observations() calls
@@ -150,7 +153,10 @@ class IQLOptimizer:
         """
         for agent_id in range(self._n_agents):
             for environment_id in range(self._n_environments):
-                if not bool(self._done_environments[environment_id]):
+                is_active = bool(self._active_arms[environment_id, agent_id])
+                is_done = bool(self._done_environments[environment_id])
+
+                if not (is_done or is_active):
                     done = bool(transition.terminated[environment_id] | transition.truncated[environment_id])
                     self._replay_buffers[agent_id].add(
                         observation=transition.observations[environment_id, agent_id],

@@ -26,13 +26,13 @@ rl:
 environment:
   target_position: [1, 1, 0.05]
   target_distance: 1
-  random_target: True
+  random_target: False
   random_initial_rotation: False
   fixed_evaluation_action: "0,1,3,4,2"
   number_of_arms: 5
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
-  number_of_environments: 8
+  number_of_environments: 1
   seed: 43
   camera_ids: [0, 1]
   frames_per_second: 50
