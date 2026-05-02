@@ -30,7 +30,7 @@ class ArmDamage():
         arm_mask = jax.nn.one_hot(random_arms, self._n_agents) # (n_envs, n_arms)
 
         self._active_arms = jnp.where(          # (n_envs, n_arms)
-            trigger,
+            trigger[:, None],                   # (n_envs, 1)
             self._active_arms * (1 - arm_mask), # Turn off
             self._active_arms
         )
