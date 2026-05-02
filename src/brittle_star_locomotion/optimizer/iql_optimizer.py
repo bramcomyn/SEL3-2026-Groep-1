@@ -100,6 +100,7 @@ class IQLOptimizer:
     def _run_episode(self) -> None:
         """Run a single episode across all vectorized environments."""
         self._env_state, self._cpg_state = self._environment.reset()
+        self._arm_damage.reset()
 
         self._metrics.new_episode(self._epsilon)
 
