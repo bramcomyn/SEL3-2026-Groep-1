@@ -13,6 +13,7 @@ class ArmDamage():
         self._rng = jax.random.PRNGKey(self._seed)
 
         self._breakpoint_range = self._config.damage.breakpoint_range
+        self._damage_enabled = self._config.damage.enabled
 
         self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
         self._break_points = jax.random.randint(self._rng, (self._n_environments), 3, 15) # shape (n_envs,)
@@ -22,6 +23,10 @@ class ArmDamage():
 
         :param step_idx: The current step in the environment
         """
+
+        if not self._damage_enabled:
+            return
+
         trigger = step_idx == self._break_points # shape (n_envs,)
 
         self._rng, subkey = jax.random.split(self._rng)
