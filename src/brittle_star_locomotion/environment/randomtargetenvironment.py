@@ -35,9 +35,5 @@ class RandomTargetEnvironment(Environment):
 
     def _reset_all_envs(self, sub_rngs: jnp.ndarray):
         """Reset all environments while avoiding vmapped-reset instability for single-env runs."""
-        if self.number_of_environments == 1:
-            single_env_state = self.jit_env_reset_single(sub_rngs[0], self.target_position)
-            return jax.tree_util.tree_map(lambda x: x[jnp.newaxis, ...], single_env_state)
-        
         target_position_for_all_envs = jnp.broadcast_to(self.target_position, (self.number_of_environments, 3)) # shape: (envs, 3)
         return self.jit_env_reset(sub_rngs, target_position_for_all_envs)
