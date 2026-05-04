@@ -163,7 +163,7 @@ class IQLOptimizer:
                 is_active = bool(active_arms[environment_id, agent_id])
                 is_done = bool(self._done_environments[environment_id])
 
-                if not (is_done or is_active):
+                if not is_done and is_active:
                     done = bool(transition.terminated[environment_id] | transition.truncated[environment_id])
                     self._replay_buffers[agent_id].add(
                         observation=transition.observations[environment_id, agent_id],
