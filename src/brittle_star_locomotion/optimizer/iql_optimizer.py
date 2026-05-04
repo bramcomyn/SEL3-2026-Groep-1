@@ -90,8 +90,7 @@ class IQLOptimizer:
         self._metrics.new_training()
 
         for _ in range(self._config.rl.n_episodes):
-            self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
-            self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
+            self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,) 
             self._update_epsilon()
             self._run_episode()
 
