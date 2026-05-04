@@ -34,10 +34,15 @@ def _parse_arguments():
 
     return parser.parse_args()
 
-# mapping of mode strings to functions
+def train(arguments):
+    Trainer().train(arguments)
+
+def evaluate(arguments):
+    Evaluator().evaluate(arguments)
+
 mode_dictionary = {
-    "train": Trainer().train,
-    "eval": Evaluator().evaluate,
+    "train": lambda args: train(args),
+    "eval": lambda args: evaluate(args),
 }
 
 if __name__ == "__main__":
