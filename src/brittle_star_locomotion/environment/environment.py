@@ -86,7 +86,7 @@ class Environment:
         env_state,
         cpg_state,
         action: jnp.ndarray,
-        active_arms: jnp.ndarray,
+        active_arms: jnp.ndarray | None = None,
         num_substeps: int = 50,
     ):
         """Modulate the rowing gait with arm-role actions and run CPG+physics substeps.
@@ -97,6 +97,8 @@ class Environment:
         :param active_arms: Determines which arms are active and which ones are not, has shape (envs, arms
         :param num_substeps: number of CPG/physics substeps to execute per call.
         """
+        if active_arms is None:
+            active_arms = jnp.ones((self.number_of_environments, self.number_of_arms))
         previous_distance: jnp.ndarray = env_state.observations["xy_distance_to_target"] # shape: (envs, 1) # type: ignore
 
         if action.ndim == 1:
