@@ -4,6 +4,7 @@ from brittle_star_locomotion.logger.logger import Logger
 from brittle_star_locomotion.neural.qnetwork import QNetwork
 from brittle_star_locomotion.optimizer.transition import Transition
 from brittle_star_locomotion.metrics.training_metrics import TrainingMetrics
+from brittle_star_locomotion.damage.arm_damage import ArmDamage
 
 from cpprb import ReplayBuffer
 from flax import nnx
@@ -34,7 +35,11 @@ class IQLOptimizer:
         self._n_agents = self._environment.number_of_arms
         self._n_environments = self._environment.number_of_environments
         self._n_actions = 5
+
         self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
+
+        self._arm_damage = ArmDamage()
+        
 
         # We explicitely keep this and update environment state accordingly
         # because this makes the JIT of environment much more efficient
@@ -85,7 +90,7 @@ class IQLOptimizer:
         self._metrics.new_training()
 
         for _ in range(self._config.rl.n_episodes):
-            self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,)
+            self._done_environments = jnp.zeros((self._n_environments,), dtype=bool) # shape (n_envs,) 
             self._update_epsilon()
             self._run_episode()
 
@@ -94,14 +99,18 @@ class IQLOptimizer:
     def _run_episode(self) -> None:
         """Run a single episode across all vectorized environments."""
         self._env_state, self._cpg_state = self._environment.reset()
+        self._arm_damage.reset()
 
         self._metrics.new_episode(self._epsilon)
 
+        step_idx = 0
         while not bool(jnp.all(self._done_environments)):
+            self._arm_damage.break_arms(step_idx)
             transition = self._step_in_environment()
             self._store_replay_transitions(transition)    
             losses = self._optimize_agents()
             self._metrics.new_episode_step(transition, losses)
+            step_idx += 1
 
         self._metrics.end_episode()
 
@@ -120,7 +129,7 @@ class IQLOptimizer:
         actions = jnp.where(self._done_environments[:, None], 0, actions) # shape (n_environments, n_agents)
 
         self._env_state, self._cpg_state, reward, terminated, truncated, _ = self._environment.step(
-            self._env_state, self._cpg_state, actions
+            self._env_state, self._cpg_state, actions, self._arm_damage.get_active_arms()
         )
 
         # Update environment's internal state for get_observations() calls
@@ -150,7 +159,11 @@ class IQLOptimizer:
         """
         for agent_id in range(self._n_agents):
             for environment_id in range(self._n_environments):
-                if not bool(self._done_environments[environment_id]):
+                active_arms = self._arm_damage.get_active_arms()
+                is_active = bool(active_arms[environment_id, agent_id])
+                is_done = bool(self._done_environments[environment_id])
+
+                if not is_done and is_active:
                     done = bool(transition.terminated[environment_id] | transition.truncated[environment_id])
                     self._replay_buffers[agent_id].add(
                         observation=transition.observations[environment_id, agent_id],

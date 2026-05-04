@@ -80,12 +80,13 @@ class Environment:
         self.cpg_state = self.controller.cpg.reset()
         return self.env_state, self.cpg_state
         
-    @functools.partial(jax.jit, static_argnums=(0, 4))
+    @functools.partial(jax.jit, static_argnums=(0, 5))
     def step(
         self,
         env_state,
         cpg_state,
         action: jnp.ndarray,
+        active_arms: jnp.ndarray | None = None,
         num_substeps: int = 50,
     ):
         """Modulate the rowing gait with arm-role actions and run CPG+physics substeps.
@@ -93,8 +94,11 @@ class Environment:
         :param env_state: current environment state.
         :param cpg_state: current CPG state.
         :param action: arm-role modulation action with shape (arms,) or (envs, arms).
+        :param active_arms: Determines which arms are active and which ones are not, has shape (envs, arms
         :param num_substeps: number of CPG/physics substeps to execute per call.
         """
+        if active_arms is None:
+            active_arms = jnp.ones((self.number_of_environments, self.number_of_arms))
         previous_distance: jnp.ndarray = env_state.observations["xy_distance_to_target"] # shape: (envs, 1) # type: ignore
 
         if action.ndim == 1:
@@ -105,7 +109,7 @@ class Environment:
         def _cpg_loop_body(carry, _):
             _env_state, _cpg_state = carry
             _next_cpg_state, _next_cpg_action = self.controller.step(_cpg_state)
-            _next_env_action = self._map_cpg_output_to_environment_action(_next_cpg_action)
+            _next_env_action = self._map_cpg_output_to_environment_action(_next_cpg_action, active_arms)
             _next_env_state = self.jit_env_step(_env_state, _next_env_action)
             return (_next_env_state, _next_cpg_state), (_next_env_state, _next_cpg_action)
 
@@ -126,13 +130,29 @@ class Environment:
         return next_env_state, next_cpg_state, reward, next_env_state.terminated, next_env_state.truncated, trajectory
 
     @functools.partial(jax.jit, static_argnums=(0,))
-    def _map_cpg_output_to_environment_action(self, cpg_output: jnp.ndarray) -> jnp.ndarray:
-        """Map one IP/OOP pair per arm to per-segment actuator controls expected by biorobot."""
+    def _map_cpg_output_to_environment_action(
+        self, 
+        cpg_output: jnp.ndarray, 
+        active_arms: jnp.ndarray
+    ) -> jnp.ndarray:
+        """Map one In-plane/Out-of-plane (IP/OOP) pair per arm to per-segment actuator controls expected by biorobot.
+
+        :param cpg_output: Output of CPG
+        :param active_arms: Determines which arms are active and which ones are not, has shape (envs, arms)
+        :return: Raw actuator input with shape (envs, arms * segments_per_arm * 2)
+        """
         ip = cpg_output[:, 0::2]
         oop = cpg_output[:, 1::2]
-        per_arm = jnp.stack([ip, oop], axis=-1)  # (envs, arms, 2)
-        per_segment = jnp.repeat(per_arm[:, :, jnp.newaxis, :], self._number_of_segments_per_arm, axis=2)
-        return per_segment.reshape(cpg_output.shape[0], -1)
+        per_arm = jnp.stack([ip, oop], axis=-1)  # shape (envs, arms, 2)
+
+        per_arm = jnp.where(active_arms[:, :, None], per_arm, 0) # shape (envs, arms, 2)
+
+        per_segment = jnp.repeat(                # shape (envs, arms, self._number_of_segments_per_arm, 2)
+            per_arm[:, :, jnp.newaxis, :], 
+            self._number_of_segments_per_arm, 
+            axis=2
+        )
+        return per_segment.reshape(cpg_output.shape[0], -1) # shape (envs, arms * segments_per_arm * 2)
 
     def get_observations(self) -> jnp.ndarray:  # (envs, arms, total_obs_per_arm)
         """Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
