@@ -9,7 +9,7 @@ export function actions_trajectory_chart() {
     const actions = Array.from({ length: 5 }, (_, i) => i);
     const steps = Array.from({ length: Math.max(...trajectory.map(row => row.step_id))+1 }, (_, i) => i)
 
-    return vl.markPoint({ strokeWidth: 1.5, interpolate: "step-after" })
+    return vl.markCircle({ strokeWidth: 1.5, interpolate: "step-after" })
         .data(trajectory)
         .transform(    
             vl.filter("datum.environment_id === 0"), // Plot only one environment
@@ -32,6 +32,7 @@ export function actions_trajectory_chart() {
                     domain: actions
                 })
                 .axis({ 
+                    title: false,
                     grid: false,
                     labelExpr: "['Leading','Left primary','Left secondary','Right primary','Right secondary'][+datum.value]"
                 })

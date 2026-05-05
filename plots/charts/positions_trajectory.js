@@ -12,7 +12,7 @@ export function positions_trajectory_chart() {
     ) - 0.5;
     const domain = [-maxAbs, maxAbs];
 
-    const path = vl.markLine({ point: { size: 15 }, strokeWidth: 1, color: "#557086" })
+    const path = vl.markLine({ point: { size: 8 }, strokeWidth: 1, color: "#557086" })
         .transform(
             vl.filter("datum.in_trajectory")
         )
@@ -23,7 +23,7 @@ export function positions_trajectory_chart() {
             vl.detail().fieldO("environment_id")
         );
 
-    const target = vl.markCircle({ color: "#ff0000", opacity: 0.4, size: 200 })
+    const target = vl.markCircle({ color: "#ff0000", opacity: 0.4, size: 150 })
         .transform(
             vl.filter("!datum.in_trajectory")
         )
