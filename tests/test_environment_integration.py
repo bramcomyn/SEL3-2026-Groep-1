@@ -33,6 +33,7 @@ def _make_test_configuration() -> SimpleNamespace:
         render_size_y=240,
         render_every_x_frames=2,
         frames_per_second=50,
+        random_initial_rotation=False,
         arena=arena,
     )
 

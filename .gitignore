@@ -6,6 +6,13 @@ __pycache__/
 # C extensions
 *.so
 
+# Node modules
+plots/node_modules/
+
+# Plots
+plots/out/*.svg
+plots/out/*.png
+
 # Distribution / packaging
 .Python
 # build/

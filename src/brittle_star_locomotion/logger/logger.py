@@ -100,16 +100,16 @@ class Logger(metaclass=Singleton):
         rl_config = config.get("rl", {}) or {}
         environment_config = config.get("environment", {}) or {}
 
-        number_of_arms = environment_config.get("number_of_arms", "na")
-        number_of_segments = environment_config.get("number_of_segments_per_arm", "na")
-        n_episodes = rl_config.get("n_episodes", "na")
-        seed = rl_config.get("seed", "na")
+        distance_target = environment_config.get("target_distance")
+        number_of_episodes = rl_config.get("n_episodes")
+        episode_length = environment_config.get("simulation_time")
+        damage = environment_config.get("include_damage")
 
         return (
-            f"IQL-{number_of_arms}arms-"
-            f"{number_of_segments}segments-"
-            f"{n_episodes}episodes-"
-            f"seed{seed}"
+            f"target-distance_{distance_target}_"
+            f"number-of-episodes_{number_of_episodes}_"
+            f"episode-length_{episode_length}_"
+            f"damage_{damage}"
         )
 
     def _build_wandb_config(self, config) -> dict:

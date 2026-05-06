@@ -117,8 +117,9 @@ class QNetwork(nnx.Module):
         >>> model = MyModel()
         >>> model.save_checkpoint("my_checkpoint")
         """
-        os.makedirs(self.config.checkpoint_directory, exist_ok=True)
-        path_to_checkpoint = os.path.join(self.config.checkpoint_directory, name)
+        checkpoint_dir = Configuration().configuration.checkpoint_directory
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        path_to_checkpoint = os.path.join(checkpoint_dir, name)
 
         _, state = nnx.split(self)
 
