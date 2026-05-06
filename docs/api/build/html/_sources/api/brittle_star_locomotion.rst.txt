@@ -10,8 +10,11 @@ Subpackages
    brittle_star_locomotion.config
    brittle_star_locomotion.controller
    brittle_star_locomotion.cpg
+   brittle_star_locomotion.damage
    brittle_star_locomotion.environment
    brittle_star_locomotion.logger
+   brittle_star_locomotion.metrics
+   brittle_star_locomotion.modes
    brittle_star_locomotion.neural
    brittle_star_locomotion.optimizer
    brittle_star_locomotion.util

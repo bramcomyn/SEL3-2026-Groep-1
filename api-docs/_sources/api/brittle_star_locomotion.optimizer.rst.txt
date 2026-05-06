@@ -12,6 +12,14 @@ brittle\_star\_locomotion.optimizer.iql\_optimizer module
    :show-inheritance:
    :undoc-members:
 
+brittle\_star\_locomotion.optimizer.transition module
+-----------------------------------------------------
+
+.. automodule:: brittle_star_locomotion.optimizer.transition
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 Module contents
 ---------------
 

@@ -197,8 +197,11 @@
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.environment.html">brittle_star_locomotion.environment package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.optimizer.html">brittle_star_locomotion.optimizer package</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">brittle_star_locomotion.util package</a></li>
@@ -248,6 +251,21 @@
 <h1>brittle_star_locomotion.util package<a class="headerlink" href="#brittle-star-locomotion-util-package" title="Link to this heading">¶</a></h1>
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-brittle_star_locomotion.util.checkpoint_naming">
+<span id="brittle-star-locomotion-util-checkpoint-naming-module"></span><h2>brittle_star_locomotion.util.checkpoint_naming module<a class="headerlink" href="#module-brittle_star_locomotion.util.checkpoint_naming" title="Link to this heading">¶</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="brittle_star_locomotion.util.checkpoint_naming.normalize_checkpoint_base_name">
+<span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.util.checkpoint_naming.</span></span><span class="sig-name descname"><span class="pre">normalize_checkpoint_base_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_argument</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/util/checkpoint_naming.html#normalize_checkpoint_base_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.util.checkpoint_naming.normalize_checkpoint_base_name" title="Link to this definition">¶</a></dt>
+<dd><p>Convert checkpoint CLI input to a basename used by QNetwork.load_checkpoint.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="brittle_star_locomotion.util.checkpoint_naming.resolve_agent_checkpoint_name">
+<span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.util.checkpoint_naming.</span></span><span class="sig-name descname"><span class="pre">resolve_agent_checkpoint_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_base</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkpoint_directory</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/util/checkpoint_naming.html#resolve_agent_checkpoint_name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.util.checkpoint_naming.resolve_agent_checkpoint_name" title="Link to this definition">¶</a></dt>
+<dd><p>Resolve the checkpoint filename for a specific agent.</p>
+</dd></dl>
+
 </section>
 <section id="module-brittle_star_locomotion.util.singleton">
 <span id="brittle-star-locomotion-util-singleton-module"></span><h2>brittle_star_locomotion.util.singleton module<a class="headerlink" href="#module-brittle_star_locomotion.util.singleton" title="Link to this heading">¶</a></h2>
@@ -342,6 +360,11 @@
             <ul>
 <li><a class="reference internal" href="#">brittle_star_locomotion.util package</a><ul>
 <li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.util.checkpoint_naming">brittle_star_locomotion.util.checkpoint_naming module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.util.checkpoint_naming.normalize_checkpoint_base_name"><code class="docutils literal notranslate"><span class="pre">normalize_checkpoint_base_name()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.util.checkpoint_naming.resolve_agent_checkpoint_name"><code class="docutils literal notranslate"><span class="pre">resolve_agent_checkpoint_name()</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#module-brittle_star_locomotion.util.singleton">brittle_star_locomotion.util.singleton module</a><ul>
 <li><a class="reference internal" href="#brittle_star_locomotion.util.singleton.Singleton"><code class="docutils literal notranslate"><span class="pre">Singleton</span></code></a><ul>
 <li><a class="reference internal" href="#brittle_star_locomotion.util.singleton.Singleton.__init__"><code class="docutils literal notranslate"><span class="pre">Singleton.__init__()</span></code></a></li>

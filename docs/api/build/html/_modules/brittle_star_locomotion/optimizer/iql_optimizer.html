@@ -196,8 +196,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.environment.html">brittle_star_locomotion.environment package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.optimizer.html">brittle_star_locomotion.optimizer package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.util.html">brittle_star_locomotion.util package</a></li>
@@ -242,6 +245,9 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.environment.environment</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.logger.logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">Logger</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.neural.qnetwork</span><span class="w"> </span><span class="kn">import</span> <span class="n">QNetwork</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.optimizer.transition</span><span class="w"> </span><span class="kn">import</span> <span class="n">Transition</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.metrics.training_metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">TrainingMetrics</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">brittle_star_locomotion.damage.arm_damage</span><span class="w"> </span><span class="kn">import</span> <span class="n">ArmDamage</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">cpprb</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReplayBuffer</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">flax</span><span class="w"> </span><span class="kn">import</span> <span class="n">nnx</span>
@@ -277,6 +283,17 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_environments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">number_of_environments</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_n_actions</span> <span class="o">=</span> <span class="mi">5</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_environments</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="c1"># shape (n_envs,)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_arm_damage</span> <span class="o">=</span> <span class="n">ArmDamage</span><span class="p">()</span>
+        
+
+        <span class="c1"># We explicitely keep this and update environment state accordingly</span>
+        <span class="c1"># because this makes the JIT of environment much more efficient</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpg_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span> <span class="o">=</span> <span class="n">TrainingMetrics</span><span class="p">()</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span> <span class="o">=</span> <span class="n">Logger</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="s2">&quot;IQL optimizer initialized with &quot;</span>
@@ -285,20 +302,16 @@
             <span class="sa">f</span><span class="s2">&quot;episodes=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="si">}</span><span class="s2">, batch_size=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">batch_size</span><span class="si">}</span><span class="s2">, &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;target_update_freq=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">target_update_freq</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
-
         <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">&quot;Training hyperparameters: seed=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_seed</span><span class="si">}</span><span class="s2">, epsilon=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;epsilon_decay=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">epsilon_decay</span><span class="si">}</span><span class="s2">, epsilon_min=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">epsilon_min</span><span class="si">}</span><span class="s2">, &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;learning_rate=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">learning_rate</span><span class="si">}</span><span class="s2">, gamma=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">gamma</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_create_replay_buffer</span><span class="p">()</span> 
-            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">)</span>
-        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_replay_buffers</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_n_qnetworks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_target_q_networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_n_qnetworks</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetworks</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_target_q_networks</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetworks</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_synchronize_target_networks</span><span class="p">()</span>
 
         <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optax</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span>
@@ -311,216 +324,9 @@
         <span class="p">]</span></div>
 
 
-<div class="viewcode-block" id="IQLOptimizer.optimize">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">n_environments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">number_of_environments</span>
-        <span class="n">total_train_steps</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">environment_steps</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">initialize_wandb</span><span class="p">(</span><span class="n">project</span><span class="o">=</span><span class="s2">&quot;brittle-star-locomotion&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Starting IQL training for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="si">}</span><span class="s2"> episodes &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;across </span><span class="si">{</span><span class="n">n_environments</span><span class="si">}</span><span class="s2"> environments&quot;</span>
-        <span class="p">)</span>
-
-        <span class="k">for</span> <span class="n">episode_index</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="p">):</span>
-            <span class="n">total_train_steps</span><span class="p">,</span> <span class="n">environment_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_episode</span><span class="p">(</span>
-                <span class="n">episode_index</span><span class="o">=</span><span class="n">episode_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="n">n_environments</span><span class="o">=</span><span class="n">n_environments</span><span class="p">,</span>
-                <span class="n">total_train_steps</span><span class="o">=</span><span class="n">total_train_steps</span><span class="p">,</span>
-                <span class="n">environment_steps</span><span class="o">=</span><span class="n">environment_steps</span><span class="p">,</span>
-            <span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Finished IQL training after </span><span class="si">{</span><span class="n">environment_steps</span><span class="si">}</span><span class="s2"> environment steps and &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">total_train_steps</span><span class="si">}</span><span class="s2"> optimization steps&quot;</span>
-        <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._run_episode">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_run_episode</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">episode_index</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">n_environments</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">total_train_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">environment_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a single episode across all vectorized environments.&quot;&quot;&quot;</span>
-        <span class="n">env_state</span><span class="p">,</span> <span class="n">cpg_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
-        <span class="n">previous_epsilon</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_update_epsilon</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Episode </span><span class="si">{</span><span class="n">episode_index</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="si">}</span><span class="s2"> started: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;epsilon </span><span class="si">{</span><span class="n">previous_epsilon</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> -&gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-        <span class="n">done_environments</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_environments</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
-        <span class="n">episode_steps</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">episode_reward_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="n">episode_loss_sum</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="n">episode_terminated_count</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">episode_truncated_count</span> <span class="o">=</span> <span class="mi">0</span>
-        <span class="n">episode_done_count</span> <span class="o">=</span> <span class="mi">0</span>
-
-        <span class="k">while</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">done_environments</span><span class="p">)):</span>
-            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect_transition</span><span class="p">(</span>
-                <span class="n">env_state</span><span class="o">=</span><span class="n">env_state</span><span class="p">,</span>
-                <span class="n">cpg_state</span><span class="o">=</span><span class="n">cpg_state</span><span class="p">,</span>
-                <span class="n">done_environments</span><span class="o">=</span><span class="n">done_environments</span>
-            <span class="p">)</span>
-
-            <span class="n">env_state</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s2">&quot;next_env_state&quot;</span><span class="p">]</span>
-            <span class="n">cpg_state</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s2">&quot;next_cpg_state&quot;</span><span class="p">]</span>
-            <span class="n">done_environments</span> <span class="o">=</span> <span class="n">transition</span><span class="p">[</span><span class="s2">&quot;done_environments&quot;</span><span class="p">]</span>
-
-            <span class="n">loss_per_environment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compute_step_loss_per_environment</span><span class="p">(</span>
-                <span class="n">observations</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;observations&quot;</span><span class="p">],</span>
-                <span class="n">actions</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;actions&quot;</span><span class="p">],</span>
-                <span class="n">rewards</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;reward&quot;</span><span class="p">],</span>
-                <span class="n">next_observations</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;next_observations&quot;</span><span class="p">],</span>
-                <span class="n">dones</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;current_done&quot;</span><span class="p">],</span>
-            <span class="p">)</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">_store_replay_transitions</span><span class="p">(</span>
-                <span class="n">observations</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;observations&quot;</span><span class="p">],</span>
-                <span class="n">actions</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;actions&quot;</span><span class="p">],</span>
-                <span class="n">rewards</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;reward&quot;</span><span class="p">],</span>
-                <span class="n">next_observations</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;next_observations&quot;</span><span class="p">],</span>
-                <span class="n">current_done</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;current_done&quot;</span><span class="p">],</span>
-                <span class="n">previously_done</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;previously_done&quot;</span><span class="p">],</span>
-            <span class="p">)</span>
-
-            <span class="n">optimize_losses</span><span class="p">,</span> <span class="n">total_train_steps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_agents</span><span class="p">(</span><span class="n">total_train_steps</span><span class="o">=</span><span class="n">total_train_steps</span><span class="p">)</span>
-
-            <span class="n">step_reward_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;reward&quot;</span><span class="p">]))</span>
-            <span class="n">step_loss_mean</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">loss_per_environment</span><span class="p">))</span>
-            <span class="n">episode_reward_sum</span> <span class="o">+=</span> <span class="n">step_reward_mean</span>
-            <span class="n">episode_loss_sum</span> <span class="o">+=</span> <span class="n">step_loss_mean</span>
-            <span class="n">episode_terminated_count</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;terminated&quot;</span><span class="p">]))</span>
-            <span class="n">episode_truncated_count</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;truncated&quot;</span><span class="p">]))</span>
-            <span class="n">episode_done_count</span> <span class="o">+=</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;current_done&quot;</span><span class="p">]))</span>
-            <span class="n">episode_steps</span> <span class="o">+=</span> <span class="mi">1</span>
-
-            <span class="bp">self</span><span class="o">.</span><span class="n">_log_step_metrics</span><span class="p">(</span>
-                <span class="n">step</span><span class="o">=</span><span class="n">environment_steps</span><span class="p">,</span>
-                <span class="n">rewards</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;reward&quot;</span><span class="p">],</span>
-                <span class="n">losses</span><span class="o">=</span><span class="n">loss_per_environment</span><span class="p">,</span>
-                <span class="n">terminated</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;terminated&quot;</span><span class="p">],</span>
-                <span class="n">truncated</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;truncated&quot;</span><span class="p">],</span>
-                <span class="n">done</span><span class="o">=</span><span class="n">transition</span><span class="p">[</span><span class="s2">&quot;current_done&quot;</span><span class="p">],</span>
-                <span class="n">optimize_losses</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">optimize_losses</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">optimize_losses</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="p">)</span>
-
-            <span class="n">environment_steps</span> <span class="o">+=</span> <span class="mi">1</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;Episode </span><span class="si">{</span><span class="n">episode_index</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="si">}</span><span class="s2"> finished after </span><span class="si">{</span><span class="n">episode_steps</span><span class="si">}</span><span class="s2"> steps: &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;mean_step_reward=</span><span class="si">{</span><span class="n">episode_reward_sum</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">episode_steps</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;mean_step_loss=</span><span class="si">{</span><span class="n">episode_loss_sum</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">episode_steps</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;terminated=</span><span class="si">{</span><span class="n">episode_terminated_count</span><span class="si">}</span><span class="s2">, truncated=</span><span class="si">{</span><span class="n">episode_truncated_count</span><span class="si">}</span><span class="s2">, &quot;</span>
-            <span class="sa">f</span><span class="s2">&quot;done=</span><span class="si">{</span><span class="n">episode_done_count</span><span class="si">}</span><span class="s2">, total_train_steps=</span><span class="si">{</span><span class="n">total_train_steps</span><span class="si">}</span><span class="s2">&quot;</span>
-        <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">total_train_steps</span><span class="p">,</span> <span class="n">environment_steps</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._collect_transition">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._collect_transition">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_collect_transition</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">env_state</span><span class="p">,</span> <span class="n">cpg_state</span><span class="p">,</span> <span class="n">done_environments</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect one transition step for all environments with action-masking for finished envs.&quot;&quot;&quot;</span>
-        <span class="n">observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">get_observations</span><span class="p">()</span>
-        <span class="n">actions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epsilon_greedy</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>
-        <span class="n">previously_done</span> <span class="o">=</span> <span class="n">done_environments</span>
-
-        <span class="n">actions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">previously_done</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">actions</span><span class="p">)</span>
-
-        <span class="n">next_env_state</span><span class="p">,</span> <span class="n">next_cpg_state</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
-            <span class="n">env_state</span><span class="p">,</span> <span class="n">cpg_state</span><span class="p">,</span> <span class="n">actions</span>
-        <span class="p">)</span>
-        
-        <span class="c1"># Update environment&#39;s internal state for get_observations() calls</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">env_state</span> <span class="o">=</span> <span class="n">next_env_state</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">cpg_state</span> <span class="o">=</span> <span class="n">next_cpg_state</span>
-
-        <span class="c1"># Reshape reward from (n_envs, 1) to (n_envs,)</span>
-        <span class="n">reward</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">reward</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">terminated</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">terminated</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-        <span class="n">truncated</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">truncated</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="n">current_done</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">terminated</span> <span class="o">|</span> <span class="n">truncated</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-        <span class="n">next_done_environments</span> <span class="o">=</span> <span class="n">done_environments</span> <span class="o">|</span> <span class="n">current_done</span>
-        <span class="n">next_observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">get_observations</span><span class="p">()</span>
-
-        <span class="k">return</span> <span class="p">{</span>
-            <span class="s2">&quot;observations&quot;</span><span class="p">:</span> <span class="n">observations</span><span class="p">,</span>
-            <span class="s2">&quot;actions&quot;</span><span class="p">:</span> <span class="n">actions</span><span class="p">,</span>
-            <span class="s2">&quot;reward&quot;</span><span class="p">:</span> <span class="n">reward</span><span class="p">,</span>
-            <span class="s2">&quot;next_observations&quot;</span><span class="p">:</span> <span class="n">next_observations</span><span class="p">,</span>
-            <span class="s2">&quot;terminated&quot;</span><span class="p">:</span> <span class="n">terminated</span><span class="p">,</span>
-            <span class="s2">&quot;truncated&quot;</span><span class="p">:</span> <span class="n">truncated</span><span class="p">,</span>
-            <span class="s2">&quot;current_done&quot;</span><span class="p">:</span> <span class="n">current_done</span><span class="p">,</span>
-            <span class="s2">&quot;previously_done&quot;</span><span class="p">:</span> <span class="n">previously_done</span><span class="p">,</span>
-            <span class="s2">&quot;done_environments&quot;</span><span class="p">:</span> <span class="n">next_done_environments</span><span class="p">,</span>
-            <span class="s2">&quot;next_env_state&quot;</span><span class="p">:</span> <span class="n">next_env_state</span><span class="p">,</span>
-            <span class="s2">&quot;next_cpg_state&quot;</span><span class="p">:</span> <span class="n">next_cpg_state</span><span class="p">,</span>
-        <span class="p">}</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._store_replay_transitions">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_store_replay_transitions</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">observations</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">actions</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">rewards</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">next_observations</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">current_done</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">previously_done</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store transitions for active environments in each agent replay buffer.&quot;&quot;&quot;</span>
-        <span class="n">n_environments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">number_of_environments</span>
-        <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">):</span>
-            <span class="k">for</span> <span class="n">environment_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_environments</span><span class="p">):</span>
-                <span class="k">if</span> <span class="nb">bool</span><span class="p">(</span><span class="n">previously_done</span><span class="p">[</span><span class="n">environment_id</span><span class="p">]):</span>
-                    <span class="k">continue</span>
-
-                <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span><span class="p">[</span><span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
-                    <span class="n">observation</span><span class="o">=</span><span class="n">observations</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
-                    <span class="n">action</span><span class="o">=</span><span class="n">actions</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
-                    <span class="n">reward</span><span class="o">=</span><span class="n">rewards</span><span class="p">[</span><span class="n">environment_id</span><span class="p">],</span>
-                    <span class="n">next_observation</span><span class="o">=</span><span class="n">next_observations</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
-                    <span class="n">done</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">current_done</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-                <span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._optimize_agents">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_optimize_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total_train_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optimize all trainable agents once and return losses with updated train step counter.&quot;&quot;&quot;</span>
-        <span class="n">optimize_losses</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span><span class="p">[</span><span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">get_stored_size</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span>
-                <span class="n">optimize_loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_step</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
-                <span class="n">optimize_losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">optimize_loss</span><span class="p">)</span>
-
-                <span class="n">total_train_steps</span> <span class="o">+=</span> <span class="mi">1</span>
-                <span class="k">if</span> <span class="n">total_train_steps</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">target_update_freq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_synchronize_target_networks</span><span class="p">()</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Synchronized target networks at train step </span><span class="si">{</span><span class="n">total_train_steps</span><span class="si">}</span><span class="s2">&quot;</span>
-                    <span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">optimize_losses</span><span class="p">,</span> <span class="n">total_train_steps</span></div>
-
-
 <div class="viewcode-block" id="IQLOptimizer.save_model">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.save_model">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;model&#39;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">save_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">checkpoint_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;model&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Save one checkpoint per agent using &lt;checkpoint_prefix&gt;_&lt;agent_id&gt;.</span>
 
 <span class="sd">        :param checkpoint_prefix: Prefix used for all checkpoint filenames.</span>
@@ -530,9 +336,134 @@
             <span class="n">q_network</span><span class="o">.</span><span class="n">save_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="IQLOptimizer.optimize">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">optimize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">new_training</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">n_episodes</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_environments</span><span class="p">,),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span> <span class="c1"># shape (n_envs,) </span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update_epsilon</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_episode</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">end_training</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="IQLOptimizer._run_episode">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run_episode</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run a single episode across all vectorized environments.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpg_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_arm_damage</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">new_episode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_epsilon</span><span class="p">)</span>
+
+        <span class="n">step_idx</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="nb">bool</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span><span class="p">)):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_arm_damage</span><span class="o">.</span><span class="n">break_arms</span><span class="p">(</span><span class="n">step_idx</span><span class="p">)</span>
+            <span class="n">transition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_step_in_environment</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_replay_transitions</span><span class="p">(</span><span class="n">transition</span><span class="p">)</span>    
+            <span class="n">losses</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_agents</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">new_episode_step</span><span class="p">(</span><span class="n">transition</span><span class="p">,</span> <span class="n">losses</span><span class="p">)</span>
+            <span class="n">step_idx</span> <span class="o">+=</span> <span class="mi">1</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">end_episode</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="IQLOptimizer._step_in_environment">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._step_in_environment">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_step_in_environment</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Transition</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Collect one transition step for all environments.</span>
+
+<span class="sd">        Makes observations of the state for each agent and determines the epsilon-greedy actions.</span>
+<span class="sd">        It steps once in the environment with these actions.</span>
+
+<span class="sd">        :return: The transition tuple from stepping once through the environment</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">get_observations</span><span class="p">()</span> <span class="c1"># shape (n_environments, n_agents, obs)</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_epsilon_greedy</span><span class="p">(</span><span class="n">observations</span><span class="p">)</span>        <span class="c1"># shape (n_environments, n_agents)</span>
+
+        <span class="c1"># Puts all actions to 0 for environments that are done</span>
+        <span class="n">actions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">],</span> <span class="mi">0</span><span class="p">,</span> <span class="n">actions</span><span class="p">)</span> <span class="c1"># shape (n_environments, n_agents)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_env_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpg_state</span><span class="p">,</span> <span class="n">reward</span><span class="p">,</span> <span class="n">terminated</span><span class="p">,</span> <span class="n">truncated</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">step</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_env_state</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpg_state</span><span class="p">,</span> <span class="n">actions</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arm_damage</span><span class="o">.</span><span class="n">get_active_arms</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Update environment&#39;s internal state for get_observations() calls</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">env_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_env_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">cpg_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpg_state</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span> <span class="o">|</span> <span class="n">terminated</span> <span class="o">|</span> <span class="n">truncated</span>
+        <span class="n">next_observations</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">get_observations</span><span class="p">()</span>
+
+        <span class="n">transition</span> <span class="o">=</span> <span class="n">Transition</span><span class="p">(</span>
+            <span class="n">observations</span><span class="p">,</span>
+            <span class="n">actions</span><span class="p">,</span>
+            <span class="n">reward</span><span class="p">,</span>
+            <span class="n">next_observations</span><span class="p">,</span>
+            <span class="n">terminated</span><span class="p">,</span>
+            <span class="n">truncated</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">transition</span></div>
+
+
+<div class="viewcode-block" id="IQLOptimizer._store_replay_transitions">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_store_replay_transitions</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">transition</span><span class="p">:</span> <span class="n">Transition</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Store transitions for non-terminated or truncated environments in each agent replay buffer.</span>
+
+<span class="sd">        :param transition: The transition to store</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">environment_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_environments</span><span class="p">):</span>
+                <span class="n">active_arms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_arm_damage</span><span class="o">.</span><span class="n">get_active_arms</span><span class="p">()</span>
+                <span class="n">is_active</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">active_arms</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">])</span>
+                <span class="n">is_done</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_done_environments</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_done</span> <span class="ow">and</span> <span class="n">is_active</span><span class="p">:</span>
+                    <span class="n">done</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">transition</span><span class="o">.</span><span class="n">terminated</span><span class="p">[</span><span class="n">environment_id</span><span class="p">]</span> <span class="o">|</span> <span class="n">transition</span><span class="o">.</span><span class="n">truncated</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span><span class="p">[</span><span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                        <span class="n">observation</span><span class="o">=</span><span class="n">transition</span><span class="o">.</span><span class="n">observations</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
+                        <span class="n">action</span><span class="o">=</span><span class="n">transition</span><span class="o">.</span><span class="n">actions</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
+                        <span class="n">reward</span><span class="o">=</span><span class="n">transition</span><span class="o">.</span><span class="n">rewards</span><span class="p">[</span><span class="n">environment_id</span><span class="p">],</span>
+                        <span class="n">next_observation</span><span class="o">=</span><span class="n">transition</span><span class="o">.</span><span class="n">next_observations</span><span class="p">[</span><span class="n">environment_id</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">],</span>
+                        <span class="n">done</span><span class="o">=</span><span class="n">done</span>
+                    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="IQLOptimizer._optimize_agents">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_optimize_agents</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Optimize all agents once by sampling a minibatch from their replay buffers and return losses.</span>
+<span class="sd">        </span>
+<span class="sd">        :return: Losses from the QNetworks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_replay_buffers</span><span class="p">[</span><span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">get_stored_size</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">batch_size</span><span class="p">:</span>
+                <span class="n">loss</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_optimize_step</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span>
+                <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">total_train_steps</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">total_train_steps</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">target_update_freq</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_synchronize_target_networks</span><span class="p">()</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Synchronized target networks at train step </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_metrics</span><span class="o">.</span><span class="n">total_train_steps</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">losses</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">losses</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span></div>
+
+
 <div class="viewcode-block" id="IQLOptimizer._optimize_step">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_step">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_optimize_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_optimize_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">agent_id</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Performs a single optimization step for the specified agent.</span>
 
 <span class="sd">        Optimizes the Q-network for the given `agent_id` by sampling a mini-batch of experiences from its replay buffer,</span>
@@ -563,72 +494,6 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_q_network_optimizers</span><span class="p">[</span><span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span><span class="p">[</span><span class="n">agent_id</span><span class="p">],</span> <span class="n">grads</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._compute_step_loss_per_environment">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._compute_step_loss_per_environment">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_step_loss_per_environment</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">observations</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">actions</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">rewards</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">next_observations</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">dones</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute one-step TD loss per environment, averaged over agents.&quot;&quot;&quot;</span>
-        <span class="n">losses_by_agent</span> <span class="o">=</span> <span class="p">[]</span>
-
-        <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">):</span>
-            <span class="n">q_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span><span class="p">[</span><span class="n">agent_id</span><span class="p">](</span><span class="n">observations</span><span class="p">[:,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="p">:])</span>
-            <span class="n">taken_actions</span> <span class="o">=</span> <span class="n">actions</span><span class="p">[:,</span> <span class="n">agent_id</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="n">q_taken</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">q_values</span><span class="p">,</span> <span class="n">taken_actions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-            <span class="n">next_q_values_online</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span><span class="p">[</span><span class="n">agent_id</span><span class="p">](</span><span class="n">next_observations</span><span class="p">[:,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="p">:])</span>
-            <span class="n">next_actions</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">next_q_values_online</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-            <span class="n">next_q_values_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_q_networks</span><span class="p">[</span><span class="n">agent_id</span><span class="p">](</span><span class="n">next_observations</span><span class="p">[:,</span> <span class="n">agent_id</span><span class="p">,</span> <span class="p">:])</span>
-            <span class="n">next_q</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">take_along_axis</span><span class="p">(</span><span class="n">next_q_values_target</span><span class="p">,</span> <span class="n">next_actions</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
-
-            <span class="n">targets</span> <span class="o">=</span> <span class="n">rewards</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">gamma</span> <span class="o">*</span> <span class="n">next_q</span> <span class="o">*</span> <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">dones</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
-            <span class="n">td_loss</span> <span class="o">=</span> <span class="p">(</span><span class="n">q_taken</span> <span class="o">-</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">targets</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span>
-            <span class="n">losses_by_agent</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">td_loss</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">losses_by_agent</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._log_step_metrics">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._log_step_metrics">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_log_step_metrics</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span>
-        <span class="n">step</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">rewards</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">losses</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">terminated</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">truncated</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">done</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-        <span class="n">optimize_losses</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log per-environment and aggregate training metrics to Weights &amp; Biases.&quot;&quot;&quot;</span>
-        <span class="n">log_data</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">&quot;train/reward_mean&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rewards</span><span class="p">)),</span>
-            <span class="s2">&quot;train/loss_mean&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">losses</span><span class="p">)),</span>
-            <span class="s2">&quot;train/terminated_count&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">terminated</span><span class="p">)),</span>
-            <span class="s2">&quot;train/truncated_count&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">truncated</span><span class="p">)),</span>
-            <span class="s2">&quot;train/done_count&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">done</span><span class="p">)),</span>
-            <span class="s2">&quot;train/terminated_ratio&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">terminated</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">))),</span>
-            <span class="s2">&quot;train/done_ratio&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">done</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">float32</span><span class="p">))),</span>
-        <span class="p">}</span>
-
-        <span class="k">if</span> <span class="n">optimize_losses</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="s2">&quot;train/optimize_loss_mean&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">optimize_losses</span><span class="p">))</span>
-
-        <span class="k">for</span> <span class="n">environment_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_environment</span><span class="o">.</span><span class="n">number_of_environments</span><span class="p">):</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;train/reward/env_</span><span class="si">{</span><span class="n">environment_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">rewards</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;train/loss/env_</span><span class="si">{</span><span class="n">environment_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">losses</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;train/terminated/env_</span><span class="si">{</span><span class="n">environment_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">terminated</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;train/truncated/env_</span><span class="si">{</span><span class="n">environment_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">truncated</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-            <span class="n">log_data</span><span class="p">[</span><span class="sa">f</span><span class="s2">&quot;train/done/env_</span><span class="si">{</span><span class="n">environment_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">done</span><span class="p">[</span><span class="n">environment_id</span><span class="p">])</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">_logger</span><span class="o">.</span><span class="n">log_metrics</span><span class="p">(</span><span class="n">log_data</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="n">step</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="IQLOptimizer._loss">
@@ -701,7 +566,7 @@
 
 <div class="viewcode-block" id="IQLOptimizer._update_epsilon">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._update_epsilon">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_update_epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_update_epsilon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Updates the epsilon value for epsilon-greedy action selection.</span>
 
 <span class="sd">        The epsilon value is decayed by multiplying it with `epsilon_decay`, but it will not go below `epsilon_min`.</span>
@@ -714,25 +579,10 @@
 
 <div class="viewcode-block" id="IQLOptimizer._synchronize_target_networks">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._synchronize_target_networks">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_synchronize_target_networks</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_synchronize_target_networks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Synchronizes the parameters of the target Q-networks with the current Q-networks.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">q_net</span><span class="p">,</span> <span class="n">target_q_net</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_q_networks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target_q_networks</span><span class="p">):</span>
             <span class="n">target_q_net</span><span class="o">.</span><span class="n">update_model_parameters</span><span class="p">(</span><span class="n">copy_from</span><span class="o">=</span><span class="n">q_net</span><span class="p">)</span></div>
-
-
-<div class="viewcode-block" id="IQLOptimizer._create_n_qnetworks">
-<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_n_qnetworks">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_create_n_qnetworks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">QNetwork</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates `n` QNetwork instances, either shared or separate based on the configuration.</span>
-
-<span class="sd">        :param n: The number of QNetwork instances to create (default is 1).</span>
-<span class="sd">        :return: A list of QNetwork instances.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
-            <span class="n">q_network</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetwork</span><span class="p">()</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">q_network</span><span class="p">]</span> <span class="o">*</span> <span class="n">n</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetwork</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span></div>
 
 
 <div class="viewcode-block" id="IQLOptimizer._create_qnetwork">
@@ -755,6 +605,20 @@
         <span class="p">)</span></div>
 
 
+<div class="viewcode-block" id="IQLOptimizer._create_qnetworks">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetworks">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_qnetworks</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">QNetwork</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates `n` QNetwork instances, either shared or separate based on the configuration.</span>
+
+<span class="sd">        :return: A list of QNetwork instances.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
+            <span class="n">q_network</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetwork</span><span class="p">()</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">q_network</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_qnetwork</span><span class="p">(</span><span class="n">agent_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">agent_id</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">)]</span></div>
+
+
 <div class="viewcode-block" id="IQLOptimizer._create_replay_buffer">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffer">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">_create_replay_buffer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ReplayBuffer</span><span class="p">:</span>
@@ -774,6 +638,21 @@
                 <span class="s2">&quot;done&quot;</span><span class="p">:</span> <span class="p">{}</span>
             <span class="p">}</span>
         <span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="IQLOptimizer._create_replay_buffers">
+<a class="viewcode-back" href="../../../api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffers">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_create_replay_buffers</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">ReplayBuffer</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creates a list of replay buffers, one for each agent.</span>
+<span class="sd">        If `shared_params` is True in the configuration, all agents will share the same replay buffer instance.</span>
+
+<span class="sd">        :return: A list of ReplayBuffer instances, one for each agent.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_config</span><span class="o">.</span><span class="n">rl</span><span class="o">.</span><span class="n">shared_params</span><span class="p">:</span>
+            <span class="n">shared_buffer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_replay_buffer</span><span class="p">()</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">shared_buffer</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_create_replay_buffer</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_n_agents</span><span class="p">)]</span></div>
 </div>
 
 </pre></div>

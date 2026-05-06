@@ -195,8 +195,11 @@
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.environment.html">brittle_star_locomotion.environment package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.optimizer.html">brittle_star_locomotion.optimizer package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="api/brittle_star_locomotion.util.html">brittle_star_locomotion.util package</a></li>
@@ -254,7 +257,13 @@
 </li>
           <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.__init__">(brittle_star_locomotion.cpg.cpg.CPGState method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.damage.html#brittle_star_locomotion.damage.arm_damage.ArmDamage.__init__">(brittle_star_locomotion.damage.arm_damage.ArmDamage method)</a>
+</li>
           <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.__init__">(brittle_star_locomotion.environment.environment.Environment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.__init__">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.__init__">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
 </li>
           <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.render.EnvironmentRenderer.__init__">(brittle_star_locomotion.environment.render.EnvironmentRenderer method)</a>
 </li>
@@ -262,9 +271,17 @@
 </li>
           <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger.Logger.__init__">(brittle_star_locomotion.logger.logger.Logger method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.__init__">(brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator.__init__">(brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.training.Trainer.__init__">(brittle_star_locomotion.modes.training.Trainer method)</a>
+</li>
           <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork.__init__">(brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
 </li>
           <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.__init__">(brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.__init__">(brittle_star_locomotion.optimizer.transition.Transition method)</a>
 </li>
           <li><a href="api/brittle_star_locomotion.util.html#brittle_star_locomotion.util.singleton.Singleton.__init__">(brittle_star_locomotion.util.singleton.Singleton method)</a>
 </li>
@@ -293,23 +310,41 @@
 </li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork._check_value">_check_value() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._collect_transition">_collect_transition() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator._collect_trajectory">_collect_trajectory() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter">_ColorFormatter (class in brittle_star_locomotion.logger.logger)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._compute_step_loss_per_environment">_compute_step_loss_per_environment() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
-</li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._create_arena">_create_arena() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_arena">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_arena">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._create_brittle_star_directed_locomotion_environment">_create_brittle_star_directed_locomotion_environment() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_brittle_star_directed_locomotion_environment">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_brittle_star_directed_locomotion_environment">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._create_morphology">_create_morphology() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_morphology">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_n_qnetworks">_create_n_qnetworks() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_morphology">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
 </li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetwork">_create_qnetwork() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetworks">_create_qnetworks() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffer">_create_replay_buffer() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffers">_create_replay_buffers() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._epsilon_greedy">_epsilon_greedy() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
@@ -318,9 +353,21 @@
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._get_angle_arm_to_target">_get_angle_arm_to_target() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_angle_arm_to_target">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_angle_arm_to_target">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._get_observations_to_use">_get_observations_to_use() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_observations_to_use">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_observations_to_use">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.controller.html#brittle_star_locomotion.controller.rowing_gait_controller.RowingGaitModulator._get_oscillator_indices">_get_oscillator_indices() (brittle_star_locomotion.controller.rowing_gait_controller.RowingGaitModulator method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork._graph_node_clear">_graph_node_clear() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
@@ -341,12 +388,18 @@
 </li>
         <li><a href="api/brittle_star_locomotion.config.html#brittle_star_locomotion.config.configuration.Configuration._load_configuration">_load_configuration() (brittle_star_locomotion.config.configuration.Configuration method)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._log_step_metrics">_log_step_metrics() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator._load_qnetworks_for_evaluation">_load_qnetworks_for_evaluation() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._loss">_loss() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._map_cpg_output_to_environment_action">_map_cpg_output_to_environment_action() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._map_cpg_output_to_environment_action">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._map_cpg_output_to_environment_action">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.controller.html#brittle_star_locomotion.controller.rowing_gait_controller.RowingGaitModulator._map_cpg_to_brittle_star_actions">_map_cpg_to_brittle_star_actions() (brittle_star_locomotion.controller.rowing_gait_controller.RowingGaitModulator method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPG._offset_acceleration">_offset_acceleration() (brittle_star_locomotion.cpg.cpg.CPG method)</a>
@@ -371,11 +424,27 @@
 </li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork._pytree__unflatten">_pytree__unflatten() (brittle_star_locomotion.neural.qnetwork.QNetwork class method)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._reset_all_envs">_reset_all_envs() (brittle_star_locomotion.environment.environment.Environment method)</a>
+        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._random_target_position">_random_target_position() (brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._reset_all_envs">_reset_all_envs() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._reset_all_envs">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._reset_all_envs">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode">_run_episode() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator._save_action_trajectory">_save_action_trajectory() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator._save_position_trajectory">_save_position_trajectory() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator._select_policy_actions">_select_policy_actions() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork._setattr">_setattr() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._step_in_environment">_step_in_environment() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions">_store_replay_transitions() (brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer method)</a>
 </li>
@@ -391,7 +460,13 @@
   <h2>A</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.actions">actions (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.amplitude">amplitude (brittle_star_locomotion.cpg.cpg.CPGState attribute)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.damage.html#brittle_star_locomotion.damage.arm_damage.ArmDamage">ArmDamage (class in brittle_star_locomotion.damage.arm_damage)</a>
 </li>
     </ul></td>
   </tr></table>
@@ -401,6 +476,8 @@
   <h2>B</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.damage.html#brittle_star_locomotion.damage.arm_damage.ArmDamage.break_arms">break_arms() (brittle_star_locomotion.damage.arm_damage.ArmDamage method)</a>
+</li>
         <li>
     brittle_star_locomotion
 
@@ -465,14 +542,26 @@
 </li>
         </ul></li>
         <li>
+    brittle_star_locomotion.damage
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.damage.html#module-brittle_star_locomotion.damage">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.damage.arm_damage
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.damage.html#module-brittle_star_locomotion.damage.arm_damage">module</a>
+</li>
+        </ul></li>
+        <li>
     brittle_star_locomotion.environment
 
         <ul>
           <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment">module</a>
 </li>
         </ul></li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     brittle_star_locomotion.environment.environment
 
@@ -480,6 +569,22 @@
           <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.environment">module</a>
 </li>
         </ul></li>
+        <li>
+    brittle_star_locomotion.environment.fixedtargetenvironment
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.fixedtargetenvironment">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.environment.randomtargetenvironment
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.randomtargetenvironment">module</a>
+</li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li>
     brittle_star_locomotion.environment.render
 
@@ -499,6 +604,41 @@
 
         <ul>
           <li><a href="api/brittle_star_locomotion.logger.html#module-brittle_star_locomotion.logger.logger">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.metrics
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.metrics.html#module-brittle_star_locomotion.metrics">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.metrics.training_metrics
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.metrics.html#module-brittle_star_locomotion.metrics.training_metrics">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.modes
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.modes.evaluation
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes.evaluation">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.modes.training
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes.training">module</a>
 </li>
         </ul></li>
         <li>
@@ -530,10 +670,24 @@
 </li>
         </ul></li>
         <li>
+    brittle_star_locomotion.optimizer.transition
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.optimizer.html#module-brittle_star_locomotion.optimizer.transition">module</a>
+</li>
+        </ul></li>
+        <li>
     brittle_star_locomotion.util
 
         <ul>
           <li><a href="api/brittle_star_locomotion.util.html#module-brittle_star_locomotion.util">module</a>
+</li>
+        </ul></li>
+        <li>
+    brittle_star_locomotion.util.checkpoint_naming
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.util.html#module-brittle_star_locomotion.util.checkpoint_naming">module</a>
 </li>
         </ul></li>
         <li>
@@ -595,6 +749,10 @@
   <h2>E</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.end_episode">end_episode() (brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.end_training">end_training() (brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment">Environment (class in brittle_star_locomotion.environment.environment)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.render.EnvironmentRenderer">EnvironmentRenderer (class in brittle_star_locomotion.environment.render)</a>
@@ -607,6 +765,10 @@
 </li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork.eval">eval() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator.evaluate">evaluate() (brittle_star_locomotion.modes.evaluation.Evaluator method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.evaluation.Evaluator">Evaluator (class in brittle_star_locomotion.modes.evaluation)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -615,6 +777,8 @@
   <h2>F</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment">FixedTargetEnvironment (class in brittle_star_locomotion.environment.fixedtargetenvironment)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter.format">format() (brittle_star_locomotion.logger.logger._ColorFormatter method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter.formatException">formatException() (brittle_star_locomotion.logger.logger._ColorFormatter method)</a>
@@ -635,12 +799,26 @@
   <h2>G</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
-        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.get_observation_size">get_observation_size() (brittle_star_locomotion.environment.environment.Environment method)</a>
+        <li><a href="api/brittle_star_locomotion.damage.html#brittle_star_locomotion.damage.arm_damage.ArmDamage.get_active_arms">get_active_arms() (brittle_star_locomotion.damage.arm_damage.ArmDamage method)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.get_observation_size">get_observation_size() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observation_size">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observation_size">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
     </ul></td>
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.get_observations">get_observations() (brittle_star_locomotion.environment.environment.Environment method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observations">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observations">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
+        </ul></li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPG.get_output">get_output() (brittle_star_locomotion.cpg.cpg.CPG method)</a>
 </li>
     </ul></td>
@@ -713,15 +891,33 @@
 </li>
           <li><a href="api/brittle_star_locomotion.cpg.html#module-brittle_star_locomotion.cpg.solver">brittle_star_locomotion.cpg.solver</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.damage.html#module-brittle_star_locomotion.damage">brittle_star_locomotion.damage</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.damage.html#module-brittle_star_locomotion.damage.arm_damage">brittle_star_locomotion.damage.arm_damage</a>
+</li>
           <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment">brittle_star_locomotion.environment</a>
 </li>
           <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.environment">brittle_star_locomotion.environment.environment</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.fixedtargetenvironment">brittle_star_locomotion.environment.fixedtargetenvironment</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.randomtargetenvironment">brittle_star_locomotion.environment.randomtargetenvironment</a>
 </li>
           <li><a href="api/brittle_star_locomotion.environment.html#module-brittle_star_locomotion.environment.render">brittle_star_locomotion.environment.render</a>
 </li>
           <li><a href="api/brittle_star_locomotion.logger.html#module-brittle_star_locomotion.logger">brittle_star_locomotion.logger</a>
 </li>
           <li><a href="api/brittle_star_locomotion.logger.html#module-brittle_star_locomotion.logger.logger">brittle_star_locomotion.logger.logger</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.metrics.html#module-brittle_star_locomotion.metrics">brittle_star_locomotion.metrics</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.metrics.html#module-brittle_star_locomotion.metrics.training_metrics">brittle_star_locomotion.metrics.training_metrics</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes">brittle_star_locomotion.modes</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes.evaluation">brittle_star_locomotion.modes.evaluation</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.modes.html#module-brittle_star_locomotion.modes.training">brittle_star_locomotion.modes.training</a>
 </li>
           <li><a href="api/brittle_star_locomotion.neural.html#module-brittle_star_locomotion.neural">brittle_star_locomotion.neural</a>
 </li>
@@ -731,7 +927,11 @@
 </li>
           <li><a href="api/brittle_star_locomotion.optimizer.html#module-brittle_star_locomotion.optimizer.iql_optimizer">brittle_star_locomotion.optimizer.iql_optimizer</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.optimizer.html#module-brittle_star_locomotion.optimizer.transition">brittle_star_locomotion.optimizer.transition</a>
+</li>
           <li><a href="api/brittle_star_locomotion.util.html#module-brittle_star_locomotion.util">brittle_star_locomotion.util</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.util.html#module-brittle_star_locomotion.util.checkpoint_naming">brittle_star_locomotion.util.checkpoint_naming</a>
 </li>
           <li><a href="api/brittle_star_locomotion.util.html#module-brittle_star_locomotion.util.singleton">brittle_star_locomotion.util.singleton</a>
 </li>
@@ -750,6 +950,18 @@
     <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter.NAME_COLOR">NAME_COLOR (brittle_star_locomotion.logger.logger._ColorFormatter attribute)</a>
 </li>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.new_episode">new_episode() (brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.new_episode_step">new_episode_step() (brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics.new_training">new_training() (brittle_star_locomotion.metrics.training_metrics.TrainingMetrics method)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.next_observations">next_observations (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.util.html#brittle_star_locomotion.util.checkpoint_naming.normalize_checkpoint_base_name">normalize_checkpoint_base_name() (in module brittle_star_locomotion.util.checkpoint_naming)</a>
+</li>
     </ul></td>
   </tr></table>
 </section>
@@ -758,6 +970,8 @@
   <h2>O</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.observations">observations (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.offset">offset (brittle_star_locomotion.cpg.cpg.CPGState attribute)</a>
 </li>
     </ul></td>
@@ -800,20 +1014,32 @@
   <h2>R</h2>
   <table style="width: 100%" class="indextable genindextable"><tr>
     <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment">RandomTargetEnvironment (class in brittle_star_locomotion.environment.randomtargetenvironment)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.render.EnvironmentRenderer.render_video">render_video() (brittle_star_locomotion.environment.render.EnvironmentRenderer method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.replace">replace() (brittle_star_locomotion.cpg.cpg.CPGState method)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter.RESET">RESET (brittle_star_locomotion.logger.logger._ColorFormatter attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPG.reset">reset() (brittle_star_locomotion.cpg.cpg.CPG method)</a>
 
         <ul>
+          <li><a href="api/brittle_star_locomotion.damage.html#brittle_star_locomotion.damage.arm_damage.ArmDamage.reset">(brittle_star_locomotion.damage.arm_damage.ArmDamage method)</a>
+</li>
           <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.reset">(brittle_star_locomotion.environment.environment.Environment method)</a>
 </li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.reset">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.reset">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
+</li>
         </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.util.html#brittle_star_locomotion.util.checkpoint_naming.resolve_agent_checkpoint_name">resolve_agent_checkpoint_name() (in module brittle_star_locomotion.util.checkpoint_naming)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.rewards">rewards (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.solver.RK4Solver">RK4Solver (class in brittle_star_locomotion.cpg.solver)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.controller.html#brittle_star_locomotion.controller.rowing_gait_controller.RowingGaitModulator">RowingGaitModulator (class in brittle_star_locomotion.controller.rowing_gait_controller)</a>
@@ -836,10 +1062,10 @@
 </li>
         <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.render.EnvironmentRenderer.show_video">show_video() (brittle_star_locomotion.environment.render.EnvironmentRenderer method)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.util.html#brittle_star_locomotion.util.singleton.Singleton">Singleton (class in brittle_star_locomotion.util.singleton)</a>
 </li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.solver.Solver">Solver (class in brittle_star_locomotion.cpg.solver)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork.sow">sow() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
@@ -850,6 +1076,10 @@
           <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPG.step">(brittle_star_locomotion.cpg.cpg.CPG method)</a>
 </li>
           <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.step">(brittle_star_locomotion.environment.environment.Environment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.step">(brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment method)</a>
+</li>
+          <li><a href="api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.step">(brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment method)</a>
 </li>
         </ul></li>
     </ul></td>
@@ -866,13 +1096,27 @@
 </li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.target_phase_bias">target_phase_bias (brittle_star_locomotion.cpg.cpg.CPGState attribute)</a>
 </li>
-    </ul></td>
-    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.terminated">terminated (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
+</li>
         <li><a href="api/brittle_star_locomotion.cpg.html#brittle_star_locomotion.cpg.cpg.CPGState.time">time (brittle_star_locomotion.cpg.cpg.CPGState attribute)</a>
 </li>
         <li><a href="api/brittle_star_locomotion.logger.html#brittle_star_locomotion.logger.logger._ColorFormatter.TIME_COLOR">TIME_COLOR (brittle_star_locomotion.logger.logger._ColorFormatter attribute)</a>
 </li>
-        <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork.train">train() (brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.training.Trainer.train">train() (brittle_star_locomotion.modes.training.Trainer method)</a>
+
+        <ul>
+          <li><a href="api/brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork.train">(brittle_star_locomotion.neural.qnetwork.QNetwork method)</a>
+</li>
+        </ul></li>
+        <li><a href="api/brittle_star_locomotion.modes.html#brittle_star_locomotion.modes.training.Trainer">Trainer (class in brittle_star_locomotion.modes.training)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.metrics.html#brittle_star_locomotion.metrics.training_metrics.TrainingMetrics">TrainingMetrics (class in brittle_star_locomotion.metrics.training_metrics)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition">Transition (class in brittle_star_locomotion.optimizer.transition)</a>
+</li>
+        <li><a href="api/brittle_star_locomotion.optimizer.html#brittle_star_locomotion.optimizer.transition.Transition.truncated">truncated (brittle_star_locomotion.optimizer.transition.Transition attribute)</a>
 </li>
     </ul></td>
   </tr></table>

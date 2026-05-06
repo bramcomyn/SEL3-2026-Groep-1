@@ -196,8 +196,11 @@
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.environment.html">brittle_star_locomotion.environment package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.optimizer.html">brittle_star_locomotion.optimizer package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="../../../api/brittle_star_locomotion.util.html">brittle_star_locomotion.util package</a></li>
@@ -318,6 +321,7 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_of_environments</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">single_env_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jit_env_reset_single</span><span class="p">(</span><span class="n">sub_rngs</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">single_env_state</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">jit_env_reset</span><span class="p">(</span><span class="n">sub_rngs</span><span class="p">)</span></div>
 
 
@@ -332,12 +336,13 @@
         
 <div class="viewcode-block" id="Environment.step">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.step">[docs]</a>
-    <span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">step</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">env_state</span><span class="p">,</span>
         <span class="n">cpg_state</span><span class="p">,</span>
         <span class="n">action</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">active_arms</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_substeps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Modulate the rowing gait with arm-role actions and run CPG+physics substeps.</span>
@@ -345,8 +350,11 @@
 <span class="sd">        :param env_state: current environment state.</span>
 <span class="sd">        :param cpg_state: current CPG state.</span>
 <span class="sd">        :param action: arm-role modulation action with shape (arms,) or (envs, arms).</span>
+<span class="sd">        :param active_arms: Determines which arms are active and which ones are not, has shape (envs, arms</span>
 <span class="sd">        :param num_substeps: number of CPG/physics substeps to execute per call.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">active_arms</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">active_arms</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">number_of_environments</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">number_of_arms</span><span class="p">))</span>
         <span class="n">previous_distance</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="n">env_state</span><span class="o">.</span><span class="n">observations</span><span class="p">[</span><span class="s2">&quot;xy_distance_to_target&quot;</span><span class="p">]</span> <span class="c1"># shape: (envs, 1) # type: ignore</span>
 
         <span class="k">if</span> <span class="n">action</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -357,7 +365,7 @@
         <span class="k">def</span><span class="w"> </span><span class="nf">_cpg_loop_body</span><span class="p">(</span><span class="n">carry</span><span class="p">,</span> <span class="n">_</span><span class="p">):</span>
             <span class="n">_env_state</span><span class="p">,</span> <span class="n">_cpg_state</span> <span class="o">=</span> <span class="n">carry</span>
             <span class="n">_next_cpg_state</span><span class="p">,</span> <span class="n">_next_cpg_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">step</span><span class="p">(</span><span class="n">_cpg_state</span><span class="p">)</span>
-            <span class="n">_next_env_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map_cpg_output_to_environment_action</span><span class="p">(</span><span class="n">_next_cpg_action</span><span class="p">)</span>
+            <span class="n">_next_env_action</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_map_cpg_output_to_environment_action</span><span class="p">(</span><span class="n">_next_cpg_action</span><span class="p">,</span> <span class="n">active_arms</span><span class="p">)</span>
             <span class="n">_next_env_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">jit_env_step</span><span class="p">(</span><span class="n">_env_state</span><span class="p">,</span> <span class="n">_next_env_action</span><span class="p">)</span>
             <span class="k">return</span> <span class="p">(</span><span class="n">_next_env_state</span><span class="p">,</span> <span class="n">_next_cpg_state</span><span class="p">),</span> <span class="p">(</span><span class="n">_next_env_state</span><span class="p">,</span> <span class="n">_next_cpg_action</span><span class="p">)</span>
 
@@ -381,18 +389,33 @@
 <div class="viewcode-block" id="Environment._map_cpg_output_to_environment_action">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._map_cpg_output_to_environment_action">[docs]</a>
     <span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_map_cpg_output_to_environment_action</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cpg_output</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map one IP/OOP pair per arm to per-segment actuator controls expected by biorobot.&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_map_cpg_output_to_environment_action</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> 
+        <span class="n">cpg_output</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> 
+        <span class="n">active_arms</span><span class="p">:</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Map one In-plane/Out-of-plane (IP/OOP) pair per arm to per-segment actuator controls expected by biorobot.</span>
+
+<span class="sd">        :param cpg_output: Output of CPG</span>
+<span class="sd">        :param active_arms: Determines which arms are active and which ones are not, has shape (envs, arms)</span>
+<span class="sd">        :return: Raw actuator input with shape (envs, arms * segments_per_arm * 2)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">ip</span> <span class="o">=</span> <span class="n">cpg_output</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
         <span class="n">oop</span> <span class="o">=</span> <span class="n">cpg_output</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">::</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">per_arm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">ip</span><span class="p">,</span> <span class="n">oop</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># (envs, arms, 2)</span>
-        <span class="n">per_segment</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">per_arm</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_number_of_segments_per_arm</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">per_segment</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cpg_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
+        <span class="n">per_arm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">ip</span><span class="p">,</span> <span class="n">oop</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># shape (envs, arms, 2)</span>
+
+        <span class="n">per_arm</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">active_arms</span><span class="p">[:,</span> <span class="p">:,</span> <span class="kc">None</span><span class="p">],</span> <span class="n">per_arm</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># shape (envs, arms, 2)</span>
+
+        <span class="n">per_segment</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>                <span class="c1"># shape (envs, arms, self._number_of_segments_per_arm, 2)</span>
+            <span class="n">per_arm</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:],</span> 
+            <span class="bp">self</span><span class="o">.</span><span class="n">_number_of_segments_per_arm</span><span class="p">,</span> 
+            <span class="n">axis</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">per_segment</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">cpg_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># shape (envs, arms * segments_per_arm * 2)</span></div>
 
 
 <div class="viewcode-block" id="Environment.get_observations">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment.get_observations">[docs]</a>
-    <span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_observations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>  <span class="c1"># (envs, arms, total_obs_per_arm)</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.</span>
 <span class="sd">        This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state, </span>
@@ -498,6 +521,7 @@
             <span class="n">time_scale</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">time_scale</span><span class="p">,</span>
             <span class="n">camera_ids</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">camera_ids</span><span class="p">,</span>
             <span class="n">render_size</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">render_size_x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">render_size_y</span><span class="p">),</span>
+            <span class="n">random_initial_rotation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">environment</span><span class="o">.</span><span class="n">random_initial_rotation</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">BrittleStarDirectedLocomotionEnvironment</span><span class="o">.</span><span class="n">from_morphology_and_arena</span><span class="p">(</span>
@@ -531,7 +555,6 @@
 
 <div class="viewcode-block" id="Environment._get_angle_arm_to_target">
 <a class="viewcode-back" href="../../../api/brittle_star_locomotion.environment.html#brittle_star_locomotion.environment.environment.Environment._get_angle_arm_to_target">[docs]</a>
-    <span class="nd">@functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">jax</span><span class="o">.</span><span class="n">jit</span><span class="p">,</span> <span class="n">static_argnums</span><span class="o">=</span><span class="p">(</span><span class="mi">0</span><span class="p">,))</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_angle_arm_to_target</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">jnp</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculate relative angle from each arm to the target</span>
 
@@ -582,7 +605,7 @@
             <span class="n">relative_angle_arm_to_target_unnormalized</span>
         <span class="p">)</span> <span class="c1"># return the signed angle in the range [-pi, pi]</span>
 
-        <span class="k">return</span> <span class="n">relative_angle_arm_to_target</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="c1"># shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)</span></div>
+        <span class="k">return</span> <span class="n">relative_angle_arm_to_target</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pi</span> <span class="c1"># shape: (envs, arms, 1) - add extra dimension to get correct output shape for observations (num_envs, num_arms, obs_per_arm)</span></div>
 </div>
 
 </pre></div>

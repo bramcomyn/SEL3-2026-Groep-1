@@ -197,8 +197,11 @@
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.environment.html">brittle_star_locomotion.environment package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
 <li class="toctree-l3 current current-page"><a class="current reference internal" href="#">brittle_star_locomotion.optimizer package</a></li>
 <li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.util.html">brittle_star_locomotion.util package</a></li>
@@ -271,32 +274,6 @@ based on the provided environment and configuration settings.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._collect_transition">
-<span class="sig-name descname"><span class="pre">_collect_transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpg_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">done_environments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._collect_transition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._collect_transition" title="Link to this definition">¶</a></dt>
-<dd><p>Collect one transition step for all environments with action-masking for finished envs.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._compute_step_loss_per_environment">
-<span class="sig-name descname"><span class="pre">_compute_step_loss_per_environment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dones</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._compute_step_loss_per_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._compute_step_loss_per_environment" title="Link to this definition">¶</a></dt>
-<dd><p>Compute one-step TD loss per environment, averaged over agents.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_n_qnetworks">
-<span class="sig-name descname"><span class="pre">_create_n_qnetworks</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork" title="brittle_star_locomotion.neural.qnetwork.QNetwork"><span class="pre">QNetwork</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._create_n_qnetworks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_n_qnetworks" title="Link to this definition">¶</a></dt>
-<dd><p>Creates <cite>n</cite> QNetwork instances, either shared or separate based on the configuration.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>n</strong> – The number of QNetwork instances to create (default is 1).</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A list of QNetwork instances.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetwork">
 <span class="sig-name descname"><span class="pre">_create_qnetwork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork" title="brittle_star_locomotion.neural.qnetwork.QNetwork"><span class="pre">QNetwork</span></a></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._create_qnetwork"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetwork" title="Link to this definition">¶</a></dt>
 <dd><p>Creates a new QNetwork instance with random parameters.</p>
@@ -308,6 +285,17 @@ By default it is set to 0, which means all agents will have the same initial par
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>A new QNetwork instance with randomly initialized parameters.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetworks">
+<span class="sig-name descname"><span class="pre">_create_qnetworks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="brittle_star_locomotion.neural.html#brittle_star_locomotion.neural.qnetwork.QNetwork" title="brittle_star_locomotion.neural.qnetwork.QNetwork"><span class="pre">QNetwork</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._create_qnetworks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetworks" title="Link to this definition">¶</a></dt>
+<dd><p>Creates <cite>n</cite> QNetwork instances, either shared or separate based on the configuration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of QNetwork instances.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -325,6 +313,18 @@ By default it is set to 0, which means all agents will have the same initial par
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffers">
+<span class="sig-name descname"><span class="pre">_create_replay_buffers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ReplayBuffer</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._create_replay_buffers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffers" title="Link to this definition">¶</a></dt>
+<dd><p>Creates a list of replay buffers, one for each agent.
+If <cite>shared_params</cite> is True in the configuration, all agents will share the same replay buffer instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A list of ReplayBuffer instances, one for each agent.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._epsilon_greedy">
 <span class="sig-name descname"><span class="pre">_epsilon_greedy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._epsilon_greedy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._epsilon_greedy" title="Link to this definition">¶</a></dt>
 <dd><p>Determines the epsilon-greedy action for each agent for the given observations of the environment.</p>
@@ -336,12 +336,6 @@ By default it is set to 0, which means all agents will have the same initial par
 <dd class="field-even"><p>The selected actions (n_environments, n_agents).</p>
 </dd>
 </dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._log_step_metrics">
-<span class="sig-name descname"><span class="pre">_log_step_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">step</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">losses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terminated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">done</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimize_losses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._log_step_metrics"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._log_step_metrics" title="Link to this definition">¶</a></dt>
-<dd><p>Log per-environment and aggregate training metrics to Weights &amp; Biases.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -365,13 +359,18 @@ By default it is set to 0, which means all agents will have the same initial par
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents">
-<span class="sig-name descname"><span class="pre">_optimize_agents</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">total_train_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._optimize_agents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents" title="Link to this definition">¶</a></dt>
-<dd><p>Optimize all trainable agents once and return losses with updated train step counter.</p>
+<span class="sig-name descname"><span class="pre">_optimize_agents</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._optimize_agents"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents" title="Link to this definition">¶</a></dt>
+<dd><p>Optimize all agents once by sampling a minibatch from their replay buffers and return losses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Losses from the QNetworks.</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_step">
-<span class="sig-name descname"><span class="pre">_optimize_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._optimize_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_step" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">_optimize_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">agent_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._optimize_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_step" title="Link to this definition">¶</a></dt>
 <dd><p>Performs a single optimization step for the specified agent.</p>
 <p>Optimizes the Q-network for the given <cite>agent_id</cite> by sampling a mini-batch of experiences from its replay buffer,
 and doing the standard Q-learning update using the Double Q-learning approach to compute the target Q-values.
@@ -385,38 +384,56 @@ This method computes the loss and gradients for the Q-network of the specified a
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode">
-<span class="sig-name descname"><span class="pre">_run_episode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">episode_index</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_environments</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">total_train_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">environment_steps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._run_episode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">_run_episode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._run_episode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode" title="Link to this definition">¶</a></dt>
 <dd><p>Run a single episode across all vectorized environments.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._step_in_environment">
+<span class="sig-name descname"><span class="pre">_step_in_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition" title="brittle_star_locomotion.optimizer.transition.Transition"><span class="pre">Transition</span></a></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._step_in_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._step_in_environment" title="Link to this definition">¶</a></dt>
+<dd><p>Collect one transition step for all environments.</p>
+<p>Makes observations of the state for each agent and determines the epsilon-greedy actions.
+It steps once in the environment with these actions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The transition tuple from stepping once through the environment</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions">
-<span class="sig-name descname"><span class="pre">_store_replay_transitions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">current_done</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">previously_done</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._store_replay_transitions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions" title="Link to this definition">¶</a></dt>
-<dd><p>Store transitions for active environments in each agent replay buffer.</p>
+<span class="sig-name descname"><span class="pre">_store_replay_transitions</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition" title="brittle_star_locomotion.optimizer.transition.Transition"><span class="pre">Transition</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._store_replay_transitions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions" title="Link to this definition">¶</a></dt>
+<dd><p>Store transitions for non-terminated or truncated environments in each agent replay buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>transition</strong> – The transition to store</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._synchronize_target_networks">
-<span class="sig-name descname"><span class="pre">_synchronize_target_networks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._synchronize_target_networks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._synchronize_target_networks" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">_synchronize_target_networks</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._synchronize_target_networks"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._synchronize_target_networks" title="Link to this definition">¶</a></dt>
 <dd><p>Synchronizes the parameters of the target Q-networks with the current Q-networks.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._update_epsilon">
-<span class="sig-name descname"><span class="pre">_update_epsilon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._update_epsilon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._update_epsilon" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">_update_epsilon</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer._update_epsilon"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._update_epsilon" title="Link to this definition">¶</a></dt>
 <dd><p>Updates the epsilon value for epsilon-greedy action selection.</p>
 <p>The epsilon value is decayed by multiplying it with <cite>epsilon_decay</cite>, but it will not go below <cite>epsilon_min</cite>.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize">
-<span class="sig-name descname"><span class="pre">optimize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer.optimize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">optimize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer.optimize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize" title="Link to this definition">¶</a></dt>
 <dd><p>Optimizes the Q-networks using the IQL algorithm over multiple episodes of interaction with the environment.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.save_model">
-<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'model'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.save_model" title="Link to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">save_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">checkpoint_prefix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'model'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/iql_optimizer.html#IQLOptimizer.save_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.save_model" title="Link to this definition">¶</a></dt>
 <dd><p>Save one checkpoint per agent using &lt;checkpoint_prefix&gt;_&lt;agent_id&gt;.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -424,6 +441,51 @@ This method computes the loss and gradients for the Q-network of the specified a
 </dd>
 </dl>
 </dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-brittle_star_locomotion.optimizer.transition">
+<span id="brittle-star-locomotion-optimizer-transition-module"></span><h2>brittle_star_locomotion.optimizer.transition module<a class="headerlink" href="#module-brittle_star_locomotion.optimizer.transition" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.optimizer.transition.</span></span><span class="sig-name descname"><span class="pre">Transition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terminated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/optimizer/transition.html#Transition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class that represents a transition tuple <cite>(s, a, r, s’)</cite> from reinforcement learning.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">actions</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rewards</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">next_observations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">terminated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">truncated</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.actions">
+<span class="sig-name descname"><span class="pre">actions</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.actions" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.next_observations">
+<span class="sig-name descname"><span class="pre">next_observations</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.next_observations" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.observations">
+<span class="sig-name descname"><span class="pre">observations</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.observations" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.rewards">
+<span class="sig-name descname"><span class="pre">rewards</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.rewards" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.terminated">
+<span class="sig-name descname"><span class="pre">terminated</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.terminated" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="brittle_star_locomotion.optimizer.transition.Transition.truncated">
+<span class="sig-name descname"><span class="pre">truncated</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Array</span></span><a class="headerlink" href="#brittle_star_locomotion.optimizer.transition.Transition.truncated" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -493,22 +555,34 @@ This method computes the loss and gradients for the Q-network of the specified a
 <li><a class="reference internal" href="#module-brittle_star_locomotion.optimizer.iql_optimizer">brittle_star_locomotion.optimizer.iql_optimizer module</a><ul>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer</span></code></a><ul>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.__init__"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer.__init__()</span></code></a></li>
-<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._collect_transition"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._collect_transition()</span></code></a></li>
-<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._compute_step_loss_per_environment"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._compute_step_loss_per_environment()</span></code></a></li>
-<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_n_qnetworks"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._create_n_qnetworks()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetwork"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._create_qnetwork()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_qnetworks"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._create_qnetworks()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffer"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._create_replay_buffer()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._create_replay_buffers"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._create_replay_buffers()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._epsilon_greedy"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._epsilon_greedy()</span></code></a></li>
-<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._log_step_metrics"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._log_step_metrics()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._loss"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._loss()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_agents"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._optimize_agents()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._optimize_step"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._optimize_step()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._run_episode"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._run_episode()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._step_in_environment"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._step_in_environment()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._store_replay_transitions"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._store_replay_transitions()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._synchronize_target_networks"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._synchronize_target_networks()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer._update_epsilon"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer._update_epsilon()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.optimize"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer.optimize()</span></code></a></li>
 <li><a class="reference internal" href="#brittle_star_locomotion.optimizer.iql_optimizer.IQLOptimizer.save_model"><code class="docutils literal notranslate"><span class="pre">IQLOptimizer.save_model()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.optimizer.transition">brittle_star_locomotion.optimizer.transition module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition"><code class="docutils literal notranslate"><span class="pre">Transition</span></code></a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.__init__"><code class="docutils literal notranslate"><span class="pre">Transition.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.actions"><code class="docutils literal notranslate"><span class="pre">Transition.actions</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.next_observations"><code class="docutils literal notranslate"><span class="pre">Transition.next_observations</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.observations"><code class="docutils literal notranslate"><span class="pre">Transition.observations</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.rewards"><code class="docutils literal notranslate"><span class="pre">Transition.rewards</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.terminated"><code class="docutils literal notranslate"><span class="pre">Transition.terminated</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.optimizer.transition.Transition.truncated"><code class="docutils literal notranslate"><span class="pre">Transition.truncated</span></code></a></li>
 </ul>
 </li>
 </ul>
