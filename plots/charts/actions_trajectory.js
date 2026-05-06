@@ -5,14 +5,27 @@ import { registerFont } from 'canvas';
 registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
 export function actions_trajectory_chart() {
-    const trajectory = load_csv('../out/eval_actions.csv');
-    const actions = Array.from({ length: 5 }, (_, i) => i);
-    const steps = Array.from({ length: Math.max(...trajectory.map(row => row.step_id))+1 }, (_, i) => i)
+    const data = preprocess_data();
 
-    return vl.markCircle({ strokeWidth: 1.5, interpolate: "step-after" })
-        .data(trajectory)
-        .transform(    
-            vl.filter("datum.environment_id === 0"), // Plot only one environment
+    const actions = Array.from({ length: 5 }, (_, i) => i);
+    const steps = Array.from({ length: Math.max(...data.map(row => row.step_id))+1 }, (_, i) => i)
+
+    const breakpoint_chart = vl
+        .markRect({ color: "#f16161", opacity: 0.15 })
+        .transform(
+            vl.filter("datum.step_id === datum.breakpoint")
+        )
+        .encode(
+            vl.x().fieldQ("breakpoint"),
+            vl.x2().value(400),
+            vl.y().value(0),
+            vl.y2().value(120)
+        );
+
+    const actions_chart = vl
+        .markCircle({ opacity: 0.9 })
+        .transform(
+            vl.filter("datum.step_id < datum.breakpoint || datum.agent_id !== datum.breakpoint_agent_id"),
             vl.calculate("datum.action === 2 ? 3 : datum.action === 3 ? 2 : datum.action")
                 .as("swapped_action")
         )
@@ -36,20 +49,26 @@ export function actions_trajectory_chart() {
                     grid: false,
                     labelExpr: "['Leading','Left primary','Left secondary','Right primary','Right secondary'][+datum.value]"
                 })
-                .title("Action"),
-            vl.detail()
-                .fieldN("agent_id"),
-            vl.row()
-                .fieldN("agent_id")
-                .title("Arm")
         )
+        .height(120)
+        .width(400);
+
+    return vl
+        .data(data)
+        .transform(
+            vl.filter("datum.environment_id === 0")
+        )
+        .facet(
+            vl.row().fieldN("agent_id").title(null),
+            vl.layer(actions_chart, breakpoint_chart)
+        )
+        .columns(1)
         .title({
             text: "Taken actions of each agent during evaluation",
+            subtitle: "Damaged interval indicated in red",
             anchor: "middle",
             offset: 30
         })
-        .height(120)
-        .width(400)
         .config({
             font: "RedHatDisplay",
             title: {
@@ -57,4 +76,29 @@ export function actions_trajectory_chart() {
             }
         })
         .toSpec();
+}
+
+function preprocess_data() {
+    const trajectory = load_csv('../out/eval_actions.csv');
+    const breakpoints = load_csv('../out/eval_breakpoints.csv');
+
+    // Convert breakpoints into a lookup map
+    const breakpointMap = {};
+    breakpoints.forEach(b => {
+        breakpointMap[b.environment_id] = {
+            breakpoint: b.breakpoint,
+            agent_id: b.agent_id
+        };
+    });
+
+    // Merge
+    return trajectory.map(t => {
+        const bp = breakpointMap[t.environment_id];
+
+        return {
+            ...t,
+            breakpoint: bp.breakpoint,
+            breakpoint_agent_id: bp.agent_id
+        };
+    });
 }

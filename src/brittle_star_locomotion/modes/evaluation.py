@@ -36,7 +36,7 @@ class Evaluator:
             checkpoint_base=checkpoint_base,
         )
 
-        render_trajectory, actions_trajectory, positions_trajectory, breakpoints_trajectory = self._collect_trajectory(
+        render_trajectory, actions_trajectory, positions_trajectory, breakpoints_trajectory, broken_arms_trajectory = self._collect_trajectory(
             q_networks,
             num_modulation_steps=self.config.gait.fixed_number_of_evaluation_modulation_steps,
             num_substeps=self.config.gait.fixed_number_of_evaluation_substeps_per_modulation,
@@ -54,7 +54,7 @@ class Evaluator:
         self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory, self.environment.target_position)
         self.logger.info("Saving position trajectory")
 
-        self._save_breakpoint_trajectory(arguments.output_breakpoints_trajectory, breakpoints_trajectory)
+        self._save_breakpoint_trajectory(arguments.output_breakpoints_trajectory, breakpoints_trajectory, broken_arms_trajectory)
         self.logger.info("Saving breakpoint trajectory")
 
         elapsed = time.perf_counter() - started_at
@@ -177,7 +177,18 @@ class Evaluator:
         trajectory_positions = jnp.stack(trajectory_positions_list, axis=1)
         trajectory_breakpoints = arm_damage._break_points
 
-        return trajectory_env_states, trajectory_actions, trajectory_positions, trajectory_breakpoints
+        # https://chatgpt.com/share/69fb4a9f-8210-8326-acf5-90d90975f1e7
+        _, trajectory_broken_arms = jnp.where(
+            arm_damage.get_active_arms() == 0 # shape (n_envs, n_agents)
+        ) # shape (n_envs,)
+
+        return (
+            trajectory_env_states, 
+            trajectory_actions, 
+            trajectory_positions, 
+            trajectory_breakpoints,
+            trajectory_broken_arms
+        )
 
     def _save_action_trajectory(self, output_filename: str, action_trajectory: jnp.ndarray) -> None:
         if len(action_trajectory.shape) == 3:
@@ -219,13 +230,15 @@ class Evaluator:
                 end_x, end_y, _ = tuple(target_positions[environment_id])
                 output.write(f'{environment_id},{n_steps},{end_x},{end_y},false\n') # End position
 
-    def _save_breakpoint_trajectory(self, output_filename: str, breakpoint_trajectory: jnp.ndarray) -> None:
+    def _save_breakpoint_trajectory(self, output_filename: str, breakpoint_trajectory: jnp.ndarray, broken_arms_trajectory: jnp.ndarray) -> None:
         """ breakpoint_trajectory - (n_environments,)
         """
         n_environments = breakpoint_trajectory.shape[0]
 
+        print(broken_arms_trajectory)
+
         with open(f'{output_filename}', 'w') as output:
-            output.write(f'environment_id,breakpoint\n')
+            output.write(f'environment_id,breakpoint,agent_id\n')
 
             for environment_id in range(n_environments):
-                output.write(f'{environment_id},{breakpoint_trajectory[environment_id]}\n')
+                output.write(f'{environment_id},{breakpoint_trajectory[environment_id]},{broken_arms_trajectory[environment_id]}\n')

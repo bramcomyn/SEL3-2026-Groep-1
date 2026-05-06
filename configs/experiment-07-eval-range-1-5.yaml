@@ -33,7 +33,7 @@ environment:
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
   number_of_environments: 4
-  seed: 43
+  seed: 40
   camera_ids: [0, 1]
   frames_per_second: 50
   arena:
