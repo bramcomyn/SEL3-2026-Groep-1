@@ -1,9 +1,11 @@
 import argparse
+import subprocess
 import time
 
 import jax
 import jax.numpy as jnp
 from flax import nnx
+from pathlib import Path
 
 from brittle_star_locomotion.config.configuration import Configuration
 from brittle_star_locomotion.environment.fixedtargetenvironment import FixedTargetEnvironment
@@ -56,6 +58,9 @@ class Evaluator:
 
         self._save_breakpoint_trajectory(arguments.output_breakpoints_trajectory, breakpoints_trajectory, broken_arms_trajectory)
         self.logger.info("Saving breakpoint trajectory")
+
+        self._generate_charts(arguments)
+        self.logger.info("Generating charts")
 
         elapsed = time.perf_counter() - started_at
         self.logger.info(f"Evaluation completed in {elapsed:.1f}s")
@@ -235,10 +240,20 @@ class Evaluator:
         """
         n_environments = breakpoint_trajectory.shape[0]
 
-        print(broken_arms_trajectory)
-
         with open(f'{output_filename}', 'w') as output:
             output.write(f'environment_id,breakpoint,agent_id\n')
 
             for environment_id in range(n_environments):
                 output.write(f'{environment_id},{breakpoint_trajectory[environment_id]},{broken_arms_trajectory[environment_id]}\n')
+
+    def _generate_charts(self, arguments: argparse.Namespace) -> None:
+        project_root = Path(__file__).resolve().parents[3]
+        plot_script = str(project_root / "plots" / "index.js")
+
+        subprocess.run([
+            "node",
+            plot_script,
+            arguments.output_actions_trajectory,
+            arguments.output_breakpoints_trajectory,
+            arguments.output_positions_trajectory
+        ], check=True)

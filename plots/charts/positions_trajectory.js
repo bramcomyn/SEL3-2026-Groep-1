@@ -4,8 +4,14 @@ import { registerFont } from 'canvas';
 
 registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
-export function positions_trajectory_chart() {
-    const data = preprocess_data();
+export function positions_trajectory_chart(
+    position_trajectory_csv, 
+    breakpoint_trajectory_csv
+) {
+    const data = preprocess_data(
+        position_trajectory_csv,
+        breakpoint_trajectory_csv
+    );
 
     const maxAbs = Math.max(
         ...data.map(d => Math.max(Math.abs(d.x), Math.abs(d.y)))
@@ -71,9 +77,12 @@ export function positions_trajectory_chart() {
         .toSpec();
 }
 
-function preprocess_data() {
-    const trajectory = load_csv('../out/eval_positions.csv');
-    const breakpoints = load_csv('../out/eval_breakpoints.csv');
+function preprocess_data(
+    position_trajectory_csv, 
+    breakpoint_trajectory_csv
+) {
+    const trajectory = load_csv(position_trajectory_csv);
+    const breakpoints = load_csv(breakpoint_trajectory_csv);
 
     // Convert breakpoints into a lookup map
     const breakpointMap = {};

@@ -4,8 +4,14 @@ import { registerFont } from 'canvas';
 
 registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
-export function actions_trajectory_chart() {
-    const data = preprocess_data();
+export function actions_trajectory_chart(
+    action_trajectory_csv, 
+    breakpoint_trajectory_csv
+) {
+    const data = preprocess_data(
+        action_trajectory_csv, 
+        breakpoint_trajectory_csv
+    );
 
     const actions = Array.from({ length: 5 }, (_, i) => i);
     const steps = Array.from({ length: Math.max(...data.map(row => row.step_id))+1 }, (_, i) => i)
@@ -78,9 +84,12 @@ export function actions_trajectory_chart() {
         .toSpec();
 }
 
-function preprocess_data() {
-    const trajectory = load_csv('../out/eval_actions.csv');
-    const breakpoints = load_csv('../out/eval_breakpoints.csv');
+function preprocess_data(
+    action_trajectory_csv, 
+    breakpoint_trajectory_csv
+) {
+    const trajectory = load_csv(action_trajectory_csv);
+    const breakpoints = load_csv(breakpoint_trajectory_csv);
 
     // Convert breakpoints into a lookup map
     const breakpointMap = {};

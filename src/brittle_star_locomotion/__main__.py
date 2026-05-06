@@ -30,8 +30,8 @@ def _parse_arguments():
     parser.add_argument("--output-video",          type=str, default="out/eval.mp4",                           help="path to save evaluation video")
     parser.add_argument("--render",                action="store_true",                                        help="render the evaluation trajectory")
     parser.add_argument("--output-actions-trajectory",       type=str, default="out/eval_actions.csv",         help="path to save action trajectory csv")
-    parser.add_argument("--output-positions-trajectory",     type=str, default="out/eval_positions.csv",       help="path to save positions trajectory csv")
     parser.add_argument("--output-breakpoints-trajectory",   type=str, default="out/eval_breakpoints.csv",     help="path to save breakpoints trajectory csv")
+    parser.add_argument("--output-positions-trajectory",     type=str, default="out/eval_positions.csv",       help="path to save positions trajectory csv")
 
     return parser.parse_args()
 
