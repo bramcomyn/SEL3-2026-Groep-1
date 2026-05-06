@@ -5,12 +5,12 @@ import { registerFont } from 'canvas';
 registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
 export function positions_trajectory_chart(
-    position_trajectory_csv, 
-    breakpoint_trajectory_csv
+    positions_trajectory_csv, 
+    breakpoints_trajectory_csv
 ) {
     const data = preprocess_data(
-        position_trajectory_csv,
-        breakpoint_trajectory_csv
+        positions_trajectory_csv,
+        breakpoints_trajectory_csv
     );
 
     const maxAbs = Math.max(
@@ -78,20 +78,20 @@ export function positions_trajectory_chart(
 }
 
 function preprocess_data(
-    position_trajectory_csv, 
-    breakpoint_trajectory_csv
+    positions_trajectory_csv, 
+    breakpoints_trajectory_csv
 ) {
-    const trajectory = load_csv(position_trajectory_csv);
-    const breakpoints = load_csv(breakpoint_trajectory_csv);
+    const positions_trajectory = load_csv(positions_trajectory_csv);
+    const breakpoints_trajectory = load_csv(breakpoints_trajectory_csv);
 
     // Convert breakpoints into a lookup map
     const breakpointMap = {};
-    breakpoints.forEach(b => {
-    breakpointMap[b.environment_id] = b.breakpoint;
+    breakpoints_trajectory.forEach(b => {
+        breakpointMap[b.environment_id] = b.breakpoint;
     });
 
     // Merge
-    return trajectory.map(t => {
+    return positions_trajectory.map(t => {
         const bp = breakpointMap[t.environment_id];
 
         return {

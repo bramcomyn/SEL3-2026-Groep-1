@@ -12,18 +12,18 @@ const args = process.argv.slice(2);
 
 const project_root = join(__dirname, "..");
 
-const action_trajectory_csv = join(project_root, args[0]);
-const breakpoint_trajectory_csv = join(project_root, args[1]);
-const position_trajectory_csv = join(project_root, args[2]);
+const actions_trajectory_csv = join(project_root, args[0]);
+const breakpoints_trajectory_csv = join(project_root, args[1]);
+const positions_trajectory_csv = join(project_root, args[2]);
 
 const out_dir = join(__dirname, "out");
 
 save_chart_png(
-    actions_trajectory_chart(action_trajectory_csv, breakpoint_trajectory_csv), 
+    actions_trajectory_chart(actions_trajectory_csv, breakpoints_trajectory_csv), 
     join(out_dir, 'action_trajectory')
 );
 
 save_chart_png(
-    positions_trajectory_chart(position_trajectory_csv, breakpoint_trajectory_csv), 
+    positions_trajectory_chart(positions_trajectory_csv, breakpoints_trajectory_csv), 
     join(out_dir, 'position_trajectory')
 );

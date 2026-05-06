@@ -5,12 +5,12 @@ import { registerFont } from 'canvas';
 registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
 export function actions_trajectory_chart(
-    action_trajectory_csv, 
-    breakpoint_trajectory_csv
+    actions_trajectory_csv, 
+    breakpoints_trajectory_csv
 ) {
     const data = preprocess_data(
-        action_trajectory_csv, 
-        breakpoint_trajectory_csv
+        actions_trajectory_csv, 
+        breakpoints_trajectory_csv
     );
 
     const actions = Array.from({ length: 5 }, (_, i) => i);
@@ -85,15 +85,15 @@ export function actions_trajectory_chart(
 }
 
 function preprocess_data(
-    action_trajectory_csv, 
-    breakpoint_trajectory_csv
+    actions_trajectory_csv, 
+    breakpoints_trajectory_csv
 ) {
-    const trajectory = load_csv(action_trajectory_csv);
-    const breakpoints = load_csv(breakpoint_trajectory_csv);
+    const actions_trajectory = load_csv(actions_trajectory_csv);
+    const breakpoints_trajectory = load_csv(breakpoints_trajectory_csv);
 
     // Convert breakpoints into a lookup map
     const breakpointMap = {};
-    breakpoints.forEach(b => {
+    breakpoints_trajectory.forEach(b => {
         breakpointMap[b.environment_id] = {
             breakpoint: b.breakpoint,
             agent_id: b.agent_id
@@ -101,7 +101,7 @@ function preprocess_data(
     });
 
     // Merge
-    return trajectory.map(t => {
+    return actions_trajectory.map(t => {
         const bp = breakpointMap[t.environment_id];
 
         return {

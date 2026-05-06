@@ -50,13 +50,13 @@ class Evaluator:
             renderer.render_video(render_trajectory, output_path=arguments.output_video)
             self.logger.info(f"Saved evaluation video to: {arguments.output_video}")
 
-        self._save_action_trajectory(arguments.output_actions_trajectory, actions_trajectory)
+        self._save_actions_trajectory(arguments.output_actions_trajectory, actions_trajectory)
         self.logger.info("Saving action trajectory")
 
-        self._save_position_trajectory(arguments.output_positions_trajectory, positions_trajectory, self.environment.target_position)
+        self._save_positions_trajectory(arguments.output_positions_trajectory, positions_trajectory, self.environment.target_position)
         self.logger.info("Saving position trajectory")
 
-        self._save_breakpoint_trajectory(arguments.output_breakpoints_trajectory, breakpoints_trajectory, broken_arms_trajectory)
+        self._save_breakpoints_trajectory(arguments.output_breakpoints_trajectory, breakpoints_trajectory, broken_arms_trajectory)
         self.logger.info("Saving breakpoint trajectory")
 
         self._generate_charts(arguments)
@@ -126,9 +126,9 @@ class Evaluator:
         )
 
         done_environments = jnp.zeros((self.environment.number_of_environments,), dtype=bool)
-        trajectory_env_states_list = []
-        trajectory_actions_list = []
-        trajectory_positions_list = []
+        env_states_trajectory_list = []
+        actions_trajectory_list = []
+        positions_trajectory_list = []
 
         arm_damage = ArmDamage()
 
@@ -162,25 +162,25 @@ class Evaluator:
 
             substep_env_states = trajectory[0]
 
-            trajectory_env_states_list.append(substep_env_states)
-            trajectory_actions_list.append(actions)
-            trajectory_positions_list.append(self.environment.env_state.observations["disk_position"])
+            env_states_trajectory_list.append(substep_env_states)
+            actions_trajectory_list.append(actions)
+            positions_trajectory_list.append(self.environment.env_state.observations["disk_position"])
 
         self.logger.info(
-            f"Policy rollout finished after {len(trajectory_env_states_list)} modulation steps"
+            f"Policy rollout finished after {len(env_states_trajectory_list)} modulation steps"
         )
 
-        if not (trajectory_env_states_list and trajectory_actions_list):
+        if not (env_states_trajectory_list and actions_trajectory_list):
             raise ValueError("No trajectory data collected during evaluation")
 
-        trajectory_env_states = jax.tree_util.tree_map(
+        states_trajectory = jax.tree_util.tree_map(
             lambda *xs: jnp.concatenate(xs, axis=0),
-            *trajectory_env_states_list,
+            *env_states_trajectory_list,
         )
-        trajectory_env_states = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), trajectory_env_states)
-        trajectory_actions = jnp.stack(trajectory_actions_list, axis=1)
-        trajectory_positions = jnp.stack(trajectory_positions_list, axis=1)
-        trajectory_breakpoints = arm_damage._break_points
+        states_trajectory = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), states_trajectory)
+        actions_trajectory = jnp.stack(actions_trajectory_list, axis=1)
+        positions_trajectory = jnp.stack(positions_trajectory_list, axis=1)
+        breakpoints_trajectory = arm_damage._break_points
 
         # https://chatgpt.com/share/69fb4a9f-8210-8326-acf5-90d90975f1e7
         _, trajectory_broken_arms = jnp.where(
@@ -188,20 +188,20 @@ class Evaluator:
         ) # shape (n_envs,)
 
         return (
-            trajectory_env_states, 
-            trajectory_actions, 
-            trajectory_positions, 
-            trajectory_breakpoints,
+            states_trajectory, 
+            actions_trajectory, 
+            positions_trajectory, 
+            breakpoints_trajectory,
             trajectory_broken_arms
         )
 
-    def _save_action_trajectory(self, output_filename: str, action_trajectory: jnp.ndarray) -> None:
-        if len(action_trajectory.shape) == 3:
-            n_environments, n_steps, n_agents = action_trajectory.shape
+    def _save_actions_trajectory(self, output_filename: str, actions_trajectory: jnp.ndarray) -> None:
+        if len(actions_trajectory.shape) == 3:
+            n_environments, n_steps, n_agents = actions_trajectory.shape
         else:
-            n_steps, n_agents = action_trajectory.shape
+            n_steps, n_agents = actions_trajectory.shape
             n_environments = 1
-            action_trajectory = action_trajectory[:, None, :]
+            actions_trajectory = actions_trajectory[:, None, :]
 
         with open(f'{output_filename}', 'w') as output:
             output.write('environment_id,step_id,agent_id,action\n')
@@ -209,9 +209,9 @@ class Evaluator:
             for environment_id in range(n_environments):
                 for step_id in range(n_steps):
                     for agent_id in range(n_agents):
-                        output.write(f'{environment_id},{step_id},{agent_id},{action_trajectory[step_id, environment_id, agent_id]}\n')
+                        output.write(f'{environment_id},{step_id},{agent_id},{actions_trajectory[step_id, environment_id, agent_id]}\n')
 
-    def _save_position_trajectory(self, output_filename: str, positions_trajectory: jnp.ndarray, target_positions: jnp.ndarray) -> None:
+    def _save_positions_trajectory(self, output_filename: str, positions_trajectory: jnp.ndarray, target_positions: jnp.ndarray) -> None:
         """ positions_trajectory - (n_environments, n_steps, 3) or (n_steps, 3)
         """
         if len(positions_trajectory.shape) == 3:
@@ -235,16 +235,16 @@ class Evaluator:
                 end_x, end_y, _ = tuple(target_positions[environment_id])
                 output.write(f'{environment_id},{n_steps},{end_x},{end_y},false\n') # End position
 
-    def _save_breakpoint_trajectory(self, output_filename: str, breakpoint_trajectory: jnp.ndarray, broken_arms_trajectory: jnp.ndarray) -> None:
-        """ breakpoint_trajectory - (n_environments,)
+    def _save_breakpoints_trajectory(self, output_filename: str, breakpoints_trajectory: jnp.ndarray, broken_arms_trajectory: jnp.ndarray) -> None:
+        """ breakpoints_trajectory - (n_environments,)
         """
-        n_environments = breakpoint_trajectory.shape[0]
+        n_environments = breakpoints_trajectory.shape[0]
 
         with open(f'{output_filename}', 'w') as output:
             output.write(f'environment_id,breakpoint,agent_id\n')
 
             for environment_id in range(n_environments):
-                output.write(f'{environment_id},{breakpoint_trajectory[environment_id]},{broken_arms_trajectory[environment_id]}\n')
+                output.write(f'{environment_id},{breakpoints_trajectory[environment_id]},{broken_arms_trajectory[environment_id]}\n')
 
     def _generate_charts(self, arguments: argparse.Namespace) -> None:
         project_root = Path(__file__).resolve().parents[3]
