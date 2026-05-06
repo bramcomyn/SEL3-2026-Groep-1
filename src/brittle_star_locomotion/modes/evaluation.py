@@ -195,12 +195,17 @@ class Evaluator:
         states_trajectory = jax.tree_util.tree_map(lambda x: jnp.swapaxes(x, 0, 1), states_trajectory)
         actions_trajectory = jnp.stack(actions_trajectory_list, axis=1)
         positions_trajectory = jnp.stack(positions_trajectory_list, axis=1)
-        breakpoints_trajectory = arm_damage._break_points
 
-        # https://chatgpt.com/share/69fb4a9f-8210-8326-acf5-90d90975f1e7
-        _, broken_arms_trajectory = jnp.where(
-            arm_damage.get_active_arms() == 0 # shape (n_envs, n_agents)
-        ) # shape (n_envs,)
+        if self.config.damage.enabled:
+            breakpoints_trajectory = arm_damage._break_points # shape (n_envs,)
+
+            # https://chatgpt.com/share/69fb4a9f-8210-8326-acf5-90d90975f1e7
+            _, broken_arms_trajectory = jnp.where(
+                arm_damage.get_active_arms() == 0 # shape (n_envs, n_agents)
+            ) # shape (n_envs,)
+        else:
+            broken_arms_trajectory = jnp.repeat(jnp.inf, self.config.environment.number_of_environments)
+            breakpoints_trajectory = jnp.repeat(jnp.inf, self.config.environment.number_of_environments)
 
         return (
             states_trajectory, 

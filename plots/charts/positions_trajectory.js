@@ -87,7 +87,10 @@ function preprocess_data(
     // Convert breakpoints into a lookup map
     const breakpointMap = {};
     breakpoints_trajectory.forEach(b => {
-        breakpointMap[b.environment_id] = b.breakpoint;
+        breakpointMap[b.environment_id] = 
+            (b.breakpoint === 'inf')
+            ? Number.MAX_SAFE_INTEGER
+            : parseInt(b.breakpoint);
     });
 
     // Merge
@@ -96,7 +99,7 @@ function preprocess_data(
 
         return {
             ...t,
-            breakpoint: bp
+            breakpoint: parseInt(bp)
         };
     });
 }

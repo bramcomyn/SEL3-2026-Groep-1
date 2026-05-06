@@ -95,7 +95,9 @@ function preprocess_data(
     const breakpointMap = {};
     breakpoints_trajectory.forEach(b => {
         breakpointMap[b.environment_id] = {
-            breakpoint: b.breakpoint,
+            breakpoint: (b.breakpoint === 'inf')
+                        ? Number.MAX_SAFE_INTEGER
+                        : parseInt(b.breakpoint),
             agent_id: b.agent_id
         };
     });

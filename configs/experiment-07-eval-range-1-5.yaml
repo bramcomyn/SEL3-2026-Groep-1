@@ -53,7 +53,7 @@ environment:
 damage:
   seed: 45
   breakpoint_range: [1, 5]
-  enabled: True
+  enabled: False
 
 gait:
   fixed_number_of_evaluation_modulation_steps: 30
