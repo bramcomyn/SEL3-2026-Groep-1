@@ -6,11 +6,22 @@ registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regula
 
 export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
     const W = 40; // Moving average window width
+
     const damaged = 1;      // ID of damaged brittle star
     const undamaged = 2;    // ID of undamaged brittle star
 
+    const damaged_label = "Damage robust (±8h)";
+    const undamaged_label = "Not damage robust (±3h)";
+
+    const title = "Achieving similar performance with damage robustness";
+    const titleNext = "requires more than twice as much time"
+
+    const ylabel = "Amount of reached targets";
+    const xlabel = "Training episode";
+
     const titleFontSize = 18;
-    const subtitleFontSize = 14;
+    const annotationFontSize = 13;
+    const titleOffset = 22.5;
     
     // Transform into Vega-lite friendly data
     const data = load_csv(learning_curve_comparison_csv)
@@ -37,12 +48,12 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
         .encode(
             vl.x()
                 .fieldQ("step")
-                .axis({ grid: false, format: '~s', titleFontSize: subtitleFontSize })
-                .title("Training episode"),
+                .axis({ grid: false, format: '~s', titleFontSize: annotationFontSize })
+                .title(xlabel),
             vl.y()
                 .fieldQ("terminated_moving_avg")
-                .axis({ grid: false, titleFontSize: subtitleFontSize })
-                .title("Amount of target reaches"),
+                .axis({ grid: false, titleFontSize: annotationFontSize })
+                .title(ylabel),
             vl.color()
                 .fieldN("brittle_star")
                 .scale({
@@ -54,23 +65,37 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
         .height(150)
         .width(500);
 
-    const training_time_annotation = vl
-        .markText({ align: "left", dx: 5, fontSize: subtitleFontSize })
+    const training_time_annotation_damaged = vl
+        .markText({ dx: 0, dy: annotationFontSize + 10, fontSize: annotationFontSize })
         .transform(
             vl.filter(`
-                (datum.step === ${max_step_damaged} && datum.brittle_star === ${damaged}) 
-                || (datum.step === ${max_step_undamaged} && datum.brittle_star === ${undamaged})
-            `),
-            vl.calculate(`
-                datum.brittle_star === ${damaged}
-                    ? "Damage robust - 8h"
-                    : "Not damage robust - 3h"
-            `).as("status_label")
+                datum.step === ${max_step_damaged} && datum.brittle_star === ${damaged} 
+            `)
         )
         .encode(
             vl.x().fieldQ("step"),
             vl.y().fieldQ("terminated_moving_avg"),
-            vl.text().fieldN("status_label"),
+            vl.text().value(damaged_label),
+            vl.color()
+                .fieldN("brittle_star")
+                .scale({
+                    domain: [undamaged, damaged],
+                    range: ["#2D8CA8", "#f16161"] 
+                })
+                .legend(null)
+        );
+
+    const training_time_annotation_undamaged = vl
+        .markText({ dx: 11, dy: -annotationFontSize, fontSize: annotationFontSize })
+        .transform(
+            vl.filter(`
+                (datum.step === ${max_step_undamaged} && datum.brittle_star === ${undamaged})
+            `)
+        )
+        .encode(
+            vl.x().fieldQ("step"),
+            vl.y().fieldQ("terminated_moving_avg"),
+            vl.text().value(damaged_label),
             vl.color()
                 .fieldN("brittle_star")
                 .scale({
@@ -99,13 +124,17 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
                 || (datum.step <= ${max_step_undamaged} && datum.brittle_star === ${undamaged})
             `)
         )
-        .layer(learning_curves, training_time_annotation)
+        .layer(
+            learning_curves, 
+            training_time_annotation_damaged, 
+            training_time_annotation_undamaged
+        )
         .title({
-            text: "Performant damage robust Brittle Star requires double more training",
+            text: title,
             fontSize: titleFontSize,
-            subtitle: "Compares amount of target reaches",
-            subtitleFontSize: subtitleFontSize,
-            offset: 22.5
+            subtitle: titleNext,
+            subtitleFontSize: titleFontSize,
+            offset: titleOffset
         })
         .config({
             font: "RedHatDisplay",
