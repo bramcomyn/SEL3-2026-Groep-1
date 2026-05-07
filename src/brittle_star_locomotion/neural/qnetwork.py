@@ -53,6 +53,8 @@ class QNetwork(nnx.Module):
         hidden_size: int = 32,
         amount_of_hidden_layers: int = 0
     ):
+        self.config = Configuration().configuration
+
         layers = []
 
         # initial layer projection

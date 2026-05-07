@@ -1,0 +1,850 @@
+<!doctype html>
+<html class="no-js" lang="en" data-content_root="../">
+  <head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
+<link rel="index" title="Index" href="../genindex.html"><link rel="search" title="Search" href="../search.html"><link rel="next" title="brittle_star_locomotion.logger package" href="brittle_star_locomotion.logger.html"><link rel="prev" title="brittle_star_locomotion.damage package" href="brittle_star_locomotion.damage.html">
+
+    <!-- Generated with Sphinx 9.1.0 and Furo 2025.12.19 -->
+        <title>brittle_star_locomotion.environment package - brittle-star-locomotion 0.1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d111a655" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo.css?v=7bdb33bb" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/furo-extensions.css?v=8dab3a3b" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f2f2f2;
+  --color-code-foreground: #1e1e1e;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-with-moon" viewBox="0 0 24 24">
+    <title>Auto light/dark, in light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path style="opacity: 50%" d="M 5.411 14.504 C 5.471 14.504 5.532 14.504 5.591 14.504 C 3.639 16.319 4.383 19.569 6.931 20.352 C 7.693 20.586 8.512 20.551 9.25 20.252 C 8.023 23.207 4.056 23.725 2.11 21.184 C 0.166 18.642 1.702 14.949 4.874 14.536 C 5.051 14.512 5.231 14.5 5.411 14.5 L 5.411 14.504 Z"/>
+      <line x1="14.5" y1="3.25" x2="14.5" y2="1.25"/>
+      <line x1="14.5" y1="15.85" x2="14.5" y2="17.85"/>
+      <line x1="10.044" y1="5.094" x2="8.63" y2="3.68"/>
+      <line x1="19" y1="14.05" x2="20.414" y2="15.464"/>
+      <line x1="8.2" y1="9.55" x2="6.2" y2="9.55"/>
+      <line x1="20.8" y1="9.55" x2="22.8" y2="9.55"/>
+      <line x1="10.044" y1="14.006" x2="8.63" y2="15.42"/>
+      <line x1="19" y1="5.05" x2="20.414" y2="3.636"/>
+      <circle cx="14.5" cy="9.55" r="3.6"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon-with-sun" viewBox="0 0 24 24">
+    <title>Auto light/dark, in dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round"
+      class="icon-custom-derived-from-feather-sun-and-tabler-moon">
+      <path d="M 8.282 7.007 C 8.385 7.007 8.494 7.007 8.595 7.007 C 5.18 10.184 6.481 15.869 10.942 17.24 C 12.275 17.648 13.706 17.589 15 17.066 C 12.851 22.236 5.91 23.143 2.505 18.696 C -0.897 14.249 1.791 7.786 7.342 7.063 C 7.652 7.021 7.965 7 8.282 7 L 8.282 7.007 Z"/>
+      <line style="opacity: 50%" x1="18" y1="3.705" x2="18" y2="2.5"/>
+      <line style="opacity: 50%" x1="18" y1="11.295" x2="18" y2="12.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="4.816" x2="14.464" y2="3.964"/>
+      <line style="opacity: 50%" x1="20.711" y1="10.212" x2="21.563" y2="11.063"/>
+      <line style="opacity: 50%" x1="14.205" y1="7.5" x2="13.001" y2="7.5"/>
+      <line style="opacity: 50%" x1="21.795" y1="7.5" x2="23" y2="7.5"/>
+      <line style="opacity: 50%" x1="15.316" y1="10.184" x2="14.464" y2="11.036"/>
+      <line style="opacity: 50%" x1="20.711" y1="4.789" x2="21.563" y2="3.937"/>
+      <circle style="opacity: 50%" cx="18" cy="7.5" r="2.169"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-pencil" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-pencil-code">
+      <path d="M4 20h4l10.5 -10.5a2.828 2.828 0 1 0 -4 -4l-10.5 10.5v4" />
+      <path d="M13.5 6.5l4 4" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+  <symbol id="svg-eye" viewBox="0 0 24 24">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-eye-code">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M10 12a2 2 0 1 0 4 0a2 2 0 0 0 -4 0" />
+      <path
+        d="M11.11 17.958c-3.209 -.307 -5.91 -2.293 -8.11 -5.958c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6c-.21 .352 -.427 .688 -.647 1.008" />
+      <path d="M20 21l2 -2l-2 -2" />
+      <path d="M17 17l-2 2l2 2" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation" aria-label="Toggle site navigation sidebar">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc" aria-label="Toggle table of contents sidebar">
+<label class="overlay sidebar-overlay" for="__navigation"></label>
+<label class="overlay toc-overlay" for="__toc"></label>
+
+<a class="skip-to-content muted-link" href="#furo-main-content">Skip to content</a>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <span class="icon"><svg><use href="#svg-menu"></use></svg></span>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="../index.html"><div class="brand">brittle-star-locomotion 0.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+          <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+          <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon" for="__toc">
+        <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="../index.html">
+  
+  <span class="sidebar-brand-text">brittle-star-locomotion 0.1.0 documentation</span>
+  
+</a><form class="sidebar-search-container" method="get" action="../search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">brittle_star_locomotion</a><input aria-label="Toggle navigation of brittle_star_locomotion" checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l2 current has-children"><a class="reference internal" href="brittle_star_locomotion.html">brittle_star_locomotion package</a><input aria-label="Toggle navigation of brittle_star_locomotion package" checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" role="switch" type="checkbox"/><label for="toctree-checkbox-2"><span class="icon"><svg><use href="#svg-arrow-right"></use></svg></span></label><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.config.html">brittle_star_locomotion.config package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.controller.html">brittle_star_locomotion.controller package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.cpg.html">brittle_star_locomotion.cpg package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.damage.html">brittle_star_locomotion.damage package</a></li>
+<li class="toctree-l3 current current-page"><a class="current reference internal" href="#">brittle_star_locomotion.environment package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.logger.html">brittle_star_locomotion.logger package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.metrics.html">brittle_star_locomotion.metrics package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.modes.html">brittle_star_locomotion.modes package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.neural.html">brittle_star_locomotion.neural package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.optimizer.html">brittle_star_locomotion.optimizer package</a></li>
+<li class="toctree-l3"><a class="reference internal" href="brittle_star_locomotion.util.html">brittle_star_locomotion.util package</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+</div>
+</div>
+
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="view-this-page">
+  <a class="muted-link" href="../_sources/api/brittle_star_locomotion.environment.rst.txt" title="View this page">
+    <svg><use href="#svg-eye"></use></svg>
+    <span class="visually-hidden">View this page</span>
+  </a>
+</div>
+<div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle" aria-label="Toggle Light / Dark / Auto color theme">
+              <svg class="theme-icon-when-auto-light"><use href="#svg-sun-with-moon"></use></svg>
+              <svg class="theme-icon-when-auto-dark"><use href="#svg-moon-with-sun"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon" for="__toc">
+            <span class="icon"><svg><use href="#svg-toc"></use></svg></span>
+          </label>
+        </div>
+        <article role="main" id="furo-main-content">
+          <section id="brittle-star-locomotion-environment-package">
+<h1>brittle_star_locomotion.environment package<a class="headerlink" href="#brittle-star-locomotion-environment-package" title="Link to this heading">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading">¶</a></h2>
+</section>
+<section id="module-brittle_star_locomotion.environment.environment">
+<span id="brittle-star-locomotion-environment-environment-module"></span><h2>brittle_star_locomotion.environment.environment module<a class="headerlink" href="#module-brittle_star_locomotion.environment.environment" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.environment.environment.</span></span><span class="sig-name descname"><span class="pre">Environment</span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._create_arena">
+<span class="sig-name descname"><span class="pre">_create_arena</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFAquariumArena</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._create_arena"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._create_arena" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the aquarium arena based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._create_brittle_star_directed_locomotion_environment">
+<span class="sig-name descname"><span class="pre">_create_brittle_star_directed_locomotion_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DualMuJoCoEnvironment</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._create_brittle_star_directed_locomotion_environment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._create_brittle_star_directed_locomotion_environment" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._create_morphology">
+<span class="sig-name descname"><span class="pre">_create_morphology</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFBrittleStarMorphology</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._create_morphology"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._create_morphology" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star morphology based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._get_angle_arm_to_target">
+<span class="sig-name descname"><span class="pre">_get_angle_arm_to_target</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._get_angle_arm_to_target"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._get_angle_arm_to_target" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate relative angle from each arm to the target</p>
+<p>This function calculates the relative angle from each arm of the brittle star to the target, taking into account the absolute rotation of the body and the position of the target.
+The steps are as follows:
+1. Get the absolute rotation of the body from the observations.
+2. Calculate the relative rotation of each arm based on the number of arms and their equal spacing around the body.
+3. Get the absolute position of the body and the direction and distance to the target from the observations.
+4. Calculate the absolute position of the target in the world frame.
+5. Calculate the absolute angle from the body to the target using the arctangent of the target’s position.
+6. Calculate the relative angle from the body to the target by subtracting the body’s absolute rotation from the absolute angle to the target.
+7. Calculate the relative angle from each arm to the target by subtracting the relative arm rotation from the relative angle from the body to the target, and normalize it to the range [-pi, pi].</p>
+<p>When talking about the absolute rotation or position, this is in world frame.
+When talking about the relative rotation of the arms, this is relative to the body of the brittle star (so it does not change as the body rotates).
+When talking about the relative angle from the arm to the target, this is in world frame, but normalized by the body’s rotation and the arm’s position around the body.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>relative angle from each arm to the target, shape (envs, arms)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._get_observations_to_use">
+<span class="sig-name descname"><span class="pre">_get_observations_to_use</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._get_observations_to_use"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._get_observations_to_use" title="Link to this definition">¶</a></dt>
+<dd><p>Determine which observations to use based on the configuration and validate them against the state space.
+If no observations are specified in the configuration, use all available observations from the state space.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._map_cpg_output_to_environment_action">
+<span class="sig-name descname"><span class="pre">_map_cpg_output_to_environment_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpg_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._map_cpg_output_to_environment_action"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._map_cpg_output_to_environment_action" title="Link to this definition">¶</a></dt>
+<dd><p>Map one In-plane/Out-of-plane (IP/OOP) pair per arm to per-segment actuator controls expected by biorobot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cpg_output</strong> – Output of CPG</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw actuator input with shape (envs, arms * segments_per_arm * 2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment._reset_all_envs">
+<span class="sig-name descname"><span class="pre">_reset_all_envs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sub_rngs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment._reset_all_envs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment._reset_all_envs" title="Link to this definition">¶</a></dt>
+<dd><p>Reset all environments while avoiding vmapped-reset instability for single-env runs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment.get_observation_size">
+<span class="sig-name descname"><span class="pre">get_observation_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment.get_observation_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment.get_observation_size" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the total size of the observation vector for each arm based on the specified observations to use in the configuration and the state space.
+:return: total size of the observation vector for each arm</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment.get_observations">
+<span class="sig-name descname"><span class="pre">get_observations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment.get_observations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment.get_observations" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
+This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state,
+and constructs a tensor of shape (num_envs, num_arms, total_obs_per_arm) that contains the observations for each arm in each environment.
+It also handles derived observations like the angle from each arm to the target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>observation tensor for all environments and arms with shape (num_envs, num_arms, total_obs_per_arm)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment.reset" title="Link to this definition">¶</a></dt>
+<dd><p>Reset both the MJX environment and the CPG controllers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.environment.Environment.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpg_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_substeps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/environment.html#Environment.step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.environment.Environment.step" title="Link to this definition">¶</a></dt>
+<dd><p>Modulate the rowing gait with arm-role actions and run CPG+physics substeps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env_state</strong> – current environment state.</p></li>
+<li><p><strong>cpg_state</strong> – current CPG state.</p></li>
+<li><p><strong>action</strong> – arm-role modulation action with shape (arms,) or (envs, arms).</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms</p></li>
+<li><p><strong>num_substeps</strong> – number of CPG/physics substeps to execute per call.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-brittle_star_locomotion.environment.fixedtargetenvironment">
+<span id="brittle-star-locomotion-environment-fixedtargetenvironment-module"></span><h2>brittle_star_locomotion.environment.fixedtargetenvironment module<a class="headerlink" href="#module-brittle_star_locomotion.environment.fixedtargetenvironment" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.environment.fixedtargetenvironment.</span></span><span class="sig-name descname"><span class="pre">FixedTargetEnvironment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/fixedtargetenvironment.html#FixedTargetEnvironment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment" title="brittle_star_locomotion.environment.environment.Environment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code></a></p>
+<p>Environment where the target position is fixed at the start of each episode.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/fixedtargetenvironment.html#FixedTargetEnvironment.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_arena">
+<span class="sig-name descname"><span class="pre">_create_arena</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFAquariumArena</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_arena" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the aquarium arena based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_brittle_star_directed_locomotion_environment">
+<span class="sig-name descname"><span class="pre">_create_brittle_star_directed_locomotion_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DualMuJoCoEnvironment</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_brittle_star_directed_locomotion_environment" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_morphology">
+<span class="sig-name descname"><span class="pre">_create_morphology</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFBrittleStarMorphology</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_morphology" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star morphology based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_angle_arm_to_target">
+<span class="sig-name descname"><span class="pre">_get_angle_arm_to_target</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_angle_arm_to_target" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate relative angle from each arm to the target</p>
+<p>This function calculates the relative angle from each arm of the brittle star to the target, taking into account the absolute rotation of the body and the position of the target.
+The steps are as follows:
+1. Get the absolute rotation of the body from the observations.
+2. Calculate the relative rotation of each arm based on the number of arms and their equal spacing around the body.
+3. Get the absolute position of the body and the direction and distance to the target from the observations.
+4. Calculate the absolute position of the target in the world frame.
+5. Calculate the absolute angle from the body to the target using the arctangent of the target’s position.
+6. Calculate the relative angle from the body to the target by subtracting the body’s absolute rotation from the absolute angle to the target.
+7. Calculate the relative angle from each arm to the target by subtracting the relative arm rotation from the relative angle from the body to the target, and normalize it to the range [-pi, pi].</p>
+<p>When talking about the absolute rotation or position, this is in world frame.
+When talking about the relative rotation of the arms, this is relative to the body of the brittle star (so it does not change as the body rotates).
+When talking about the relative angle from the arm to the target, this is in world frame, but normalized by the body’s rotation and the arm’s position around the body.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>relative angle from each arm to the target, shape (envs, arms)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_observations_to_use">
+<span class="sig-name descname"><span class="pre">_get_observations_to_use</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_observations_to_use" title="Link to this definition">¶</a></dt>
+<dd><p>Determine which observations to use based on the configuration and validate them against the state space.
+If no observations are specified in the configuration, use all available observations from the state space.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._map_cpg_output_to_environment_action">
+<span class="sig-name descname"><span class="pre">_map_cpg_output_to_environment_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpg_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._map_cpg_output_to_environment_action" title="Link to this definition">¶</a></dt>
+<dd><p>Map one In-plane/Out-of-plane (IP/OOP) pair per arm to per-segment actuator controls expected by biorobot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cpg_output</strong> – Output of CPG</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw actuator input with shape (envs, arms * segments_per_arm * 2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._reset_all_envs">
+<span class="sig-name descname"><span class="pre">_reset_all_envs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sub_rngs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/fixedtargetenvironment.html#FixedTargetEnvironment._reset_all_envs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._reset_all_envs" title="Link to this definition">¶</a></dt>
+<dd><p>Reset all environments while avoiding vmapped-reset instability for single-env runs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observation_size">
+<span class="sig-name descname"><span class="pre">get_observation_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observation_size" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the total size of the observation vector for each arm based on the specified observations to use in the configuration and the state space.
+:return: total size of the observation vector for each arm</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observations">
+<span class="sig-name descname"><span class="pre">get_observations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observations" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
+This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state,
+and constructs a tensor of shape (num_envs, num_arms, total_obs_per_arm) that contains the observations for each arm in each environment.
+It also handles derived observations like the angle from each arm to the target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>observation tensor for all environments and arms with shape (num_envs, num_arms, total_obs_per_arm)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.reset" title="Link to this definition">¶</a></dt>
+<dd><p>Reset both the MJX environment and the CPG controllers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpg_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_substeps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.step" title="Link to this definition">¶</a></dt>
+<dd><p>Modulate the rowing gait with arm-role actions and run CPG+physics substeps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env_state</strong> – current environment state.</p></li>
+<li><p><strong>cpg_state</strong> – current CPG state.</p></li>
+<li><p><strong>action</strong> – arm-role modulation action with shape (arms,) or (envs, arms).</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms</p></li>
+<li><p><strong>num_substeps</strong> – number of CPG/physics substeps to execute per call.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-brittle_star_locomotion.environment.randomtargetenvironment">
+<span id="brittle-star-locomotion-environment-randomtargetenvironment-module"></span><h2>brittle_star_locomotion.environment.randomtargetenvironment module<a class="headerlink" href="#module-brittle_star_locomotion.environment.randomtargetenvironment" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.environment.randomtargetenvironment.</span></span><span class="sig-name descname"><span class="pre">RandomTargetEnvironment</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/randomtargetenvironment.html#RandomTargetEnvironment"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment" title="brittle_star_locomotion.environment.environment.Environment"><code class="xref py py-class docutils literal notranslate"><span class="pre">Environment</span></code></a></p>
+<p>Environment where the target position is randomly generated at the start of each episode.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/randomtargetenvironment.html#RandomTargetEnvironment.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_arena">
+<span class="sig-name descname"><span class="pre">_create_arena</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFAquariumArena</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_arena" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the aquarium arena based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_brittle_star_directed_locomotion_environment">
+<span class="sig-name descname"><span class="pre">_create_brittle_star_directed_locomotion_environment</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DualMuJoCoEnvironment</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_brittle_star_directed_locomotion_environment" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star directed locomotion environment based on the morphology, arena, and configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_morphology">
+<span class="sig-name descname"><span class="pre">_create_morphology</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">MJCFBrittleStarMorphology</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_morphology" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the brittle star morphology based on the configuration.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_angle_arm_to_target">
+<span class="sig-name descname"><span class="pre">_get_angle_arm_to_target</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_angle_arm_to_target" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate relative angle from each arm to the target</p>
+<p>This function calculates the relative angle from each arm of the brittle star to the target, taking into account the absolute rotation of the body and the position of the target.
+The steps are as follows:
+1. Get the absolute rotation of the body from the observations.
+2. Calculate the relative rotation of each arm based on the number of arms and their equal spacing around the body.
+3. Get the absolute position of the body and the direction and distance to the target from the observations.
+4. Calculate the absolute position of the target in the world frame.
+5. Calculate the absolute angle from the body to the target using the arctangent of the target’s position.
+6. Calculate the relative angle from the body to the target by subtracting the body’s absolute rotation from the absolute angle to the target.
+7. Calculate the relative angle from each arm to the target by subtracting the relative arm rotation from the relative angle from the body to the target, and normalize it to the range [-pi, pi].</p>
+<p>When talking about the absolute rotation or position, this is in world frame.
+When talking about the relative rotation of the arms, this is relative to the body of the brittle star (so it does not change as the body rotates).
+When talking about the relative angle from the arm to the target, this is in world frame, but normalized by the body’s rotation and the arm’s position around the body.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>relative angle from each arm to the target, shape (envs, arms)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_observations_to_use">
+<span class="sig-name descname"><span class="pre">_get_observations_to_use</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_observations_to_use" title="Link to this definition">¶</a></dt>
+<dd><p>Determine which observations to use based on the configuration and validate them against the state space.
+If no observations are specified in the configuration, use all available observations from the state space.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._map_cpg_output_to_environment_action">
+<span class="sig-name descname"><span class="pre">_map_cpg_output_to_environment_action</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cpg_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._map_cpg_output_to_environment_action" title="Link to this definition">¶</a></dt>
+<dd><p>Map one In-plane/Out-of-plane (IP/OOP) pair per arm to per-segment actuator controls expected by biorobot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cpg_output</strong> – Output of CPG</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Raw actuator input with shape (envs, arms * segments_per_arm * 2)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._random_target_position">
+<span class="sig-name descname"><span class="pre">_random_target_position</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/randomtargetenvironment.html#RandomTargetEnvironment._random_target_position"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._random_target_position" title="Link to this definition">¶</a></dt>
+<dd><p>Generates random target positions</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Random target positions of shape (n_environments, 3)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._reset_all_envs">
+<span class="sig-name descname"><span class="pre">_reset_all_envs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sub_rngs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/randomtargetenvironment.html#RandomTargetEnvironment._reset_all_envs"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._reset_all_envs" title="Link to this definition">¶</a></dt>
+<dd><p>Reset all environments while avoiding vmapped-reset instability for single-env runs.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observation_size">
+<span class="sig-name descname"><span class="pre">get_observation_size</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observation_size" title="Link to this definition">¶</a></dt>
+<dd><p>Calculate the total size of the observation vector for each arm based on the specified observations to use in the configuration and the state space.
+:return: total size of the observation vector for each arm</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observations">
+<span class="sig-name descname"><span class="pre">get_observations</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Array</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observations" title="Link to this definition">¶</a></dt>
+<dd><p>Construct the observation tensor for all environments and arms based on the specified observations to use in the configuration.
+This function loops through the observations specified in the configuration, retrieves the corresponding data from the environment state,
+and constructs a tensor of shape (num_envs, num_arms, total_obs_per_arm) that contains the observations for each arm in each environment.
+It also handles derived observations like the angle from each arm to the target.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>observation tensor for all environments and arms with shape (num_envs, num_arms, total_obs_per_arm)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>jnp.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.reset" title="Link to this definition">¶</a></dt>
+<dd><p>Reset both the MJX environment and the CPG controllers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.step">
+<span class="sig-name descname"><span class="pre">step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">env_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cpg_state</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">active_arms</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Array</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_substeps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">50</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.step" title="Link to this definition">¶</a></dt>
+<dd><p>Modulate the rowing gait with arm-role actions and run CPG+physics substeps.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>env_state</strong> – current environment state.</p></li>
+<li><p><strong>cpg_state</strong> – current CPG state.</p></li>
+<li><p><strong>action</strong> – arm-role modulation action with shape (arms,) or (envs, arms).</p></li>
+<li><p><strong>active_arms</strong> – Determines which arms are active and which ones are not, has shape (envs, arms</p></li>
+<li><p><strong>num_substeps</strong> – number of CPG/physics substeps to execute per call.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-brittle_star_locomotion.environment.render">
+<span id="brittle-star-locomotion-environment-render-module"></span><h2>brittle_star_locomotion.environment.render module<a class="headerlink" href="#module-brittle_star_locomotion.environment.render" title="Link to this heading">¶</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.render.EnvironmentRenderer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">brittle_star_locomotion.environment.render.</span></span><span class="sig-name descname"><span class="pre">EnvironmentRenderer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">environment</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/render.html#EnvironmentRenderer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer" title="Link to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Renderer for the brittle star locomotion environment.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.render.EnvironmentRenderer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">environment</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/render.html#EnvironmentRenderer.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.__init__" title="Link to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.render.EnvironmentRenderer.__post_render">
+<span class="sig-name descname"><span class="pre">__post_render</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">render_output</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.__post_render" title="Link to this definition">¶</a></dt>
+<dd><p>converts list of camera arrays into a single stitched array.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.render.EnvironmentRenderer.render_video">
+<span class="sig-name descname"><span class="pre">render_video</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trajectory</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'out/test-video.mp4'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/render.html#EnvironmentRenderer.render_video"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.render_video" title="Link to this definition">¶</a></dt>
+<dd><p>Processes trajectory for ALL environments and stacks them vertically.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="brittle_star_locomotion.environment.render.EnvironmentRenderer.show_video">
+<span class="sig-name descname"><span class="pre">show_video</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">video_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/brittle_star_locomotion/environment/render.html#EnvironmentRenderer.show_video"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.show_video" title="Link to this definition">¶</a></dt>
+<dd><p>display the video in a notebook environment.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-brittle_star_locomotion.environment">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-brittle_star_locomotion.environment" title="Link to this heading">¶</a></h2>
+</section>
+</section>
+
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          <a class="next-page" href="brittle_star_locomotion.logger.html">
+              <div class="page-info">
+                <div class="context">
+                  <span>Next</span>
+                </div>
+                <div class="title">brittle_star_locomotion.logger package</div>
+              </div>
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+            </a>
+          <a class="prev-page" href="brittle_star_locomotion.damage.html">
+              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
+              <div class="page-info">
+                <div class="context">
+                  <span>Previous</span>
+                </div>
+                
+                <div class="title">brittle_star_locomotion.damage package</div>
+                
+              </div>
+            </a>
+        </div>
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2026, Bram Comyn, Brent Janssens &amp; Nyah Van Wayenberge
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
+        </div>
+        
+      </footer>
+    </div>
+    <aside class="toc-drawer">
+      
+      
+      <div class="toc-sticky toc-scroll">
+        <div class="toc-title-container">
+          <span class="toc-title">
+            On this page
+          </span>
+        </div>
+        <div class="toc-tree-container">
+          <div class="toc-tree">
+            <ul>
+<li><a class="reference internal" href="#">brittle_star_locomotion.environment package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.environment.environment">brittle_star_locomotion.environment.environment module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment"><code class="docutils literal notranslate"><span class="pre">Environment</span></code></a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment.__init__"><code class="docutils literal notranslate"><span class="pre">Environment.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._create_arena"><code class="docutils literal notranslate"><span class="pre">Environment._create_arena()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._create_brittle_star_directed_locomotion_environment"><code class="docutils literal notranslate"><span class="pre">Environment._create_brittle_star_directed_locomotion_environment()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._create_morphology"><code class="docutils literal notranslate"><span class="pre">Environment._create_morphology()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._get_angle_arm_to_target"><code class="docutils literal notranslate"><span class="pre">Environment._get_angle_arm_to_target()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._get_observations_to_use"><code class="docutils literal notranslate"><span class="pre">Environment._get_observations_to_use()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._map_cpg_output_to_environment_action"><code class="docutils literal notranslate"><span class="pre">Environment._map_cpg_output_to_environment_action()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment._reset_all_envs"><code class="docutils literal notranslate"><span class="pre">Environment._reset_all_envs()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment.get_observation_size"><code class="docutils literal notranslate"><span class="pre">Environment.get_observation_size()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment.get_observations"><code class="docutils literal notranslate"><span class="pre">Environment.get_observations()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment.reset"><code class="docutils literal notranslate"><span class="pre">Environment.reset()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.environment.Environment.step"><code class="docutils literal notranslate"><span class="pre">Environment.step()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.environment.fixedtargetenvironment">brittle_star_locomotion.environment.fixedtargetenvironment module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment</span></code></a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.__init__"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_arena"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._create_arena()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_brittle_star_directed_locomotion_environment"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._create_brittle_star_directed_locomotion_environment()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._create_morphology"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._create_morphology()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_angle_arm_to_target"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._get_angle_arm_to_target()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._get_observations_to_use"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._get_observations_to_use()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._map_cpg_output_to_environment_action"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._map_cpg_output_to_environment_action()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment._reset_all_envs"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment._reset_all_envs()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observation_size"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment.get_observation_size()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.get_observations"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment.get_observations()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.reset"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment.reset()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.fixedtargetenvironment.FixedTargetEnvironment.step"><code class="docutils literal notranslate"><span class="pre">FixedTargetEnvironment.step()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.environment.randomtargetenvironment">brittle_star_locomotion.environment.randomtargetenvironment module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment</span></code></a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.__init__"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_arena"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._create_arena()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_brittle_star_directed_locomotion_environment"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._create_brittle_star_directed_locomotion_environment()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._create_morphology"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._create_morphology()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_angle_arm_to_target"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._get_angle_arm_to_target()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._get_observations_to_use"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._get_observations_to_use()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._map_cpg_output_to_environment_action"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._map_cpg_output_to_environment_action()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._random_target_position"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._random_target_position()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment._reset_all_envs"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment._reset_all_envs()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observation_size"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment.get_observation_size()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.get_observations"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment.get_observations()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.reset"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment.reset()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.randomtargetenvironment.RandomTargetEnvironment.step"><code class="docutils literal notranslate"><span class="pre">RandomTargetEnvironment.step()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.environment.render">brittle_star_locomotion.environment.render module</a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer"><code class="docutils literal notranslate"><span class="pre">EnvironmentRenderer</span></code></a><ul>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.__init__"><code class="docutils literal notranslate"><span class="pre">EnvironmentRenderer.__init__()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.__post_render"><code class="docutils literal notranslate"><span class="pre">EnvironmentRenderer.__post_render()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.render_video"><code class="docutils literal notranslate"><span class="pre">EnvironmentRenderer.render_video()</span></code></a></li>
+<li><a class="reference internal" href="#brittle_star_locomotion.environment.render.EnvironmentRenderer.show_video"><code class="docutils literal notranslate"><span class="pre">EnvironmentRenderer.show_video()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><a class="reference internal" href="#module-brittle_star_locomotion.environment">Module contents</a></li>
+</ul>
+</li>
+</ul>
+
+          </div>
+        </div>
+      </div>
+      
+      
+    </aside>
+  </div>
+</div><script src="../_static/documentation_options.js?v=01f34227"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/scripts/furo.js?v=46bd48cc"></script>
+    </body>
+</html>
