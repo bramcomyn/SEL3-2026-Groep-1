@@ -6,14 +6,14 @@ logging:
 rl:
   seed: 43
   epsilon: 1.0
-  epsilon_decay: 0.975
+  epsilon_decay: 0.990
   epsilon_min: 0.01
   learning_rate: 0.0001
   gamma: 0.95
   hidden_size: 64
   amount_of_hidden_layers: 4
   shared_params: True
-  n_episodes: 300
+  n_episodes: 400
   batch_size: 256
   target_update_freq: 300
   replay_buffer_size: 10000
@@ -32,8 +32,8 @@ environment:
   number_of_arms: 5
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
-  number_of_environments: 1
-  seed: 44
+  number_of_environments: 16
+  seed: 43
   camera_ids: [0, 1]
   frames_per_second: 50
   arena:
@@ -43,24 +43,24 @@ environment:
     attach_target: True
     wall_height: 0.5
     wall_thickness: 0.1
-  simulation_time: 50.0
+  simulation_time: 30.0
   number_of_physics_steps_per_control_step: 10
   time_scale: 1.0
   render_size_x: 720
   render_size_y: 480
-  include_damage: False
-
-gait:
-  fixed_number_of_evaluation_modulation_steps: 50
-  fixed_number_of_evaluation_substeps_per_modulation: 50
+  include_damage: True
 
 damage:
   seed: 45
-  breakpoint_range: [1, 5]
+  breakpoint_range: [3, 15]
   enabled: True
 
+gait:
+  fixed_number_of_evaluation_modulation_steps: 30
+  fixed_number_of_evaluation_substeps_per_modulation: 50
+
 cpg:
-  seed: 45
+  seed: 44
   solver: "rk4"
   time_step: 0.01
   base_frequency_multiplier: 2.0
