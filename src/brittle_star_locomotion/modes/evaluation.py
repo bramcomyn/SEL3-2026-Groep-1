@@ -292,6 +292,7 @@ class Evaluator:
         subprocess.run([
             "node",
             plot_script,
+            "eval",
             arguments.output_actions_trajectory,
             arguments.output_breakpoints_trajectory,
             arguments.output_positions_trajectory
