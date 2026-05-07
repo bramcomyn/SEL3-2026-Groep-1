@@ -1,0 +1,44 @@
+name: Deploy API Docs
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install
+
+      - name: Build Documentation
+        run: |
+          cd docs/api
+          rm -rf build source/api
+          uv run sphinx-apidoc -o source/api ../../src/brittle_star_locomotion
+          uv run sphinx-build -b html source build/html
+          # Create .nojekyll so GitHub doesn't ignore Sphinx's underscore folders
+          touch build/html/.nojekyll
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Point this exactly to your Sphinx HTML output
+          path: 'docs/api/build/html'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
