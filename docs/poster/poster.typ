@@ -7,6 +7,8 @@
   columns: 2,
 )
 
+#set par(justify: true)
+
 #set text(font: "Red Hat Display", size: 36pt)
 #set heading(numbering: "1")
 

@@ -1,5 +1,5 @@
 #let project-title = [
-  Brittle Star-Inspired Damage Robustness:\ Multi-Agent Reinforcement Learning Approach
+  Brittle Star-Inspired Damage Robustness\ with Multi-Agent Reinforcement Learning
 ]
 
 #let authors = [
