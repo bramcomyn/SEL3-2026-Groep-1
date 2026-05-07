@@ -95,7 +95,7 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
         .encode(
             vl.x().fieldQ("step"),
             vl.y().fieldQ("terminated_moving_avg"),
-            vl.text().value(damaged_label),
+            vl.text().value(undamaged_label),
             vl.color()
                 .fieldN("brittle_star")
                 .scale({
