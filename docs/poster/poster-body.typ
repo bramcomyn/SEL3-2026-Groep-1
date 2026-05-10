@@ -42,10 +42,7 @@
 })
 
 #let methodology-figure = figure(
-  image("../assets/methodology.svg", width: 300mm),
-  caption: [
-    Overview of the methodology.
-  ]
+  image("../assets/methodology.drawio.svg")
 )
 
 #let reward-function-figure = figure(
@@ -134,11 +131,12 @@
   We make use of *Independent Q-Learning* (IQL), which is an adaption of standard Q-Learning in which each agent treats the *other agents as an extra source of stochasticity*.
   In order to keep training complexity lower, the agents *share their networks' parameters* with each other so they can *share experience* with each other.
 
-  #grid(
-    columns: 2,
-    figure-placeholder(),
-    figure-placeholder()
-  )
+  // #grid(
+  //   columns: 2,
+  //   figure-placeholder(),
+  //   figure-placeholder()
+  // )
+  #methodology-figure
 
 ]
 
