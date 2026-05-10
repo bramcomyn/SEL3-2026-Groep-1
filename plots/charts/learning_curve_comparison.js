@@ -2,8 +2,6 @@ import * as vl from 'vega-lite-api';
 import { load_csv } from '../utils/load_csv.js';
 import { registerFont } from 'canvas';
 
-registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
-
 export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
     const W = 40; // Moving average window width
 
@@ -18,6 +16,9 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
 
     const ylabel = "Amount of reached targets";
     const xlabel = "Training episode";
+
+    const height = 150;
+    const width = 500;
 
     const titleFontSize = 18;
     const annotationFontSize = 13;
@@ -62,8 +63,8 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
                 })
                 .legend(null)
         )
-        .height(150)
-        .width(500);
+        .height(height)
+        .width(width);
 
     const training_time_annotation_damaged = vl
         .markText({ dx: 0, dy: annotationFontSize + 10, fontSize: annotationFontSize })

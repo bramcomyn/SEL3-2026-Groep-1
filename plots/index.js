@@ -33,7 +33,7 @@ if(mode === 'eval') {
 } else if(mode === 'comparison') {
     const learning_curve_comparison_csv = join(project_root, args[1]);
 
-    save_chart_png(
+    save_chart_svg(
         learning_curve_comparison_chart(learning_curve_comparison_csv),
         join(out_dir, 'learning_curve_comparison')
     );

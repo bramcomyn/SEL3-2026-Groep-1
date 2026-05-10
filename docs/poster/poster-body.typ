@@ -24,7 +24,6 @@
   ]
 )
 
-// TODO: update picture to more recent simulation
 #let simulated-brittle-star-figure = figure(
   image("../assets/simulated-brittle-star.png", height: intro-figure-height),
   caption: [
@@ -42,7 +41,7 @@
 })
 
 #let methodology-figure = figure(
-  image("../assets/methodology.drawio.svg")
+  image("../assets/methodology.svg")
 )
 
 #let reward-function-figure = figure(
@@ -52,11 +51,8 @@
   ]
 )
 
-#let random-reward-function-figure = figure(
-  image("../assets/random-reward-function.svg", width: 350mm),
-  caption: [
-    Same training setup as above, but with random target positions
-  ]
+#let learning-curve-figure = figure(
+  image("../assets/learning_curve_comparison.svg", width: 350mm)
 )
 
 #let trajectories = figure(
@@ -172,6 +168,8 @@
   // However, in this case, the robot *doesn't learn to walk*.
 
   #trajectories
+
+  #learning-curve-figure
   
 ]
 
