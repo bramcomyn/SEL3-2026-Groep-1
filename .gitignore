@@ -78,3 +78,6 @@ Thumbs.db
 /out/
 /wandb/
 /checkpoints/
+
+docs/api/build/
+api-docs/
