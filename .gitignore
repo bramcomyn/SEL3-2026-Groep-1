@@ -7,11 +7,7 @@ __pycache__/
 *.so
 
 # Node modules
-plots/node_modules/
-
-# Plots
-plots/out/*.svg
-plots/out/*.png
+node_modules/
 
 # Distribution / packaging
 .Python
@@ -75,9 +71,9 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-/out/
-/wandb/
-/checkpoints/
+out/
+wandb/
+checkpoints/
 
 docs/api/build/
 api-docs/
