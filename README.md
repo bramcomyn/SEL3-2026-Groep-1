@@ -18,9 +18,9 @@ This project involves both the design, implementation and evaluation of this fra
 The documentation for this project is organized as follows:
 
 - **README.md** (this file): Provides an overview of the project, including its goals, structure and how to use the code.
-- **docs/**: Contains detailed documentation on the design and implementation of the project, as well as the (Typst) source code of our research poster.
+- [**docs/**](https://bramcomyn.github.io/SEL3-2026-Groep-1/): Contains detailed documentation on the design and implementation of the project, as well as the (Typst) source code of our research poster.
     API documentation is build and deployed to Github Pages using Sphinx and can be found in the `docs/api/` directory.
-- **Github Wiki**: Contains additional information and resources related to the project, such as background information on the brittle star and central pattern generators, as well as multi-agent reinforcement learning.
+- [**Github Wiki**](https://github.com/bramcomyn/SEL3-2026-Groep-1/wiki): Contains additional information and resources related to the project, such as background information on the brittle star and central pattern generators, as well as multi-agent reinforcement learning.
 
 ## Installation
 
