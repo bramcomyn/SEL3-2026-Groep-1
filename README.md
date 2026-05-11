@@ -28,7 +28,7 @@ This project is implemented in Python and requires several dependencies to run.
 We recommend using `uv` to manage the virtual environment and dependencies.
 To set up the project, clone the repository and install the dependencies using the following commands:
 
-```bash
+```shell-session
 git clone <repository-url> <project-directory>
 cd <project-directory>
 uv sync
@@ -36,7 +36,7 @@ uv sync
 
 If you have a CUDA-compatible GPU and want to use it for training, you can sync the environment using:
 
-```bash
+```shell-session
 uv sync --extra gpu
 ```
 
