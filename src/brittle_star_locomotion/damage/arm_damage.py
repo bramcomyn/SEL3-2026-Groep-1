@@ -16,7 +16,7 @@ class ArmDamage():
         self._damage_enabled = self._config.damage.enabled
 
         self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
-        self._break_points = jax.random.randint(self._rng, (self._n_environments), 3, 15) # shape (n_envs,)
+        self._break_points = jax.random.randint(self._rng, (self._n_environments), self._breakpoint_range[0], self._breakpoint_range[1]) # shape (n_envs,)
 
     def break_arms(self, step_idx: int) -> None:
         """Deactivates a random arm in an environment if that environment reached its breakpoint
@@ -43,7 +43,7 @@ class ArmDamage():
     def reset(self) -> None:
         """Resets the active arms and breakpoints"""
         self._active_arms = jnp.ones((self._n_environments, self._n_agents))     # shape (n_envs, n_agents)
-        self._break_points = jax.random.randint(self._rng, (self._n_environments), 3, 15) # shape (n_envs,)
+        self._break_points = jax.random.randint(self._rng, (self._n_environments), self._breakpoint_range[0], self._breakpoint_range[1]) # shape (n_envs,)
 
     def get_active_arms(self) -> jnp.ndarray:
         """Returns the active arms.
