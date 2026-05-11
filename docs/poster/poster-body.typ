@@ -119,7 +119,7 @@
 
   // #methodology-figure
 
-  *Central Pattern Generators* (CPGs) are a *mathematical model for representing natural rythmic motions* without requiring external steering. // TODO: check if final part of scentence is required.
+  *Central Pattern Generators* (CPGs) are a *mathematical model for representing natural rythmic motions* without sensory feedback.
 
   We use them in a *Multi-Agent Reinforcement Learning* (MARL) pipeline where the CPGs are the chosen actions.
   The idea of MARL is to have *multiple agents interact independently* in the same environment.
