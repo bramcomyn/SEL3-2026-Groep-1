@@ -76,7 +76,7 @@ To train the model, you can use the following command:
 
 ## Training
 
-```bash
+```shell-session
 uv run -m brittle_star_locomotion 
     --mode train
     --config <path-to-training-config> 
@@ -87,7 +87,7 @@ uv run -m brittle_star_locomotion
 
 To evaluate the model and save the results in a video file, you can use the following command:
 
-```bash
+```shell-session
 uv run -m brittle_star_locomotion 
     --mode eval
     --config <path-to-evaluation-config> 
