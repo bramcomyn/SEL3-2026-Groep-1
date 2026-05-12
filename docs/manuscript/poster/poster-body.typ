@@ -56,7 +56,12 @@
 )
 
 #let trajectories = figure(
-  image("../assets/position_trajectory.png")
+  block(
+    inset: (bottom: -40mm), 
+    clip: true
+  )[
+    #image("../assets/position_trajectory.svg", height: 260mm)
+  ]
 )
 
 #content-block[
@@ -110,20 +115,23 @@
 
   = Results
 
+  When training with and without damage, we plotted the *number of parallel environments that reached the target in time* during each episode:
+
   #learning-curve-figure
+
+  When evaluating these models, we can inspect the trajectories for two undamaged runs and two damaged runs:
+
+  #trajectories
   
 ]
 
 #content-block[
 
   = Conclusions
-
-  // + More research is required to *fix the learning process*.
-  // + Reward function should be checked for *bugs*.
-  // + Cannot say anything about *damage robustness*
   
-  + Training to walk to a target on a larger distance requires more and longer training episodes.
-  + Training with damage takes more than twice as long as training without damage to obtain similar results.
+  + Training to walk to a target *on a larger distance* requires more and longer training episodes.
+  + Training *with damage* takes more than twice as long as training without damage to obtain similar results.
+    Including damage during training makes the *problem more complex* and requires more training.
   
 ]
 
@@ -131,7 +139,16 @@
 
   = Future work
 
-  - Explore more complex locomotion gates (without CPGs?)
-  - Trying out other MARL algorithms
+  - Explore more complex locomotion gates, e.g. without CPGs
+  - Trying out other MARL algorithms, e.g. policy gradient
 
+]
+
+#content-block[
+
+  = References
+
+  + Albrecht, S. V., Christianos, F., & Schäfer, L. (2024). Multi-agent reinforcement learning: Foundations and modern approaches. MIT Press.
+  + Simoens, P. (2026). Reinforcement Learning. Department of Information Technology, Ghent University.
+  
 ]

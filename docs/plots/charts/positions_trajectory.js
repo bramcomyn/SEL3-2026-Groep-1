@@ -96,7 +96,7 @@ export function positions_trajectory_chart(
         .config({
             font: "RedHatDisplay",
             title: {
-                fontSize: 18
+                fontSize: 13
             },
             view: {
                 aspect: 1,

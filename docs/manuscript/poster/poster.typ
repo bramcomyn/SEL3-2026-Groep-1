@@ -31,6 +31,8 @@
 
 #include "poster-body.typ"
 
+#v(-100mm)
+
 #place(
   bottom + center,
   scope: "parent",
