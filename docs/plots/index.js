@@ -21,12 +21,12 @@ if(mode === 'eval') {
     const breakpoints_trajectory_csv = join(project_root, args[2]);
     const positions_trajectory_csv = join(project_root, args[3]);
 
-    save_chart_png(
+    save_chart_svg(
         actions_trajectory_chart(actions_trajectory_csv, breakpoints_trajectory_csv), 
         join(out_dir, 'action_trajectory')
     );
 
-    save_chart_png(
+    save_chart_svg(
         positions_trajectory_chart(positions_trajectory_csv, breakpoints_trajectory_csv), 
         join(out_dir, 'position_trajectory')
     );

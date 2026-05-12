@@ -287,7 +287,7 @@ class Evaluator:
         :param arguments: Commandline arguments to the `brittle_star_locomotion` module
         """
         project_root = Path(__file__).resolve().parents[3]
-        plot_script = str(project_root / "plots" / "index.js")
+        plot_script = str(project_root / "docs" / "plots" / "index.js")
 
         subprocess.run([
             "node",

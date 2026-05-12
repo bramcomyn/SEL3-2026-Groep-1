@@ -15,7 +15,7 @@ export function positions_trajectory_chart(
 
     const maxAbs = Math.max(
         ...data.map(d => Math.max(Math.abs(d.x), Math.abs(d.y)))
-    ) - 0.5;
+    ) - 1;
     const domain = [-maxAbs, maxAbs];
 
     const no_damage_path = vl.markLine({ point: { size: 8 }, strokeWidth: 1 })
@@ -24,8 +24,8 @@ export function positions_trajectory_chart(
             vl.filter("datum.step_id < datum.breakpoint")
         )
         .encode(
-            vl.x().fieldQ("x").axis(null).scale({ domain, padding: 20 }),
-            vl.y().fieldQ("y").axis(null).scale({ domain, padding: 20 }),
+            vl.x().fieldQ("x").axis(null).scale({ domain, nice: false, padding: 20 }),
+            vl.y().fieldQ("y").axis(null).scale({ domain, nice: false, padding: 20 }),
             vl.order().fieldO("step_id"),
             vl.detail().fieldO("environment_id"),
             vl.color().value("#3a7fb8")
@@ -35,10 +35,10 @@ export function positions_trajectory_chart(
         .transform(
             vl.filter("datum.in_trajectory"),
             vl.filter("datum.step_id >= datum.breakpoint - 1")
-        )
+        ) 
         .encode(
-            vl.x().fieldQ("x").axis(null).scale({ domain, padding: 20 }),
-            vl.y().fieldQ("y").axis(null).scale({ domain, padding: 20 }),
+            vl.x().fieldQ("x").axis(null).scale({ domain, nice: false, padding: 20 }),
+            vl.y().fieldQ("y").axis(null).scale({ domain, nice: false, padding: 20 }),
             vl.order().fieldO("step_id"),
             vl.detail().fieldO("environment_id"),
             vl.color().value("#f16161")
@@ -55,14 +55,14 @@ export function positions_trajectory_chart(
 
     return vl.layer(no_damage_path, damage_path, target)
         .data(data)
+        .transform(
+            vl.filter(`datum.x < ${maxAbs} && datum.x > ${-maxAbs} && datum.y < ${maxAbs} && datum.y > ${-maxAbs}`)
+        )
         .title({
             text: "Trajectories taken by the Brittle Star",
             subtitle: "Targets indicated in grey, damaged interval in red",
             anchor: "middle",
-            offset: 30
-        })
-        .resolve({
-            scale: { x: 'shared', y: 'shared' } 
+            offset: -30
         })
         .config({
             font: "RedHatDisplay",
@@ -71,6 +71,7 @@ export function positions_trajectory_chart(
             },
             view: {
                 aspect: 1,
+                stroke: null,
                 strokeOpacity: 0.5
             }
         })
