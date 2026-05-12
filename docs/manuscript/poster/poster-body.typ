@@ -57,7 +57,7 @@
 
 #let trajectories = figure(
   block(
-    inset: (bottom: -40mm), 
+    inset: (bottom: -31mm), 
     clip: true
   )[
     #image("../assets/position_trajectory.svg", height: 260mm)
