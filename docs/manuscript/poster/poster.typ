@@ -3,9 +3,11 @@
 #set page(
   paper: "a0",
   margin: (x: 20mm, top: 0mm, bottom: 0mm),
-  fill: gray.lighten(80%),
+  fill: gray.lighten(90%),
   columns: 2,
 )
+
+#set par(justify: true)
 
 #set text(font: "Red Hat Display", size: 36pt)
 #set heading(numbering: "1")
@@ -28,6 +30,8 @@
 ]
 
 #include "poster-body.typ"
+
+#v(-100mm)
 
 #place(
   bottom + center,

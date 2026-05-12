@@ -32,8 +32,8 @@ environment:
   number_of_arms: 5
   number_of_segments_per_arm: 3
   render_every_x_frames: 2
-  number_of_environments: 1
-  seed: 44
+  number_of_environments: 2
+  seed: 661149
   camera_ids: [0, 1]
   frames_per_second: 50
   arena:
@@ -48,14 +48,14 @@ environment:
   time_scale: 1.0
   render_size_x: 720
   render_size_y: 480
-  include_damage: False
+  include_damage: True
 
 gait:
   fixed_number_of_evaluation_modulation_steps: 50
   fixed_number_of_evaluation_substeps_per_modulation: 50
 
 damage:
-  seed: 45
+  seed: 40
   breakpoint_range: [1, 5]
   enabled: True
 
