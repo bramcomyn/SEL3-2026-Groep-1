@@ -53,16 +53,45 @@ export function positions_trajectory_chart(
             vl.y().fieldQ("y")
         );
 
-    return vl.layer(no_damage_path, damage_path, target)
+    const damaged_annotation = vl
+        .markText({ color: "#f16161", align: 'left', dx: 0, dy: -35, fontSize: 13 })
+        .transform(
+            vl.filter(`
+                datum.in_trajectory && datum.step_id === datum.breakpoint - 1
+                && datum.environment_id === 0
+            `)
+        )
+        .encode(
+            vl.x().fieldQ("x"),
+            vl.y().fieldQ("y"),
+            vl.text().value("Trajectory with damage"),
+        );
+
+    const undamaged_annotation = vl
+        .markText({ color: "#3a7fb8", align: 'left', dx: 30, dy: 35, fontSize: 13 })
+        .transform(
+            vl.filter(`
+                datum.in_trajectory && datum.step_id === datum.breakpoint - 1
+                && datum.environment_id === 0
+            `)
+        )
+        .encode(
+            vl.x().fieldQ("x"),
+            vl.y().fieldQ("y"),
+            vl.text().value("Trajectory with no damage"),
+        );
+
+    return vl.layer(no_damage_path, damage_path, target, damaged_annotation, undamaged_annotation)
         .data(data)
         .transform(
             vl.filter(`datum.x < ${maxAbs} && datum.x > ${-maxAbs} && datum.y < ${maxAbs} && datum.y > ${-maxAbs}`)
         )
         .title({
             text: "Trajectories taken by the Brittle Star",
-            subtitle: "Targets indicated in grey, damaged interval in red",
             anchor: "middle",
-            offset: -30
+            offset: -30,
+            dx: 15,
+            fontWeight: "normal"
         })
         .config({
             font: "RedHatDisplay",
@@ -72,7 +101,7 @@ export function positions_trajectory_chart(
             view: {
                 aspect: 1,
                 stroke: null,
-                strokeOpacity: 0.5
+                strokeOpacity: 0.5,
             }
         })
         .toSpec();
