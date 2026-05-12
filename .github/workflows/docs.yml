@@ -26,17 +26,21 @@ jobs:
 
       - name: Build Documentation
         run: |
-          cd docs/api
-          rm -rf build source/api
-          uv run sphinx-apidoc -o source/api ../../src/brittle_star_locomotion
-          uv run sphinx-build -b html source build/html
-          # Create .nojekyll so GitHub doesn't ignore Sphinx's underscore folders
-          touch build/html/.nojekyll
+          # 1. Install dependencies (ensure sphinx/furo are in your pyproject.toml)
+          uv sync 
+
+          # 2. Run apidoc to generate .rst files from src/
+          # We point to the internal package folder
+          uv run sphinx-apidoc -o docs/api/source/api src/brittle_star_locomotion
+
+          # 3. Build the actual HTML
+          uv run sphinx-build -b html docs/api/source docs/api/build/html
+
+          touch docs/api/build/html/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Point this exactly to your Sphinx HTML output
           path: 'docs/api/build/html'
 
       - name: Deploy to GitHub Pages
