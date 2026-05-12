@@ -78,7 +78,7 @@ export function positions_trajectory_chart(
         .encode(
             vl.x().fieldQ("x"),
             vl.y().fieldQ("y"),
-            vl.text().value("Trajectory with no damage"),
+            vl.text().value("Trajectory without damage"),
         );
 
     return vl.layer(no_damage_path, damage_path, target, damaged_annotation, undamaged_annotation)
