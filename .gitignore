@@ -1,80 +1,54 @@
-# Byte-compiled / optimized / DLL files
+# --- System / OS Specific ---
+.DS_Store
+Thumbs.db
+.history/
+
+# --- Python & Byte-code ---
 __pycache__/
 *.py[codz]
 *$py.class
-
-# C extensions
 *.so
-
-# Node modules
-plots/node_modules/
-
-# Plots
-plots/out/*.svg
-plots/out/*.png
-
-# Distribution / packaging
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
 *.egg
 MANIFEST
+.installed.cfg
 
-# --- uv & Virtual Environments ---
-# uv creates a .venv directory by default
+# --- Environments & Package Managers ---
 .venv/
-# If you use other env managers
 venv/
 env/
 ENV/
+**/node_modules/
+package-lock.json
 
-# --- Ruff ---
-# Ruff's cache directory
+# --- Project Specific Data & Outputs ---
+out/
+wandb/
+checkpoints/
+.cache
+.pytest_cache/
 .ruff_cache/
-
-# --- pre-commit ---
-.assistant/
 .pre-commit-cache/
 
-# --- Testing & Coverage ---
-.pytest_cache/
-.tox/
-.nox/
+# --- Documentation & Plots ---
+api-docs/
+docs/api/build/
+# Ignore all PDFs (Posters/Manuscripts) 
+# Usually better to build these locally
+*.pdf
+
+# --- Coverage / Testing ---
 .coverage
-.cache
 htmlcov/
 .noseresults
 nosetests.xml
 coverage.xml
 *.cover
-*.py,cover
 
 # --- Editors (VS Code) ---
 .vscode/*
-# Allow specific VS Code settings if you want to share them with the team:
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
-.history/
-
-# --- OS Specific ---
-.DS_Store
-Thumbs.db
-
-/out/
-/wandb/
-/checkpoints/

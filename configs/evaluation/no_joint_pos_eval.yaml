@@ -19,8 +19,7 @@ rl:
   replay_buffer_size: 10000
   observations_to_use: [
     "angle_to_target",
-    "xy_distance_to_target",
-    "joint_position",
+    "xy_distance_to_target"
   ]
 
 environment:
@@ -43,7 +42,7 @@ environment:
     attach_target: True
     wall_height: 0.5
     wall_thickness: 0.1
-  simulation_time: 30.0
+  simulation_time: 50.0
   number_of_physics_steps_per_control_step: 10
   time_scale: 1.0
   render_size_x: 720
@@ -51,8 +50,13 @@ environment:
   include_damage: False
 
 gait:
-  fixed_number_of_evaluation_modulation_steps: 30
+  fixed_number_of_evaluation_modulation_steps: 50
   fixed_number_of_evaluation_substeps_per_modulation: 50
+
+damage:
+  seed: 45
+  breakpoint_range: [1, 5]
+  enabled: True
 
 cpg:
   seed: 45
