@@ -92,82 +92,23 @@
 
   = Methodology
 
-  // Actions: rowing gait modulation through CPGs:
-
-  //   #table(
-  //     stroke: none,
-  //     columns: (auto, auto),
-  //     gutter: 5mm,
-  //     inset: 5mm,
-  //     align: (left + horizon),
-  //     table.header([*Action*], [*Description*]),
-  //     table.hline(stroke: gray + 1pt),
-  //     [Leading arm],           [Pointing upward],
-  //     [Left rower],            [Clockwise rotation],
-  //     [Right rower],           [Counterclockwise rotation],
-  //     [Secondary left rower],  [Smaller amplitude clockwise],
-  //     [Secondary right rower], [Smaller amplitude counterclockwise]
-  //   )
-
-  // Learning: *action selection* through MARL:
-  //   - Observations: 
-  //    + *Angle* between arm and target, 
-  //    + *Direction* between body and target, 
-  //    + *Distance* between body and target
-  //   - Reward function: *distance reduction* toward target
-  //   - *Fixed* target position
-
-  // #methodology-figure
-
-  *Central Pattern Generators* (CPGs) are a *mathematical model for representing natural rythmic motions* without sensory feedback.
-
-  We use them in a *Multi-Agent Reinforcement Learning* (MARL) pipeline where the CPGs are the chosen actions.
+  *CPGs* are a *mathematical model for representing natural rythmic motions* without sensory feedback.
+  We use them in a *MARL* pipeline where the CPG gaits are the chosen actions.
   The idea of MARL is to have *multiple agents interact independently* in the same environment.
 
-  We make use of *Independent Q-Learning* (IQL), which is an adaption of standard Q-Learning in which each agent treats the *other agents as an extra source of stochasticity*.
-  In order to keep training complexity lower, the agents *share their networks' parameters* with each other so they can *share experience* with each other.
+  We make use of *Independent Q-Learning* (IQL), which is an adaption of Q-Learning in which each agent treats the *other agents as an extra source of stochasticity*.
+  To keep training complexity lower, agents *share their networks' parameters*.
 
-  // #grid(
-  //   columns: 2,
-  //   figure-placeholder(),
-  //   figure-placeholder()
-  // )
   #methodology-figure
+
+  Agents pick one of *five preconfigured CPG gaits* which allow them to switch roles from leading arm to primary or secondary rower, both left and right.
+  Damage is introduced by *zeroing out actuator inputs for one arm* at a random point in time during an episode.
 
 ]
 
 #content-block[
 
   = Results
-
-  // *Can walk* in simulation with 5 arms, fixed target and no damage:
-
-  // #align(center)[
-  //   #grid(
-  //     columns: (auto, auto),
-  //     column-gutter: 10mm,
-  //     rows: (auto, auto),
-  //     row-gutter: 10mm,
-  //     align: (center + horizon),
-  //     ..brittle-star-moving-figures
-  //   )
-  // ]
-
-  // Reward functions shows a *small increase* in reward, but remains close to zero:
-
-  // #align(center)[
-  //   #reward-function-figure
-  // ]
-
-  // Moving to random target positions shows the *same results, but with a lower average* reward:
-
-  // #align(center)[
-  //   #random-reward-function-figure
-  // ]
-
-  // However, in this case, the robot *doesn't learn to walk*.
-
-  #trajectories
 
   #learning-curve-figure
   
