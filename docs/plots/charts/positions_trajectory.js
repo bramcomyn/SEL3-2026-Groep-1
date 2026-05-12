@@ -2,7 +2,7 @@ import * as vl from 'vega-lite-api';
 import { load_csv } from '../utils/load_csv.js';
 import { registerFont } from 'canvas';
 
-registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
+// registerFont('/usr/local/share/fonts/Red_Hat_Display/static/RedHatDisplay-Regular.ttf', { family: 'RedHatDisplay' });
 
 export function positions_trajectory_chart(
     positions_trajectory_csv, 

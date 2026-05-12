@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 const args = process.argv.slice(2);
 
-const project_root = join(__dirname, "..");
+const project_root = join(__dirname, "../../");
 const out_dir = join(__dirname, "out");
 
 const mode = args[0];

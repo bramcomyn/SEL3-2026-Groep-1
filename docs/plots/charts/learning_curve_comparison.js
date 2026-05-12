@@ -8,8 +8,8 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
     const damaged = 1;      // ID of damaged brittle star
     const undamaged = 2;    // ID of undamaged brittle star
 
-    const damaged_label = "Damage robust (±8h)";
-    const undamaged_label = "Not damage robust (±3h)";
+    const damaged_label = "Damage included (±8h)";
+    const undamaged_label = "No damage included (±3h)";
 
     const title = "Achieving similar performance with damage robustness";
     const titleNext = "requires more than twice as much time"
@@ -49,11 +49,11 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
         .encode(
             vl.x()
                 .fieldQ("step")
-                .axis({ grid: false, format: '~s', titleFontSize: annotationFontSize })
+                .axis({ grid: false, format: '~s', titleFontSize: annotationFontSize, titleFontWeight: "normal" })
                 .title(xlabel),
             vl.y()
                 .fieldQ("terminated_moving_avg")
-                .axis({ grid: false, titleFontSize: annotationFontSize })
+                .axis({ grid: false, titleFontSize: annotationFontSize, titleFontWeight: "normal" })
                 .title(ylabel),
             vl.color()
                 .fieldN("brittle_star")
@@ -67,7 +67,7 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
         .width(width);
 
     const training_time_annotation_damaged = vl
-        .markText({ dx: 0, dy: annotationFontSize + 10, fontSize: annotationFontSize })
+        .markText({ dx: -50, dy: annotationFontSize + 10, fontSize: annotationFontSize })
         .transform(
             vl.filter(`
                 datum.step === ${max_step_damaged} && datum.brittle_star === ${damaged} 
@@ -135,7 +135,8 @@ export function learning_curve_comparison_chart(learning_curve_comparison_csv) {
             fontSize: titleFontSize,
             subtitle: titleNext,
             subtitleFontSize: titleFontSize,
-            offset: titleOffset
+            offset: titleOffset,
+            fontWeight: "normal"
         })
         .config({
             font: "RedHatDisplay",
